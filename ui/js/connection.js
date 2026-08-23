@@ -24,6 +24,12 @@ async function _doPollHealth() {
 
     if (data.jarvis_ready) {
       stopHealthPolling()
+      // _attemptConnect() below refuses to connect unless boot state is
+      // 'starting' (or main UI is already shown) — must set this before
+      // calling it, otherwise a poll that finds jarvis already fully ready
+      // while state is still 'idle' (e.g. this is the very first poll)
+      // silently no-ops forever with no error, no retry, no timeout valve.
+      if (bootOverlay.dataset.state === 'idle') setBootState('starting')
       setBootMsg('READY — CONNECTING…')
       _doConnectJarvis()
       return
@@ -150,18 +156,11 @@ function _attemptConnect() {
       .then(({ muted }) => applyTtsMuteState(muted))
       .catch(() => {})
     _loadFeatureFlags()
-    _loadTtsEngine()
     // Part 2: sync mode button to backend state on every connect
     fetch(`${JARVIS_API}/api/mode`)
       .then(r => r.json())
       .then(({ mode }) => applyModeState(mode))
       .catch(() => {})
-    // Re-pull the Conceptuales list from the backend on every (re)connect —
-    // by now JARVIS_API points at the confirmed-reachable backend URL, so
-    // this catches cases where the very first _fetchConcepts() call (fired
-    // at script load, before the backend URL was confirmed) fell back to
-    // localStorage.
-    _fetchConcepts()
     _checkNotifications()
   })
 
@@ -234,10 +233,10 @@ function _attemptConnect() {
   })
   jarvisSocket.on('mute_state', ({ muted }) => applyMuteState(muted))
   jarvisSocket.on('tts_mute_state', ({ muted }) => applyTtsMuteState(muted))
-  // LIRA CORE's Estado tab — additive listeners (existing ones above are
+  // HUGO CORE's Estado tab — additive listeners (existing ones above are
   // untouched) that just refresh Estado's own display if it's the
   // currently visible tab, on top of whatever each event already does.
-  // See _renderCoreEstado() / "LIRA CORE" section further down.
+  // See _renderCoreEstado() / "HUGO CORE" section further down.
   const _coreEstadoRefresh = () => {
     if (typeof _currentSection !== 'undefined' && _currentSection === 'core' &&
         typeof _currentCoreSub !== 'undefined' && _currentCoreSub === 'estado') {
@@ -265,14 +264,11 @@ function _attemptConnect() {
       _loadSleepInsights()
     }
   })
-  // LIRA CORE's Pensamiento tab — see _onLiraThinking() further down.
-  jarvisSocket.on('lira_thinking', (data) => { if (typeof _onLiraThinking === 'function') _onLiraThinking(data) })
+  // HUGO CORE's Pensamiento tab — see _onHugoThinking() further down.
+  jarvisSocket.on('hugo_thinking', (data) => { if (typeof _onHugoThinking === 'function') _onHugoThinking(data) })
   // Chat latency display — see core/server.py's emit_response_timing()
   // and chat-render.js's _applyResponseTiming()/_lastJarvisTimingEl.
   jarvisSocket.on('response_timing', (data) => { if (typeof _applyResponseTiming === 'function') _applyResponseTiming(data) })
-  // MOTOR DE VOZ toggle (Ajustes) — broadcast whenever POST /api/set_tts_engine
-  // changes it, from any connected tab, so every open HUD stays in sync.
-  jarvisSocket.on('tts_engine_state', ({ engine }) => { if (typeof _applyTtsEngineState === 'function') _applyTtsEngineState(engine) })
   // Unified floating diamond — live partial transcript (what Joan is
   // saying, mid-recognition) shown above the diamond while she's actively
   // listening and still processing. Additional listener alongside the

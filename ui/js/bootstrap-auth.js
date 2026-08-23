@@ -80,12 +80,12 @@ const responseTimerEl  = document.getElementById('responseTimer')
 const BOOT_TIMEOUT_MS = 45000
 
 const STATUS_LABELS = { listening: 'Listening', processing: 'Processing', speaking: 'Speaking' }
-// LIRA is the only personality now — kept as a labeled constant (not an
+// HUGO is the only personality now — kept as a labeled constant (not an
 // inlined string at each of its 2 call sites in chat-render.js/
 // core-tabs-sleep-panel.js) since both already read it by name.
-const PERSONALITY_LABEL = '🤖  lira'
+const PERSONALITY_LABEL = '🤖  hugo'
 
-const currentPersonality = 'lira'   // never switches anymore — see personality-switch.js's own header comment
+const currentPersonality = 'hugo'   // never switches anymore — see personality-switch.js's own header comment
 let currentStatus       = 'listening'
 let lastMsgType         = null
 let _flashTimer         = null
@@ -172,7 +172,7 @@ function _showRejectionPage() {
     '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}' +
     'html,body{height:100%;overflow:hidden;background:#0a0a0a;' +
     'display:flex;align-items:center;justify-content:center}' +
-    'p{color:#f0c040;font-size:clamp(1.5rem,5vw,3rem);' +
+    'p{color:#409cf0;font-size:clamp(1.5rem,5vw,3rem);' +
     "font-family:'Courier New',Courier,monospace;text-align:center;user-select:none}" +
     '</style></head><body>' +
     '<p>Los cojones ves esto</p>' +
@@ -351,4 +351,23 @@ launcher.on('update_progress', _applyUpdateProgress)
 // update_progress above.
 launcher.on('build_ios_progress', _applyBuildIosProgress)
 }   // end _initLauncherSocket()
+
+// ════════════════════════════════════════════════════════════════════════════
+// BOOTSTRAP — actually start the app.
+// Real root cause of "stuck forever on the loading screen": when this file
+// was split out of the old single-file ui/app.js (see that file's own
+// auth-gate IIFE, now dead/unused since index.html no longer loads it),
+// this bare top-level call to _initLauncherSocket() didn't come with it.
+// Every function above was still defined and correct, but nothing ever
+// invoked _initLauncherSocket() — `launcher` stayed null forever, no
+// 'connect'/'jarvis_ready' handler ever fired, startHealthPolling() never
+// ran, and bootOverlay.dataset.state never left its initial value. The
+// decorative boot splash (clock-boot-splash-wiring.js) has no idea any of
+// this failed — it just shows "Cargando..." until #bootOverlay's real
+// state becomes 'running', which now never happens. Auth (fingerprint
+// check against the launcher) is disabled server-side right now — see
+// _generateFingerprint()'s own comment — so, matching ui/app.js's own
+// "AUTH DISABLED" fallback, skip straight to starting the app.
+// ════════════════════════════════════════════════════════════════════════════
+_initLauncherSocket()
 

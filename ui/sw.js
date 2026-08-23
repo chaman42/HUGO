@@ -91,12 +91,12 @@
 // so a real resumen/esquema looked identical to an empty one. Both are now
 // expandable (same click-to-detail pattern as INVESTIGACIÓN) to show the
 // full text. estudio.js changed, already in PRECACHE since v88.
-// v112: NÚCLEO LIRA → Módulos tab — first a runtime skills/ registry view
+// v112: NÚCLEO HUGO → Módulos tab — first a runtime skills/ registry view
 // (enable/disable toggles), then replaced with the full capability catalog
 // (grouped by category, collapsible, click-to-expand detail) backed by
 // GET /api/modules/catalog. core-tabs-sleep-panel.js and
 // armor-mindmap-detail.css changed across both passes — both already in
-// PRECACHE (core-tabs-sleep-panel.js since the original NÚCLEO LIRA build,
+// PRECACHE (core-tabs-sleep-panel.js since the original NÚCLEO HUGO build,
 // armor-mindmap-detail.css likewise) — this bump is what actually gets
 // clients off their stale cached copies, which is why the tab rendered
 // empty/stale until now.
@@ -111,16 +111,16 @@
 // native `say` — index.html got a new <button data-engine="say"> and
 // components.css's header comment was updated; bumped so clients drop
 // their stale cached index.html/components.css and see the new button.
-// v116: Ajustes gained a 'Código LIRA' feature toggle (Code Engine
+// v116: Ajustes gained a 'Código HUGO' feature toggle (Code Engine
 // Phase 4 kill switch) — chat-render.js's FEATURE_FLAG_LABELS changed.
 // v117: Ajustes gained an 'Auto-actualización' toggle, separate from
-// 'Código LIRA' — chat-render.js's FEATURE_FLAG_LABELS changed again.
+// 'Código HUGO' — chat-render.js's FEATURE_FLAG_LABELS changed again.
 // v118: Chat section's orb was missing the faceted gold-diamond SVG layer
 // the main-menu orb and persistent-bar orb already had (same geometry,
-// see .mm-orb-facet-svg/.lira-diamond-facet-svg) — added as .orb-facet-svg
+// see .mm-orb-facet-svg/.hugo-diamond-facet-svg) — added as .orb-facet-svg
 // in index.html + chat.css. Bumped so clients drop their stale cached
 // index.html/chat.css and see the updated logo instead of the old plain one.
-// v119: JARVIS/FRIDAY personalities removed entirely — LIRA is now the only
+// v119: JARVIS/FRIDAY personalities removed entirely — HUGO is now the only
 // one. Orb is always diamond-shaped/gold (no more shape-toggle branching or
 // .orb-bracket circle decoration), the settings-panel personality switcher
 // row, #personalityModal, and the Electron tray's Personality submenu are
@@ -204,19 +204,19 @@
 // its own final positioning. section-nav.js changed.
 // v126: Architectural rewrite of the diamond animation system per direct
 // feedback that v120-125's incremental dock/undock/hop patches kept
-// surfacing new sync bugs — because #liraDiamond, #mmOrbWrap, and
+// surfacing new sync bugs — because #hugoDiamond, #mmOrbWrap, and
 // #chatOrbWrap were three separate DOM elements, and every transition
 // between them relied on JS warping one to match another's rect then
-// hard-swapping visibility at exactly the right instant. #liraDiamond is
+// hard-swapping visibility at exactly the right instant. #hugoDiamond is
 // now the ONLY diamond element that ever exists, on every section
 // including Main/Chat — she's never hidden/swapped, just continuously
 // repositioned/rescaled (top/left/--diamond-scale) via one unified
 // _glideDiamondTo(), the same call ambient repositioning already used.
 // #mmOrbWrap/#chatOrbWrap are gone, replaced by empty layout placeholders
 // (#mmOrbSlot/#chatOrbSlot) that only exist so sibling elements (name/
-// status labels, title, mic dot) keep their layout; #liraDiamond overlays
+// status labels, title, mic dot) keep their layout; #hugoDiamond overlays
 // their rect while docked. Main's/Chat's own decorative layers (energy
-// fields, rings, gems, particles) moved into #liraDiamond itself as
+// fields, rings, gems, particles) moved into #hugoDiamond itself as
 // context-gated sibling layers (.context-main/.context-chat), with the
 // circular processing spinner and speaking wave-bars unified to the
 // diamond's own existing perimeter-arc/shape-ripple look everywhere
@@ -242,7 +242,7 @@
 // floating-size for the animation's 0.35s on every arrival. Keyframe
 // values now scale relative to --diamond-scale. diamond-toggles.css changed.
 // v129: Fixed live feedback that docking into Main/Chat still "resizes,
-// then moves" — .lira-diamond's transform (scale) transitioned over 0.34s
+// then moves" — .hugo-diamond's transform (scale) transitioned over 0.34s
 // while top/left transitioned over 0.42s, so the size visibly finished
 // changing well before the position glide caught up. All three now share
 // the same 0.42s duration so position and scale land together.
@@ -280,13 +280,13 @@
 // scale transform — mechanically incapable of finishing at different
 // moments now. diamond-toggles.css, diamond-motion.js, and
 // status-diamond-grid.js changed.
-// v133: New "Personas" tab in Núcleo LIRA — lists every person LIRA has a
+// v133: New "Personas" tab in Núcleo HUGO — lists every person HUGO has a
 // saved record of (core/social.py), with a Joan-editable trust tier
 // (Owner/Private/Personal/Public, or "Desconocido" until Joan explicitly
-// reviews someone — new Person.trust_confirmed field) and knows_lira
+// reviews someone — new Person.trust_confirmed field) and knows_hugo
 // flag, plus add/edit/delete. New backend routes: POST /api/social/people
 // (create), PATCH /api/social/people/<id> (edit name/relationship/
-// knows_lira); POST .../trust extended to also set trust_confirmed.
+// knows_hugo); POST .../trust extended to also set trust_confirmed.
 // index.html, diamond-text-launcher.js, core-tabs-sleep-panel.js, and
 // armor-mindmap-detail.css changed.
 // v134: Armor Bay's build status is now editable (Modelos Primarios /
@@ -312,9 +312,9 @@
 // v136: Chat's paperclip button now opens a small type menu (Fotos / PDF /
 // Documentos) instead of the file picker directly. Only Fotos is wired to
 // an actual accept="image/*" picker trigger — PDF/Documentos are disabled
-// placeholders, staging the UI shape for when LIRA can actually read those
+// placeholders, staging the UI shape for when HUGO can actually read those
 // too, without staging files nothing reads yet. No new backend, no change
-// to LIRA's ability to see attachment content (still cosmetic staging
+// to HUGO's ability to see attachment content (still cosmetic staging
 // only, per the existing comment in chat-render.js). index.html,
 // chat-render.js, and controls-bar.css changed.
 // v137: fixed a real (pre-existing, unrelated to v136) bug where the
@@ -329,7 +329,7 @@
 // .open). diamond-core.css changed.
 //
 // v138: backend-only bump (no ui/ files changed) — cache-busts after
-// fixing LIRA's inline investigation asides (core/personalities/base.py)
+// fixing HUGO's inline investigation asides (core/personalities/base.py)
 // and the self-feeding module_error/task loop between core/situation.py
 // and core/action_engine.py, both restarted and verified live this
 // session.
@@ -371,7 +371,7 @@
 // mark-read button (replacing the old two-col/isLong heuristic). Removed
 // now-dead .estudio-schema-node*/.estudio-detail-columns.two-col CSS
 // (ui/js/estudio.js, ui/css/estudio.css).
-// v148: extended the instrument-console aesthetic to NÚCLEO LIRA's
+// v148: extended the instrument-console aesthetic to NÚCLEO HUGO's
 // Pensamiento (thinking/sleep-questions/reflections feeds → estudio-
 // console-item-card) and Memoria (facts → estudio-console-list bullets,
 // episodes → item-cards with a date/importance head) tabs, plus a shared
@@ -381,7 +381,7 @@
 // deferred to a follow-up pass (real interactive widgets — priority
 // stepper, block/build controls, tier picker — need a more careful hybrid
 // treatment, not a drop-in swap).
-// v149: finished the NÚCLEO LIRA console pass — Módulos/Personas' shared
+// v149: finished the NÚCLEO HUGO console pass — Módulos/Personas' shared
 // row/detail shell (.core-module-row/-detail) gets the same left-accent-
 // tick + bordered-card treatment as everywhere else (zero interactivity
 // changes: priority stepper/block/build/tier-picker markup untouched), and
@@ -421,14 +421,14 @@
 // matches the rest of the mono-caption family. Nav's active indicator
 // (.nav-item.active) got a soft inset glow on its existing thin top
 // border — no dot/pill added, respecting that bar's own documented "sharp,
-// not a bubble" intent. #liraDiamond and every diamond-*/boot-splash file
+// not a bubble" intent. #hugoDiamond and every diamond-*/boot-splash file
 // were NOT touched, per the standing constraint (ui/css/chat.css,
 // ui/css/controls-bar.css, ui/css/nav-personality-modal.css).
 // v154: added a fancy ambient background to the main menu (#section-home)
 // — 4 drifting glow orbs spread across the whole section, a slow diagonal
 // HUD light-sweep pass, and a faint drifting star-dot field
 // (.mm-atmosphere, ui/css/personality-nav.css, markup in ui/index.html).
-// Distinct from and doesn't touch #liraDiamond's own particle ring — spans
+// Distinct from and doesn't touch #hugoDiamond's own particle ring — spans
 // the whole section rather than being centered on the diamond, and the
 // diamond itself (and every diamond-*/boot-splash file) remains untouched.
 // v155: fixed the main-menu light sweep (.mm-atmosphere-sweep) — v1
@@ -549,7 +549,22 @@
 // before any new Scope entry can be saved, enforced server-side too (see
 // core.bughunter_routes.api_bughunter_add_scope) so it can't be bypassed
 // by calling the route directly.
-const CACHE = 'jarvis-v175';
+// v176: removed the Armor Design Studio / ArmorOS subsystem (armor grid,
+// armor detail view, Diseño tab) — never applied to HUGO. PRECACHE dropped
+// the deleted armor-svg-grid.js/armor-detail-concepts-load.js/
+// design-studio.js/design-studio.css entries (were 404ing) and added the
+// new concepts-load.js (armor-detail-concepts-load.js's concepts-only
+// successor).
+// v180: bootstrap-auth.js fix — actual root cause of the infinite
+// "Cargando..." boot screen. The ui/js/*.js split from ui/app.js dropped
+// the top-level call to _initLauncherSocket() that used to live at the
+// bottom of app.js's auth-gate IIFE — the function was still defined
+// correctly but nothing ever invoked it, so the launcher socket was never
+// created and the boot state machine never moved off its initial state.
+// Now called for real. (v179's connection.js guard fix is still correct
+// and kept, but was never reachable without this.) Bump so clients drop
+// their stale cached copy that never actually booted.
+const CACHE = 'jarvis-v180';
 
 // Assets to pre-cache on install so the icons/manifest load instantly
 // offline. '/' (ui/index.html) is deliberately NOT in this list — see the
@@ -563,15 +578,13 @@ const PRECACHE = [
   '/css/controls-bar.css', '/css/diamond-toggles.css', '/css/diamond-core.css',
   '/css/personality-nav.css', '/css/main-menu-orb.css', '/css/main-menu-panels.css',
   '/css/armor-grid.css', '/css/armor-mindmap-detail.css', '/css/concepts.css',
-  '/css/nav-personality-modal.css', '/css/estudio.css', '/css/bughunter.css',
+  '/css/nav-personality-modal.css', '/css/estudio.css',
   '/js/bootstrap-auth.js', '/js/connection.js', '/js/boot-power-state.js',
   '/js/section-nav.js', '/js/status-diamond-grid.js', '/js/diamond-motion.js',
   '/js/diamond-text-launcher.js', '/js/core-tabs-sleep-panel.js', '/js/mind-map.js',
   '/js/personality-switch.js', '/js/chat-render.js', '/js/settings-updates.js',
-  '/js/clock-boot-splash-wiring.js', '/js/mm-wiring.js', '/js/armor-svg-grid.js',
-  '/js/armor-detail-concepts-load.js', '/js/concepts-edit.js', '/js/estudio.js',
-  '/css/design-studio.css', '/js/design-studio.js',
-  '/js/bughunter.js',
+  '/js/clock-boot-splash-wiring.js', '/js/mm-wiring.js',
+  '/js/estudio.js',
 ];
 
 // ── Install: pre-cache static assets ─────────────────────────────────────────
