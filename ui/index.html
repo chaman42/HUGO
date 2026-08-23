@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>JARVIS</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3fa9f5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Jarvis">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
+<!-- D3 — powers the Mapa Mental node graph in NÚCLEO LIRA (see _renderCoreMapa). -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js" crossorigin="anonymous"></script>
+<!-- Main-menu-only typefaces (commercial-grade redesign spec) — Inter for
+     readable text, JetBrains Mono for technical/label text. Every other
+     section keeps using --font (Courier New); these are additive, not a
+     replacement of the global font stack. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Rajdhani — LIRA's own name/status face: geometric but with more character
+     than Inter, reserved for .mm-name/.mm-status-label only (see their CSS). -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/boot-splash.css">
+<link rel="stylesheet" href="/css/chat.css">
+<link rel="stylesheet" href="/css/controls-bar.css">
+<link rel="stylesheet" href="/css/diamond-toggles.css">
+<link rel="stylesheet" href="/css/diamond-core.css">
+<link rel="stylesheet" href="/css/personality-nav.css">
+<link rel="stylesheet" href="/css/main-menu-orb.css">
+<link rel="stylesheet" href="/css/main-menu-panels.css">
+<link rel="stylesheet" href="/css/armor-grid.css">
+<link rel="stylesheet" href="/css/armor-mindmap-detail.css">
+<link rel="stylesheet" href="/css/concepts.css">
+<link rel="stylesheet" href="/css/nav-personality-modal.css">
+<link rel="stylesheet" href="/css/estudio.css">
+<link rel="stylesheet" href="/css/bughunter.css">
+<link rel="stylesheet" href="/css/design-studio.css">
+<link rel="stylesheet" href="/css/components.css">
+</head>
+
+<!-- Body class: status (listening|processing|speaking) -->
+<body class="listening">
+
+<!-- Global atmosphere — fixed, behind everything, pointer-events: none.
+     Slow-drifting grid + a few soft glow particles; see the GLOBAL ATMOSPHERE
+     CSS block for details. Purely decorative, never intercepts input. -->
+<div id="bgField" aria-hidden="true">
+  <div class="bg-grid"></div>
+  <div class="bg-particle p1"></div>
+  <div class="bg-particle p2"></div>
+  <div class="bg-particle p3"></div>
+</div>
+
+<!-- ── BOOT SPLASH — fixed ~3.5s cinematic intro, plays on every page load,
+     then holds on the diamond + "L I R A" (see _enterBootSplashWait() in the
+     script) for as long as #bootOverlay's real state machine is still
+     resolving. Sits above everything (z-index 9999). It only ever READS
+     #bootOverlay's state/message — setBootState/setBootMsg, jarvis_ready,
+     health polling, retries, mic permission all keep running completely
+     unaffected underneath, for exactly as long as the actual backend needs.
+     The splash reflects that wait (border trace + "Cargando...", or a red
+     "Error de conexión" + Reintentar on a genuine timeout/failure) and only
+     fades once state genuinely reaches 'running'. Always LIRA's gold
+     diamond, regardless of the active personality — a fixed brand intro,
+     not a themed state. -->
+<div id="bootSplash" aria-hidden="true">
+  <div class="boot-splash-grid" id="bootSplashGrid"></div>
+  <!-- Ambient depth — same "drifting soft glow" language as #bgField's own
+       .bg-particle (see base.css's GLOBAL ATMOSPHERE block), gold-tinted
+       and boot-scoped so this reads as part of the same product rather
+       than a different effect. Purely decorative, never intercepts input. -->
+  <div class="boot-splash-particle bp1" aria-hidden="true"></div>
+  <div class="boot-splash-particle bp2" aria-hidden="true"></div>
+  <div class="boot-splash-particle bp3" aria-hidden="true"></div>
+  <div class="boot-splash-particle bp4" aria-hidden="true"></div>
+  <div class="boot-splash-vignette" aria-hidden="true"></div>
+  <div class="boot-splash-content">
+    <!-- Beat 2/3: the REAL boot stages (see BOOT_STAGES in the script,
+         mirroring the exact 'boot_progress' events core/process_manager.py
+         and jarvis.py already emit) — not scripted filler text. Each line
+         starts pending (hollow marker) and flips to a checkmark the moment
+         its real event actually arrives, live, for as long as this stays
+         on screen — see _applyBootProgress()'s terminal-line update. -->
+    <div class="boot-terminal" id="bootTerminal"></div>
+    <div class="boot-splash-orb" id="bootSplashOrb">
+      <div class="boot-splash-orb-field"></div>
+      <div class="boot-splash-orb-glow"></div>
+      <!-- One-shot "assembly" draw — the diamond's own outline traces
+           itself in as the orb reveals, instead of just scaling up flat.
+           Distinct element/animation from the continuous loading trace
+           below so the two never fight over the same stroke-dashoffset. -->
+      <svg class="boot-splash-draw" id="bootSplashDraw" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <polygon points="50,5 95,50 50,95 5,50" />
+      </svg>
+      <div class="boot-splash-orb-ring"></div>
+      <div class="boot-splash-orb-core"></div>
+      <!-- One-shot light sweep across the polished diamond, right after the
+           burst — a glint, not a loop. -->
+      <div class="boot-splash-orb-sweep"></div>
+      <!-- Loading indicator: a dash traces continuously around the diamond
+           perimeter while #bootOverlay's real state is still resolving —
+           see _enterBootSplashWait() in the script. -->
+      <svg class="boot-splash-trace" id="bootSplashTrace" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <polygon points="50,5 95,50 50,95 5,50" />
+      </svg>
+    </div>
+    <div class="boot-splash-name" id="bootSplashName">L I R A</div>
+    <div class="boot-splash-status" id="bootSplashStatus">Cargando...</div>
+    <!-- Real, backend-driven boot progress — fills only in response to
+         genuine 'boot_progress' socket events from launcher.py/jarvis.py,
+         same events the terminal checklist above reacts to — see
+         _applyBootProgress() in the script. -->
+    <div class="boot-real-progress" id="bootRealProgress">
+      <div class="boot-real-progress-track"><div class="boot-real-progress-fill" id="bootRealProgressFill"></div></div>
+      <div class="boot-real-progress-row">
+        <div class="boot-real-progress-label" id="bootRealProgressLabel"></div>
+        <div class="boot-real-progress-percent" id="bootRealProgressPercent"></div>
+      </div>
+    </div>
+    <button class="boot-splash-retry" id="bootSplashRetry" type="button">Reintentar</button>
+  </div>
+</div>
+
+<!-- Offline banner (jarvis socket disconnected unexpectedly) -->
+<div class="offline-banner" id="offlineBanner">⚡ JARVIS DISCONNECTED — reconnecting…</div>
+
+<!-- Personality flash notification -->
+<div id="personalityFlash"></div>
+
+<!-- Unified floating LIRA diamond — single persistent point of interaction
+     with LIRA whenever NOT on Main or Chat (both have their own
+     equivalents already). Fixed gold (#f0c040) regardless of personality,
+     same "always LIRA's diamond" convention as the boot diamond. Lives
+     outside #sectionContainer so it floats above any section's content.
+     Autonomous — LIRA controls her own position (see
+     _applyDiamondState/_bestIdlePosition in the script); not draggable,
+     no localStorage. Click opens a compact bubble with the last response +
+     a text input; response text also fades in above the orb while she
+     speaks. See _updateDiamondVisibility()/_applyDiamondState()/
+     _showDiamondText()/_toggleDiamondBubble() in the script. -->
+<div id="liraDiamond" class="lira-diamond idle">
+  <div class="lira-diamond-text" id="liraDiamondText"></div>
+  <!-- Sibling of, not nested inside, the orb below, so clicks/typing in the
+       bubble's own input don't bubble up through the orb's click handler.
+       .lira-diamond-bubble's position:absolute anchors to .lira-diamond
+       itself (position:fixed already establishes the containing block), so
+       this still visually grows from the diamond. -->
+  <div class="lira-diamond-orb" id="liraDiamondOrb">
+    <!-- Main-context-only ambient energy field (see #liraDiamond.context-main
+         in diamond-toggles.css) — two independently-breathing radial
+         gradients, formerly #mmOrbWrap's own .mm-energy-field. Sized/
+         positioned proportionally to THIS element's 32px base (not the old
+         ~120px main orb) since she now reaches Main's actual size via the
+         existing transform:scale() docking math, not natural layout size —
+         see that CSS block's own comment for the exact ratio. First
+         children so z-index:-1 sits behind everything else here. -->
+    <div class="lira-diamond-energy-field inner"></div>
+    <div class="lira-diamond-energy-field outer"></div>
+    <!-- Bioluminescent halo — breathes on its own independent cycle, out of
+         phase with the shape's own animation (see .lira-diamond-glow's own
+         CSS comment). Sibling of .lira-diamond-shape below, NOT a child of
+         it — that shape carries the clip-path, and a child would be
+         clipped to the same diamond outline, hiding the halo entirely. -->
+    <div class="lira-diamond-glow" id="liraDiamondGlow"></div>
+    <!-- Faceted diamond SVG (premium pass) — same real 4-facet geometry
+         formerly duplicated across .mm-orb-facet-svg/.orb-facet-svg, now
+         the only copy. #liraDiamondFacetGlow's opacity + this svg's own
+         transform (breathing) are driven every frame by _mmVisualLoop()
+         (mm-wiring.js) while .context-main is active — see that script. -->
+    <svg class="lira-diamond-facet-svg" id="liraDiamondFacetSvg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <radialGradient id="liraFacetCore" cx="50%" cy="46%" r="60%">
+          <stop offset="0%" stop-color="#f0c040" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="#f0c040" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <circle id="liraDiamondFacetGlow" cx="100" cy="92" r="70" fill="url(#liraFacetCore)"/>
+      <polygon points="100,100 100,10 10,100" fill="#f5e070"/>
+      <polygon points="100,100 10,100 100,190" fill="#f0c040"/>
+      <polygon points="100,100 100,10 190,100" fill="#c49a0a"/>
+      <polygon points="100,100 190,100 100,190" fill="#8a6800"/>
+      <line x1="100" y1="10" x2="10" y2="100" stroke="#fff8d0" stroke-width="0.5"/>
+    </svg>
+    <!-- Main-context-only "dramatic idle orb" layer — formerly
+         #mmOrbWrap's own .mm-orb-ring-outer/.mm-orb-energy-ring. -->
+    <div class="lira-diamond-ring-outer"></div>
+    <div class="lira-diamond-energy-ring r1"></div>
+    <div class="lira-diamond-energy-ring r2"></div>
+    <!-- The diamond's reactive outline ring (border/box-shadow only now —
+         see .lira-diamond-shape's own CSS comment for why its old fill is
+         gone) — clip-path/border-color still driven per state exactly as
+         before. -->
+    <div class="lira-diamond-shape"></div>
+    <!-- Processing spinner: a thin arc traveling around the diamond's
+         perimeter (see .lira-diamond-arc / @keyframes lira-diamond-arc-spin
+         above), same stroke-dasharray/dashoffset technique as the boot
+         splash's own .boot-splash-trace. Used in every context now — the
+         unification that replaced Main's/Chat's own separate circular
+         mm-orb-spinner/orb-spinner (one processing indicator instead of
+         three near-identical ones). -->
+    <svg class="lira-diamond-arc" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <polygon points="50,0 100,50 50,100 0,50"/>
+    </svg>
+    <!-- Idle particle dust — 6 tiny gold motes, floating-context only (see
+         .lira-diamond-particle's own CSS comment for why Main gets its own
+         richer rAF particle field below instead of these). -->
+    <div class="lira-diamond-particle lira-diamond-particle-1"></div>
+    <div class="lira-diamond-particle lira-diamond-particle-2"></div>
+    <div class="lira-diamond-particle lira-diamond-particle-3"></div>
+    <div class="lira-diamond-particle lira-diamond-particle-4"></div>
+    <div class="lira-diamond-particle lira-diamond-particle-5"></div>
+    <div class="lira-diamond-particle lira-diamond-particle-6"></div>
+    <!-- Gem markers at the diamond's 4 points — Main-/Chat-context only
+         (formerly .mm-orb-gem/.orb-gem), siblings of .lira-diamond-shape
+         (not children), so they're never clipped by its clip-path. -->
+    <div class="lira-diamond-gem top"></div>
+    <div class="lira-diamond-gem right"></div>
+    <div class="lira-diamond-gem bottom"></div>
+    <div class="lira-diamond-gem left"></div>
+    <!-- Main-context-only gold dust particle field — formerly #mmOrbWrap's
+         own #mmOrbParticles, populated/animated every frame by
+         _mmVisualLoop() (mm-wiring.js) while .context-main is active. -->
+    <div class="lira-diamond-particles" id="liraDiamondParticles" aria-hidden="true"></div>
+  </div>
+  <div class="lira-diamond-bubble" id="liraDiamondBubble">
+    <div class="lira-diamond-bubble-text" id="liraDiamondBubbleText"></div>
+    <input type="text" class="lira-diamond-bubble-input" id="liraDiamondInput"
+           placeholder="Escribe algo..." autocomplete="off" spellcheck="false">
+  </div>
+</div>
+
+<!-- App launcher — floating circular button to the left of #persistentBar,
+     vertically centered with it (position:fixed, outside #sectionContainer
+     — always visible regardless of active section, same as #persistentBar
+     itself). Click reveals a staggered slide-out row of app icons to its
+     right, above #bottomNav. Apps are a plain JS array
+     (APP_LAUNCHER_APPS) — see the script — so adding one is a single
+     entry: {id, icon (SVG string), label, action}. -->
+<div id="appLauncher" class="app-launcher">
+  <button id="appLauncherBtn" class="app-launcher-btn" title="Apps">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <circle cx="6" cy="6" r="1.4"/><circle cx="12" cy="6" r="1.4"/><circle cx="18" cy="6" r="1.4"/>
+      <circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/>
+      <circle cx="6" cy="18" r="1.4"/><circle cx="12" cy="18" r="1.4"/><circle cx="18" cy="18" r="1.4"/>
+    </svg>
+  </button>
+  <div class="app-launcher-row" id="appLauncherRow"></div>
+</div>
+
+<!-- ── BOOT OVERLAY ── LIRA's diamond orb (same clip-path/gem motif as the
+     main-menu orb, see .mm-orb-shape below), same gold diamond as
+     #bootSplash above (see .boot-diamond-* rules), so the state machine
+     below (idle/starting/running, health polling, retries) never surfaces
+     the old blue circle + power icon once the cinematic splash fades.
+     jarvis.py now starts automatically (electron/main.js's
+     autoStartJarvis(), fired the moment launcher.py reports healthy) — this
+     whole overlay sits behind #bootSplash's "Cargando..." for a normal
+     launch and nobody needs to touch #powerBtn. #powerBtn IS still the
+     diamond's clickable silhouette, kept as the manual fallback the boot
+     splash's "Reintentar" button re-fires on a genuine timeout/error (see
+     _enterBootSplashWait() in the script), and as the click target behind
+     #statusPowerBtn's in-HUD stop/start toggle once the app is up. -->
+<div id="bootOverlay" data-state="idle">
+  <div class="boot-inner">
+    <div class="boot-diamond-wrap">
+      <div class="boot-diamond-glow"></div>
+      <div class="boot-diamond-ring"></div>
+      <div class="boot-diamond-core"></div>
+      <!-- Border-trace loading indicator — same technique/markup as
+           #bootSplashTrace above, just sized for this diamond. -->
+      <svg class="boot-diamond-trace" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <polygon points="50,5 95,50 50,95 5,50" />
+      </svg>
+      <button id="powerBtn" class="power-btn" title="Start Jarvis"></button>
+      <div class="boot-diamond-gem top"></div>
+      <div class="boot-diamond-gem right"></div>
+      <div class="boot-diamond-gem bottom"></div>
+      <div class="boot-diamond-gem left"></div>
+    </div>
+    <div class="boot-label">L I R A</div>
+    <div id="bootMsg">OFFLINE</div>
+  </div>
+</div>
+
+<!-- ── MAIN UI ───────────────────────────────────────────────────────────── -->
+<!-- [CHANGE] mainUI starts visible so the clock ticks immediately on page load.
+     The boot overlay (z-index 9000, opaque background) covers it until Jarvis
+     connects — making the main UI visible from the start is safe. -->
+<div id="mainUI" class="visible">
+  <div class="layout">
+
+    <!-- Native window drag region — see #windowDragBar's own CSS comment
+         above (.layout section). Empty on purpose: just a grab handle
+         behind the macOS traffic lights, no visible content. -->
+    <div id="windowDragBar" aria-hidden="true"></div>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         SECTION CONTAINER — 4 sections, only the .active one is visible
+    ════════════════════════════════════════════════════════════════════════ -->
+    <div id="sectionContainer">
+
+      <!-- ── MAIN MENU ─────────────────────────────────────────────────── -->
+      <div class="app-section active" id="section-home">
+        <!-- Ambient background atmosphere — full-section drifting glow orbs +
+             a faint star-dot field, transform/background-position-driven
+             (compositor-friendly, same discipline as #bgField's own
+             particles in base.css). Distinct from — and doesn't touch —
+             #liraDiamond's own particle ring; this spans the whole section
+             rather than being centered on the diamond. z-index:0 like
+             #section-home's own ::before/::after atmosphere layers
+             (personality-nav.css), sits below .mm-edge-readouts/
+             .mm-scroll-wrap (z-index:1). A diagonal light-sweep layer was
+             tried and removed after feedback that it stayed distracting
+             even tuned down — see ui/css/personality-nav.css's own note. -->
+        <div class="mm-atmosphere" aria-hidden="true">
+          <div class="mm-atmosphere-glow g1"></div>
+          <div class="mm-atmosphere-glow g2"></div>
+          <div class="mm-atmosphere-glow g3"></div>
+          <div class="mm-atmosphere-glow g4"></div>
+          <div class="mm-atmosphere-stars"></div>
+        </div>
+        <!-- Technical readouts anchored to the section's own four corners (this
+             section fills the whole app viewport, so its edges ARE the screen
+             edges) — same four live values as before (time/mode/mic/latency,
+             kept in sync by _updateMMClock(), _updateMMSysStrip() and
+             _stopResponseTimer()), just relabeled/repositioned as HUD chrome
+             instead of floating beside the orb. Sits above the grid/scanline
+             body::before layer (that one's global, already covers this
+             section) but below actual content — pointer-events:none throughout
+             so it never blocks the buttons/input underneath. Two corner radar
+             arcs are purely decorative. -->
+        <div class="mm-edge-readouts" aria-hidden="true">
+          <div class="mm-edge-readout tl">
+            <span class="mm-edge-label">UPTIME</span>
+            <span class="mm-edge-val" id="mmHudTime">--:--:--</span>
+          </div>
+          <!-- "Current time" corner mirror — same string _updateMMClock() already
+               writes into #mmTime/#mmHudTime, just a second real-data readout,
+               not a fabricated one; see #mmHudClock in that function. -->
+          <div class="mm-edge-readout tr">
+            <span class="mm-edge-label">TIME</span>
+            <span class="mm-edge-val" id="mmHudClock">--:--:--</span>
+          </div>
+          <!-- MODE lives here too (still real data) but is display:none by
+               default — see the CSS block above for why. -->
+          <div class="mm-edge-readout bl">
+            <span class="mm-edge-label">NET STATUS</span>
+            <span class="mm-edge-val" id="mmHudMic">--</span>
+            <span class="mm-edge-val" id="mmHudMode">WAKE</span>
+          </div>
+          <div class="mm-edge-readout br">
+            <span class="mm-edge-label">SYS</span>
+            <span class="mm-edge-val" id="mmHudLatency">--</span>
+          </div>
+          <!-- Radar arcs — thin stroke circles cut at a fixed angle, no data
+               behind them. Both in TOP corners per spec; stroke color/opacity
+               set directly here (rgba(63,169,245,0.08), no fill) since SVG
+               presentation attributes win over the CSS class's inherited value. -->
+          <svg class="mm-radar-arc corner-tl" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="30" cy="30" r="26" fill="none" stroke="rgba(63,169,245,0.08)" stroke-width="1" stroke-dasharray="40 123" stroke-linecap="round" transform="rotate(-40 30 30)"/>
+          </svg>
+          <svg class="mm-radar-arc corner-tr" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="30" cy="30" r="26" fill="none" stroke="rgba(63,169,245,0.08)" stroke-width="1" stroke-dasharray="30 133" stroke-linecap="round" transform="rotate(120 30 30)"/>
+          </svg>
+        </div>
+        <div class="mm-scroll-wrap">
+
+          <!-- Header: live clock + date -->
+          <div class="mm-header">
+            <div class="mm-time" id="mmTime">--:--:--</div>
+            <div class="mm-date" id="mmDate">—</div>
+          </div>
+
+          <!-- Orb area: large personality orb + name + status + quote — or,
+               while a contextual panel (weather/time/...) is active, the
+               identity cluster below slides left and #mmContextPanel slides
+               in from the right. See "CONTEXTUAL PANELS" in the script. -->
+          <div class="mm-orb-area" id="mmOrbArea">
+           <div class="mm-orb-identity" id="mmOrbIdentity">
+            <!-- Layout placeholder only — LIRA herself (#liraDiamond, fixed
+                 position, outside #sectionContainer) is now the ONLY diamond
+                 DOM element that ever exists; she overlays this slot's own
+                 getBoundingClientRect() (see _resolveDiamondTarget() in
+                 section-nav.js) instead of a separate element being swapped
+                 in for her. This slot exists purely so #mmName/.mm-status-
+                 label below keep their current flex-sibling layout — same
+                 clamp() sizing the old #mmOrbWrap used to carry. -->
+            <div class="mm-orb-slot" id="mmOrbSlot" aria-hidden="true"></div>
+            <div class="mm-name" id="mmName">L I R A</div>
+            <!-- Dot is a separate sibling (not a child of #mmStatus) since
+                 setStatus()/_typeMMStatus() in the script write #mmStatus's
+                 textContent directly for the typewriter effect — nesting
+                 the dot inside would get wiped on every status change. -->
+            <div class="mm-status-label"><span class="mm-status-dot"></span><span id="mmStatus">Escuchando</span></div>
+           </div>
+            <!-- Contextual panel — populated by _renderContextPanel() (see
+                 PANEL_RENDERERS in the script); empty and invisible until a
+                 'show_panel' event arrives and LIRA starts speaking. -->
+            <div class="mm-context-panel" id="mmContextPanel"></div>
+            <div class="mm-quote" id="mmQuote">Sin novedades. Por ahora.</div>
+          </div>
+
+          <!-- Quick stats: session duration + active personality -->
+          <div class="mm-stats-panel">
+            <div class="mm-stat">
+              <div class="mm-stat-label">Sesión</div>
+              <div class="mm-stat-val" id="mmStatDuration">00:00</div>
+            </div>
+            <div class="mm-stat-divider"></div>
+            <div class="mm-stat">
+              <div class="mm-stat-label">Personalidad</div>
+              <div class="mm-stat-val" id="mmStatPersonality">LIRA</div>
+            </div>
+          </div>
+
+          <!-- Floating response text — lives in this dedicated empty slot
+               below the orb/name/quote/stats and above the quick-action
+               buttons, so it can never overlap any of them (normal flow,
+               not absolute positioning). Fades in on a user or LIRA
+               message while on Main, holds a few seconds after she
+               finishes speaking (or briefly, for the user's own echo),
+               then fades out — see _showMMFloatingText() and
+               _scheduleMMFloatingTextHide() in the script. -->
+          <div class="mm-floating-text" id="mmFloatingText"></div>
+
+          <!-- Quick action buttons — wrapped in a retractable "system tray"
+               (.mm-tray): collapsing leaves only the 1px accent hinge line
+               visible, like the panel is still there, just stowed. Starts
+               expanded (buttons must stay immediately usable by default) —
+               see _wireMMTrays() in the script, near _wireMMActions. -->
+          <div class="mm-tray" id="mmActionsTray">
+            <div class="mm-tray-body">
+              <div class="mm-actions">
+                <button class="mm-action-btn" id="mmGoChat" title="Ir al Chat">
+                  <span class="mm-action-icon">◎</span>
+                  <span class="mm-action-label">Chat</span>
+                </button>
+                <button class="mm-action-btn" id="mmGoArmor" title="Ir a Armaduras">
+                  <span class="mm-action-icon">⬡</span>
+                  <span class="mm-action-label">Armaduras</span>
+                </button>
+                <button class="mm-action-btn" id="mmToggleMute" title="Toggle Mute">
+                  <span class="mm-action-icon">🎤</span>
+                  <span class="mm-action-label">Micrófono</span>
+                </button>
+                <!-- TTS (voice output) mute — separate from mic mute above: mic
+                     stays active and LIRA keeps processing/replying in chat,
+                     she just stops speaking out loud. Mirrors #ttsMuteBtn in
+                     the persistent bar the same way #mmToggleMute mirrors
+                     #muteBtn — see _wireMMActions() in the script. -->
+                <button class="mm-action-btn" id="mmToggleTts" title="Toggle Voz (TTS)">
+                  <span class="mm-action-icon">🔊</span>
+                  <span class="mm-action-label">Voz</span>
+                </button>
+                <button class="mm-action-btn" id="mmToggleMode" title="Toggle Conversation Mode">
+                  <span class="mm-action-icon">⟳</span>
+                  <span class="mm-action-label">Modo</span>
+                </button>
+              </div>
+            </div>
+            <button class="mm-tray-handle" aria-label="Colapsar controles" title="Colapsar/expandir controles"><span class="mm-tray-hinge"></span></button>
+          </div>
+
+          <!-- System status strip — same retractable tray treatment as the
+               action buttons above. -->
+          <div class="mm-tray" id="mmSysTray">
+            <div class="mm-tray-body">
+              <div class="mm-sys-strip">
+                <div class="mm-sys-item sys-active" id="mmSysMic">
+                  <span class="mm-sys-icon">🎤</span>
+                  <span class="mm-sys-lbl">Mic</span>
+                </div>
+                <div class="mm-sys-item" id="mmSysMode">
+                  <span class="mm-sys-icon">◉</span>
+                  <span class="mm-sys-lbl">Wake Word</span>
+                </div>
+                <div class="mm-sys-item sys-offline" id="mmSysConn">
+                  <span class="mm-sys-icon">◌</span>
+                  <span class="mm-sys-lbl">Offline</span>
+                </div>
+              </div>
+            </div>
+            <button class="mm-tray-handle" aria-label="Colapsar estado" title="Colapsar/expandir estado"><span class="mm-tray-hinge"></span></button>
+          </div>
+
+          <!-- Compact text input — same send path as Chat's own input
+               (sendTextCommand(sourceInput) in the script accepts any
+               input element), so a command can be typed without leaving
+               Main. Last element in the main menu, below the status strip
+               above — deliberately not between the stats panel and the
+               quick-action buttons, so it never splits that existing
+               content in two. -->
+          <input type="text" class="mm-floating-input" id="mmFloatingInput"
+                 placeholder="Escribe algo..." autocomplete="off" spellcheck="false">
+
+        </div><!-- /.mm-scroll-wrap -->
+      </div><!-- /#section-home -->
+
+      <!-- ── CHAT ──────────────────────────────────────────────────────── -->
+      <div class="app-section" id="section-chat">
+        <div class="section-inner">
+
+          <!-- ORB -->
+          <div class="orb-section">
+            <!-- Layout placeholder only — same role as #mmOrbSlot above, see
+                 its own comment. #liraDiamond overlays this slot's rect
+                 while on Chat instead of a separate element being swapped
+                 in. Same 148px (110px on short viewports) sizing the old
+                 #chatOrbWrap used to carry. -->
+            <div class="chat-orb-slot" id="chatOrbSlot" aria-hidden="true"></div>
+            <div class="title" id="titleEl">L I R A</div>
+            <div class="mic-dot" id="micDot" title="Microphone active"></div>
+          </div>
+
+          <!-- LOG (user + jarvis messages only) -->
+          <div class="log-section" id="log"></div>
+
+          <!-- Typing/processing indicator — purely CSS-driven off body.processing,
+               see the .typing-indicator rules; no JS wiring needed -->
+          <div class="typing-indicator" id="typingIndicator">
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+          </div>
+
+          <!-- RESPONSE TIMER — fixed UI element, never a chat bubble -->
+          <div id="responseTimer"></div>
+
+          <!-- PARTIAL TRANSCRIPT — shown during STT recognition -->
+          <div id="partialTranscript"></div>
+
+          <!-- ATTACHMENT PREVIEW — staged files before send, see chat-render.js's
+               attachment handling. Empty/hidden until at least one file is picked. -->
+          <div class="attach-preview" id="attachPreview"></div>
+
+          <!-- TEXT INPUT -->
+          <div class="input-section">
+            <!-- Attach button — image/* is actually read now (core/vision.py,
+                 see chat-render.js's own comment on this); document/video content
+                 still isn't. Hidden native file input triggered by the visible
+                 button, standard pattern. Only image/* is actually wired up right
+                 now (see #attachMenu below) — video/pdf/doc accept values stay on
+                 the input for whenever those menu items go live too, but nothing
+                 currently opens this input with them. -->
+            <input
+              type="file"
+              id="attachFileInput"
+              accept="image/*,video/*,.pdf,.doc,.docx,.txt,.md,.csv"
+              multiple
+              hidden
+            >
+            <button id="attachBtn" class="attach-btn" title="Adjuntar archivo" type="button">📎</button>
+            <!-- Attach type menu — pops up above the button (see
+                 ui/js/chat-render.js's wiring). Only "Fotos" actually opens the
+                 file picker today (accept="image/*"); PDF/Documentos are
+                 deliberately disabled placeholders — the menu itself, and the
+                 rest of the staging/chip pipeline, are ready for them, but
+                 nothing reads their content yet, so wiring a working picker for
+                 them would stage files that go nowhere. Remove `disabled` (and
+                 give each its own accept-scoped trigger, same as Fotos below)
+                 once that's ready. -->
+            <div class="attach-menu" id="attachMenu">
+              <button class="attach-menu-item" data-attach-accept="image/*" type="button">
+                <span class="attach-menu-icon">🖼️</span> Fotos
+              </button>
+              <button class="attach-menu-item" type="button" disabled>
+                <span class="attach-menu-icon">📄</span> PDF
+                <span class="attach-menu-soon">Pronto</span>
+              </button>
+              <button class="attach-menu-item" type="button" disabled>
+                <span class="attach-menu-icon">📃</span> Documentos
+                <span class="attach-menu-soon">Pronto</span>
+              </button>
+            </div>
+            <input
+              type="text"
+              id="textInput"
+              class="text-input"
+              placeholder="Type a command…"
+              autocomplete="off"
+              spellcheck="false"
+            >
+            <!-- [CHANGE] disabled removed: input enabled immediately; send guards against no-connection -->
+            <button id="sendBtn" class="send-btn">→</button>
+          </div>
+
+        </div><!-- /.section-inner -->
+      </div><!-- /#section-chat -->
+
+      <!-- ── MAINTENANCE ─────────────────────────────────────────────────── -->
+      <!-- System log moved inline; #maintLog, #maintCount, #maintClear IDs preserved.
+           Aesthetic pass: same "instrument console" chrome as ESTUDIO's detail
+           views (estudio-console-chip/meta-readout reused here for the header
+           eyebrow) rather than the old flat text-row header. -->
+      <div class="app-section" id="section-maintenance">
+        <div class="maint-header">
+          <div class="maint-header-left">
+            <span class="estudio-console-chip status-activa">Sistema</span>
+            <span class="maint-title">Registro del Sistema</span>
+            <span class="estudio-console-meta-readout" id="maintCount"></span>
+          </div>
+          <div class="maint-header-actions">
+            <button class="maint-action-btn" id="maintReload" title="Force reload with latest cached version">RLD</button>
+            <button class="maint-action-btn" id="maintClear" title="Clear system log">CLR</button>
+            <button class="maint-close" id="sysPanelClose" title="Back to Chat">✕</button>
+          </div>
+        </div>
+        <div class="maint-log" id="maintLog"></div>
+      </div>
+
+      <!-- ── ARMOR BAY ───────────────────────────────────────────────────── -->
+      <!-- #armorSection always active inside its dedicated section -->
+      <div class="app-section" id="section-armor">
+        <div class="section-inner">
+          <div id="armorSection" class="active">
+
+            <!-- Sub-tabs: Primarios | Paralelos | Conceptuales | Diseño -->
+            <div class="armor-subtabs">
+              <button class="armor-subtab active" data-sub="primarios">Modelos Primarios</button>
+              <button class="armor-subtab" data-sub="paralelos">Proyectos Paralelos</button>
+              <button class="armor-subtab" data-sub="conceptuales">Conceptuales</button>
+              <button class="armor-subtab" data-sub="diseno">Diseño</button>
+            </div>
+
+            <!-- Primarios + Paralelos: card grids (shown/hidden by sub-tab JS) -->
+            <div class="armor-grid-wrap" id="armorGridWrap">
+              <div class="armor-grid" id="armorGrid"></div>
+            </div>
+
+            <!-- Conceptuales: Armaduras | Conceptos Generales sub-toggle,
+                 "+ Nuevo Concepto" trigger, saved card list. The old
+                 always-visible inline form was replaced by the dedicated
+                 create/edit modal (#conceptModalOverlay, near
+                 #conceptDeleteConfirm below) — this button opens it in
+                 create mode; each card's ✎ button opens it pre-filled in
+                 edit mode. Both subsections share the same modal/storage,
+                 just tagged with a different 'type' — see
+                 _currentConceptType / _renderConcepts in the script. -->
+            <div id="conceptPanel">
+              <div class="concept-type-toggle" id="conceptTypeToggle">
+                <button class="concept-type-btn active" data-type="armor">Armaduras</button>
+                <button class="concept-type-btn" data-type="general">Conceptos Generales</button>
+              </div>
+              <button id="cptNewBtn" class="concept-new-btn">+ Nuevo Concepto</button>
+              <div class="concept-list" id="conceptList"></div>
+            </div>
+
+            <!-- Diseño: three subsections (Armaduras | Mecanismos | HUDs),
+                 each a placeholder empty state for now — no functionality
+                 yet. #designPanel itself is shown/hidden by _switchSubTab()
+                 same as #armorGridWrap/#conceptPanel above; the toggle below
+                 picks which of the three .design-sub-content panels shows,
+                 same "sub-toggle inside a main subsection tab" pattern as
+                 #conceptTypeToggle (Conceptuales' own Armaduras | Conceptos
+                 Generales toggle) — deliberately its OWN class names
+                 (.design-subtabs/.design-subtab), not a reuse of
+                 .concept-type-toggle/.concept-type-btn, since those are
+                 queried unscoped in concepts-edit.js and would otherwise
+                 get toggled/tracked by this panel's clicks too. -->
+            <div id="designPanel">
+              <div class="design-subtabs" id="designSubtabToggle">
+                <button class="design-subtab active" data-design-sub="armaduras">Armaduras</button>
+                <button class="design-subtab" data-design-sub="mecanismos">Mecanismos</button>
+                <button class="design-subtab" data-design-sub="huds">HUDs</button>
+              </div>
+              <div class="design-sub-content active" data-design-content="armaduras">
+                <!-- Armor Design Studio (Phase 1) — collaborative design space:
+                     Joan describes, LIRA assists. #dsPicker (NUEVO DISEÑO +
+                     existing sessions) and #dsWorkspace (chat + live SVG
+                     diagram) are two views inside #designStudioRoot, toggled
+                     by ui/js/design-studio.js — CSS-only visibility, no
+                     coupling to the Diseño sub-toggle above this div. -->
+                <div id="designStudioRoot">
+                  <div class="ds-picker" id="dsPicker">
+                    <button class="ds-new-btn" id="dsNewBtn">+ Nuevo Diseño</button>
+                    <div class="ds-session-list-label" id="dsSessionListLabel">Diseños en curso</div>
+                    <div id="dsSessionList"></div>
+                    <div class="ds-empty" id="dsEmptyState">Ningún diseño todavía.<br>Empieza uno nuevo arriba.</div>
+                  </div>
+
+                  <div class="ds-workspace" id="dsWorkspace">
+                    <button class="ds-workspace-back" id="dsBackBtn">← Volver a diseños</button>
+                    <div class="ds-workspace-main">
+                      <div class="ds-chat-panel">
+                        <div class="ds-chat-log" id="dsChatLog"></div>
+                        <div class="ds-active-zone-readout" id="dsActiveZoneReadout"></div>
+                        <div class="ds-chat-input-row">
+                          <textarea class="ds-chat-input" id="dsChatInput" placeholder="Describe tu idea, pregunta algo o pide un cambio..." rows="1"></textarea>
+                          <button class="ds-chat-send-btn" id="dsSendBtn">Enviar</button>
+                        </div>
+                      </div>
+
+                      <div class="ds-diagram-panel">
+                        <svg class="ds-diagram-svg" viewBox="0 0 240 440" xmlns="http://www.w3.org/2000/svg">
+                          <g id="dsZone_helmet" class="ds-zone">
+                            <path d="M120,8 L142,18 L146,40 L138,56 L102,56 L94,40 L98,18 Z"/>
+                          </g>
+                          <text class="ds-zone-label" id="dsZoneLabel_helmet" x="120" y="6">CASCO</text>
+
+                          <g id="dsZone_shoulders" class="ds-zone">
+                            <path d="M50,60 L96,58 L94,90 L70,98 L46,88 Z"/>
+                            <path d="M190,60 L144,58 L146,90 L170,98 L194,88 Z"/>
+                          </g>
+                          <text class="ds-zone-label" id="dsZoneLabel_shoulders" x="120" y="68">HOMBRERAS</text>
+
+                          <g id="dsZone_chest" class="ds-zone">
+                            <path d="M92,60 L148,60 L156,140 L150,168 L90,168 L84,140 Z"/>
+                          </g>
+                          <text class="ds-zone-label" id="dsZoneLabel_chest" x="120" y="118">PECHO</text>
+
+                          <g id="dsZone_arms" class="ds-zone">
+                            <path d="M46,88 L72,96 L78,180 L74,255 L54,268 L34,255 L30,180 Z"/>
+                            <path d="M194,88 L168,96 L162,180 L166,255 L186,268 L206,255 L210,180 Z"/>
+                          </g>
+                          <text class="ds-zone-label" id="dsZoneLabel_arms" x="120" y="180">BRAZOS</text>
+
+                          <g id="dsZone_waist" class="ds-zone">
+                            <path d="M90,168 L150,168 L146,205 L94,205 Z"/>
+                          </g>
+                          <text class="ds-zone-label" id="dsZoneLabel_waist" x="120" y="200">CINTURA</text>
+
+                          <g id="dsZone_legs" class="ds-zone">
+                            <path d="M94,205 L118,205 L120,330 L104,338 L86,332 L84,220 Z"/>
+                            <path d="M146,205 L122,205 L120,330 L136,338 L154,332 L156,220 Z"/>
+                          </g>
+                          <text class="ds-zone-label" id="dsZoneLabel_legs" x="120" y="290">PIERNAS</text>
+
+                          <g id="dsZone_boots" class="ds-zone">
+                            <path d="M84,332 L120,330 L124,362 L108,372 L78,370 L74,345 Z"/>
+                            <path d="M156,332 L120,330 L116,362 L132,372 L162,370 L166,345 Z"/>
+                          </g>
+                          <text class="ds-zone-label" id="dsZoneLabel_boots" x="120" y="400">BOTAS</text>
+                        </svg>
+                        <div class="ds-diagram-legend">
+                          <span><span class="ds-legend-dot designed"></span>Diseñado</span>
+                          <span><span class="ds-legend-dot active"></span>En discusión</span>
+                          <span><span class="ds-legend-dot pending"></span>Pendiente</span>
+                        </div>
+                        <div class="ds-name-suggest-overlay" id="dsNameSuggestOverlay">
+                          <div id="dsNameSuggestOptions"></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="ds-bottom-bar">
+                      <input class="ds-name-input" id="dsNameInput" type="text" placeholder="Nombre del diseño...">
+                      <button class="ds-save-btn" id="dsSaveBtn">Guardar en Estudio</button>
+                      <span class="ds-save-status" id="dsSaveStatus"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="design-sub-content" data-design-content="mecanismos">
+                <div class="design-placeholder">
+                  <div class="design-placeholder-icon">⚙</div>
+                  <div class="design-placeholder-title">Diseño de mecanismos — En desarrollo</div>
+                </div>
+              </div>
+              <div class="design-sub-content" data-design-content="huds">
+                <div class="design-placeholder">
+                  <div class="design-placeholder-icon">▣</div>
+                  <div class="design-placeholder-title">Diseño de HUDs — En desarrollo</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Armor detail — full-page replacement for the grid/concept view
+                 above (never a side panel or modal). Sits on top of them as an
+                 opaque, absolutely-positioned layer within #armorSection, so
+                 opening/closing it is a pure opacity fade — the grid/subtabs
+                 underneath are never hidden or re-rendered, just covered,
+                 which is what keeps this from touching their own logic at all. -->
+            <div id="armorDetailView">
+              <button id="detailBackBtn" class="detail-back-btn">← Volver</button>
+              <div class="armor-detail-page">
+                <!-- "Instrument console" treatment — same estudio-console-*
+                     chrome as ESTUDIO's Investigación/Resúmenes detail views
+                     (ui/css/estudio.css), reused here so Armaduras' sheet
+                     matches that aesthetic instead of the old flat two-
+                     column text layout. Element IDs are untouched so
+                     armor-detail-concepts-load.js's existing DOM refs/
+                     interactions (status picker, section observer, toast)
+                     keep working unchanged. -->
+                <div class="estudio-console armor-console">
+                  <div class="estudio-console-hero">
+                    <div class="estudio-console-hero-main">
+                      <div class="estudio-console-hero-eyebrow">
+                        <div id="detailBadge2"></div>
+                        <span class="estudio-console-meta-readout" id="detailHoursReadout"></span>
+                      </div>
+                      <div class="estudio-console-hero-title" id="detailName2"></div>
+                    </div>
+                    <div class="armor-console-sil-wrap">
+                      <div class="detail-silhouette-wrap" id="detailSilWrap"></div>
+                      <div class="detail-silhouette-label">Esquema visual</div>
+                    </div>
+                  </div>
+
+                  <div class="estudio-console-body-grid">
+                    <div class="estudio-console-col-main" id="detailBody2"></div>
+                    <div class="estudio-console-rail">
+                      <div class="estudio-console-rail-section">
+                        <!-- Placeholder action buttons — not real functionality
+                             yet, clicking shows a brief per-model message below
+                             instead of a full modal. See _CONTROLAR_MESSAGES /
+                             _HUD_MESSAGES + _showDetailToast() in the script. -->
+                        <div class="estudio-console-section-label neutral"><span class="dot"></span>Acciones</div>
+                        <div class="detail-actions">
+                          <button class="detail-action-btn" id="detailControlarBtn">Controlar</button>
+                          <button class="detail-action-btn" id="detailHudBtn">Ver HUD</button>
+                        </div>
+                        <!-- Modelo 8 only — revealed by Controlar instead of the
+                             usual toast-only placeholder. See _CONTROLAR_MESSAGES
+                             / detailControlarBtn's click handler in
+                             armor-detail-concepts-load.js. -->
+                        <div class="detail-light-controls" id="detailLightControls">
+                          <div class="detail-light-controls-label">Luz del reactor</div>
+                          <div class="detail-light-controls-row">
+                            <button class="detail-action-btn" id="detailLightOnBtn" data-light-state="on">ON</button>
+                            <button class="detail-action-btn" id="detailLightOffBtn" data-light-state="off">OFF</button>
+                          </div>
+                          <button class="detail-action-btn" id="detailLightBalizaBtn" data-light-state="baliza">Modo Baliza</button>
+                          <div class="detail-light-controls-warning">⚠ WiFi (OTA) solo está activo los primeros 2 min tras encender la placa — mientras tanto el control por BLE puede fallar.</div>
+                        </div>
+                        <div class="detail-action-toast" id="detailActionToast"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /#armorSection -->
+        </div><!-- /.section-inner -->
+      </div><!-- /#section-armor -->
+
+      <!-- ── AJUSTES — was a slide-in overlay (#settingsPanel opened by the
+           removed gearBtn); now a full nav section like its siblings above.
+           Content is unchanged: system info rows, personality switcher,
+           update button. -->
+      <div class="app-section" id="section-settings">
+        <div class="section-inner">
+          <div class="settings-head">
+            <span class="settings-title-text">Ajustes</span>
+            <button id="settingsClose" class="settings-close" title="Volver a Main">✕</button>
+          </div>
+          <!-- Premium pass: everything below the header now scrolls as one
+               column (custom thin accent scrollbar, see controls-bar.css)
+               instead of relying on .section-inner's own overflow:hidden —
+               this section previously had no scroll path of its own, so
+               anything past the visible fold was simply clipped. -->
+          <div class="settings-scroll">
+            <div id="settingsBody"></div>
+            <!-- Everything below is deliberately OUTSIDE #settingsBody, which
+                 updateSettingsInfo() fully overwrites every time this section
+                 is opened — living here means these survive that re-render
+                 instead of getting wiped. -->
+            <!-- Feature toggles — populated by _renderFeatureToggles(), synced
+                 from core/commands.py's data/feature_flags.json via
+                 GET/POST /api/feature_flags. Lives outside #settingsBody, same
+                 reasoning as the comment right above: it must survive
+                 updateSettingsInfo()'s full re-render. -->
+            <div class="settings-divider"><span>Funciones</span></div>
+            <div class="settings-toggles" id="settingsToggles"></div>
+            <!-- MOTOR DE VOZ — engine choice (not a boolean, so not
+                 one of the generic .toggle-switch rows above). Backed by
+                 GET/POST /api/tts_engine + /api/set_tts_engine
+                 (core/routes_control.py, core/voice.py) — switches live,
+                 no restart, see _renderTtsEngineToggle()/_setTtsEngine()/
+                 _applyTtsEngineState() in the script. Styling in
+                 ui/css/components.css — label above, angular buttons side
+                 by side, small dot indicator over whichever is active. -->
+            <div class="engine-selector">
+              <div class="engine-selector-label">Motor de voz</div>
+              <div class="engine-toggle" id="ttsEngineToggle" role="group" aria-label="Motor de voz">
+                <div class="engine-toggle-item">
+                  <span class="engine-toggle-dot"></span>
+                  <button class="engine-toggle-btn" data-engine="kokoro">KOKORO</button>
+                </div>
+                <div class="engine-toggle-item">
+                  <span class="engine-toggle-dot"></span>
+                  <button class="engine-toggle-btn" data-engine="xtts">XTTS</button>
+                </div>
+                <div class="engine-toggle-item">
+                  <span class="engine-toggle-dot"></span>
+                  <button class="engine-toggle-btn" data-engine="say">SAY</button>
+                </div>
+              </div>
+            </div>
+            <!-- MODO TEST — a dedicated angular control (not one of the
+                 generic .toggle-switch pill entries above), since it needs
+                 its own red-glow-when-active state + an appearing hint
+                 label, per spec. Backed by the same POST /api/feature_flags
+                 as every other flag (name: 'modo_test') — see
+                 _wireTestModeToggle()/_applyTestModeUI() in the script. -->
+            <button id="testModeToggle" class="test-mode-toggle" role="switch" aria-checked="false">
+              <span class="test-mode-toggle-dot"></span>
+              <span>Modo Test</span>
+            </button>
+            <div class="test-mode-hint" id="testModeHint">Conversación no guardada en memoria</div>
+            <!-- Test Tools panel — expandable sub-menu of voice-identification
+                 test controls (Reconocimiento de voz / Aprendizaje de voz /
+                 Marcar toda voz como conocida toggle-rows, reusing the exact
+                 same .toggle-row/.toggle-switch components FUNCIONES uses
+                 below, backed by the same POST /api/feature_flags). Collapsed
+                 by default (max-height:0, see .test-tools-panel's own CSS) —
+                 purely a display grouping, not a gate: every flag inside
+                 still applies immediately whether this is expanded or not.
+                 See _renderTestToolsToggles()/_wireTestToolsPanel() in
+                 chat-render.js. -->
+            <button id="testToolsExpandBtn" class="test-tools-expand-btn" aria-expanded="false">
+              <span>Herramientas de prueba</span>
+              <span class="test-tools-expand-chevron">▾</span>
+            </button>
+            <div class="test-tools-panel" id="testToolsPanel">
+              <div class="test-tools-toggles" id="testToolsToggles"></div>
+            </div>
+            <div class="settings-divider"><span>Sistema</span></div>
+            <button id="updateLiraBtn" class="settings-update-btn">Actualizar Sistema</button>
+            <div id="updateLiraStatus" class="settings-update-status"></div>
+            <!-- Sleep System — 'Iniciar Sueño' manual trigger. Same button/
+                 status-line language as Actualizar Sistema above (see
+                 .settings-update-btn/.settings-update-status), driven by
+                 core.sleep via POST /api/sleep/start + polled
+                 GET /api/sleep/status — see the script's own "Sleep System"
+                 section for the full state machine (idle → confirm →
+                 'Durmiendo... Fase X/7' → completion summary). -->
+            <button id="sleepStartBtn" class="settings-update-btn">Iniciar Sueño</button>
+            <!-- 'Detener Sueño' — only shown while continuous.running (see
+                 _applySleepStatus in the script). Sends SIGTERM to the
+                 continuous-sleep subprocess via POST /api/sleep/stop; it
+                 finishes whatever phase is in flight, then exits. -->
+            <button id="sleepStopBtn" class="settings-update-btn danger-stop">Detener Sueño</button>
+            <div id="sleepStartStatus" class="settings-update-status"></div>
+            <!-- Compilar para iPhone — same button/status-line language as
+                 Actualizar Sistema/Iniciar Sueño above, driven by
+                 POST /api/build_ios + 'build_ios_progress' socket events
+                 (see _applyBuildIosProgress() in the script). No confirm
+                 modal (unlike Actualizar Sistema): this doesn't restart or
+                 replace anything running, just produces a file. -->
+            <button id="buildIosBtn" class="settings-update-btn">Compilar para iPhone</button>
+            <div id="buildIosStatus" class="settings-update-status"></div>
+          </div><!-- /.settings-scroll -->
+        </div><!-- /.section-inner -->
+      </div><!-- /#section-settings -->
+
+      <!-- Update confirmation — HUD-styled, not a browser confirm(). Reuses
+           the exact same generic overlay/box/button classes as
+           #conceptDeleteConfirm above (.concept-confirm-*) rather than
+           inventing a parallel set of modal styles for one more dialog. -->
+      <div id="updateConfirmModal" class="concept-confirm-overlay">
+        <div class="concept-confirm-box">
+          <div class="concept-confirm-text">LIRA se reiniciará para aplicar las actualizaciones. ¿Continuar?</div>
+          <div class="concept-confirm-btns">
+            <button id="updateConfirmBtn" class="concept-confirm-btn">Actualizar</button>
+            <button id="updateCancelBtn" class="concept-confirm-btn">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Second-chance confirm shown only when the first /api/update call
+           was skipped by rebuild_app.sh's Claude Code guard (see its
+           comment for the stash/data-loss risk being overridden here).
+           Only reachable after that specific skip — never shown up front —
+           so forcing through it is always an informed, per-run choice. -->
+      <div id="updateForceClaudeModal" class="concept-confirm-overlay">
+        <div class="concept-confirm-box">
+          <div class="concept-confirm-text">Hay una sesión de Claude Code activa. Forzar la actualización ahora podría perder ediciones sin guardar de esa sesión. ¿Forzar de todos modos?</div>
+          <div class="concept-confirm-btns">
+            <button id="updateForceClaudeConfirmBtn" class="concept-confirm-btn">Forzar de todos modos</button>
+            <button id="updateForceClaudeCancelBtn" class="concept-confirm-btn">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sleep System confirmation — same HUD-styled pattern as
+           #updateConfirmModal above, never a browser confirm(). -->
+      <div id="sleepConfirmModal" class="concept-confirm-overlay">
+        <div class="concept-confirm-box">
+          <div class="concept-confirm-text">LIRA entrará en modo sueño — ciclos continuos de mantenimiento en segundo plano hasta que le hables o pulses "Detener Sueño".</div>
+          <div class="concept-confirm-btns">
+            <button id="sleepConfirmBtn" class="concept-confirm-btn">Confirmar</button>
+            <button id="sleepCancelBtn" class="concept-confirm-btn">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── LIRA CORE ─────────────────────────────────────────────────────
+           Reached only via the app launcher (#appLauncher), not the bottom
+           nav — see APP_LAUNCHER_APPS in the script. Own independent
+           sub-tab state (_currentCoreSub / _switchCoreSubTab), reusing
+           .armor-subtabs/.armor-subtab's generic styling but never sharing
+           Armor Bay's own _currentSub/_switchSubTab, so switching one never
+           affects the other. -->
+      <div class="app-section" id="section-core">
+        <div class="section-inner">
+          <div class="settings-head">
+            <span class="settings-title-text">NÚCLEO LIRA</span>
+            <button id="coreClose" class="settings-close" title="Volver a Main">✕</button>
+          </div>
+
+          <div class="armor-subtabs">
+            <button class="armor-subtab active" data-core-sub="estado">Estado</button>
+            <button class="armor-subtab" data-core-sub="pensamiento">Pensamiento</button>
+            <button class="armor-subtab" data-core-sub="memoria">Memoria</button>
+            <button class="armor-subtab" data-core-sub="mapa">Mapa</button>
+            <button class="armor-subtab" data-core-sub="modulos">Módulos</button>
+            <button class="armor-subtab" data-core-sub="personas">Personas</button>
+          </div>
+
+          <!-- Estado — real-time status panel. Populated by _renderCoreEstado(),
+               called on tab-open, on a light polling interval while visible
+               (see _CORE_ESTADO_POLL_MS), and re-triggered by the existing
+               status/personality_change/mute_state/tts_mute_state socket
+               events — no new backend signals needed, per spec. -->
+          <div class="core-panel active" id="coreEstadoPanel">
+            <div id="coreEstadoBody"></div>
+          </div>
+
+          <!-- Pensamiento — three feeds:
+                 1. PENSAMIENTO EN TIEMPO REAL — live <think> content,
+                    normally stripped before the user ever sees it.
+                    Backfilled from GET /api/think_log on tab-open, then
+                    grows live via the 'lira_thinking' socket event
+                    (core.server.emit_lira_thinking, called from
+                    core.commands._groq_complete() the moment a
+                    reasoning-capable GROQ_MODEL_CHAIN tier answers) — see
+                    _onLiraThinking() in the script. Capped at 10 blocks,
+                    newest first, each revealed with a typewriter effect
+                    (_typewriterReveal()).
+                 2. PREGUNTAS DURANTE EL SUEÑO — pending questions LIRA
+                    generated during sleep's Phase 5 (Preguntas
+                    Pendientes), from GET /api/sleep_insights. Ordered by
+                    confidence (importance); already-surfaced ones show a
+                    "Resuelta" tag (see core.sleep.get_sleep_insights_summary()'s
+                    own docstring on why "asked" stands in for "answered").
+                 3. REFLEXIONES DEL SUEÑO — patterns/ideas/autocritica
+                    notes from sleep's own phases, same endpoint, ordered
+                    by recency.
+               Both sleep lists reuse .estudio-console-item-card (the same
+               instrument-console shell as ESTUDIO/Armor Bay) and refresh on
+               tab-open + on every 'sleep_phase_update' socket event — see
+               _loadSleepInsights(). -->
+          <div class="core-panel" id="corePensamientoPanel">
+            <div class="core-section-label">PENSAMIENTO EN TIEMPO REAL</div>
+            <div class="core-think-list" id="coreThinkList"></div>
+
+            <div class="core-section-label">PREGUNTAS DURANTE EL SUEÑO</div>
+            <div class="core-think-list" id="coreSleepQuestionsList"></div>
+
+            <div class="core-section-label">REFLEXIONES DEL SUEÑO</div>
+            <div class="core-think-list" id="coreSleepReflectionsList"></div>
+          </div>
+
+          <!-- Memoria — read-only snapshot from GET /api/memory_active:
+               stored facts grouped by category, last 5 episodes, and
+               whatever core.server.get_hud_context() currently holds (the
+               same PANTALLA ACTUAL context core.commands injects into
+               LIRA's system prompt). Populated by _renderCoreMemoria() on
+               tab-open. -->
+          <div class="core-panel" id="coreMemoriaPanel">
+            <div id="coreMemoriaBody"></div>
+          </div>
+
+          <!-- Mapa — interactive D3 node graph (see _renderCoreMapa). Two
+               mutually-exclusive states toggled by JS depending on whether
+               there's any conversation-derived data yet: #coreMapaEmpty
+               (reuses .design-placeholder's generic centered-column layout,
+               same one Armor Bay's own "Diseño" tab uses, with the original
+               decorative node-graph SVG) or #coreMapaGraph (the real D3
+               canvas + click-to-inspect side panel). -->
+          <div class="core-panel" id="coreMapaPanel">
+            <div class="design-placeholder" id="coreMapaEmpty">
+              <svg class="core-map-svg" viewBox="0 0 200 140" fill="none" stroke="currentColor" stroke-width="1">
+                <line x1="100" y1="70" x2="50"  y2="30"/>
+                <line x1="100" y1="70" x2="150" y2="30"/>
+                <line x1="100" y1="70" x2="40"  y2="112"/>
+                <line x1="100" y1="70" x2="160" y2="112"/>
+                <line x1="100" y1="70" x2="100" y2="18"/>
+                <line x1="50"  y1="30" x2="100" y2="18"/>
+                <line x1="150" y1="30" x2="100" y2="18"/>
+                <circle cx="100" cy="70"  r="4"/>
+                <circle cx="50"  cy="30"  r="3"/>
+                <circle cx="150" cy="30"  r="3"/>
+                <circle cx="40"  cy="112" r="3"/>
+                <circle cx="160" cy="112" r="3"/>
+                <circle cx="100" cy="18"  r="3"/>
+              </svg>
+              <div class="design-placeholder-title">Sin datos suficientes aún — LIRA necesita más conversaciones</div>
+            </div>
+            <div class="core-map-graph" id="coreMapaGraph">
+              <svg id="coreMapaSvg" class="core-map-canvas"></svg>
+              <div class="core-map-detail" id="coreMapaDetail">
+                <button id="coreMapaDetailClose" class="core-map-detail-close" title="Cerrar">✕</button>
+                <div id="coreMapaDetailBody" class="core-map-detail-body"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Módulos — full capability catalog (core.module_manager,
+               data/modules_catalog.json), not just what's currently loaded
+               — every planned/in-progress/installed capability across all
+               12 categories. Populated by _renderCoreModulos() on tab-open
+               from GET /api/modules/catalog, grouped into collapsible
+               category sections; clicking a row expands its detail
+               (description/dependencies/permissions/priority), plus a
+               priority stepper and a Bloquear/Desbloquear toggle
+               (POST /api/modules/catalog/<id>/priority|block) — a blocked
+               entry is one core.code_engine.CodeEngine will always refuse
+               to create/update, regardless of status. A non-blocked entry
+               also gets a build trigger: 'Crear módulo' (not yet
+               installed) or 'Actualizar' + a change-description input
+               (already installed), POSTing to
+               /api/code-engine/create|update — both fire-and-forget on
+               the backend, so _pollModuleBuild() re-fetches the catalog
+               every 5s until this entry reaches a terminal status. See
+               ui/js/core-tabs-sleep-panel.js. -->
+          <div class="core-panel" id="coreModulosPanel">
+            <div id="coreModulosBody"></div>
+          </div>
+
+          <!-- Personas — every person LIRA has a saved record of
+               (data/social_profiles.json via core/social.py), with a
+               Joan-editable trust tier (Owner/Private/Personal/Public,
+               or "Desconocido" until Joan has explicitly reviewed
+               someone — see Person.trust_confirmed's own comment in
+               core/social.py) and whether they know LIRA exists.
+               Populated by _renderCorePersonas() on tab-open — see
+               ui/js/core-tabs-sleep-panel.js, modeled directly on
+               Módulos's own expandable-row list above. -->
+          <div class="core-panel" id="corePersonasPanel">
+            <div id="corePersonasBody"></div>
+          </div>
+        </div><!-- /.section-inner -->
+      </div><!-- /#section-core -->
+
+      <!-- ── CONTROL ───────────────────────────────────────────────────────
+           Placeholder only, per spec — no functionality yet. Reached only
+           via the app launcher, same as CORE above. -->
+      <div class="app-section" id="section-control">
+        <div class="section-inner">
+          <div class="settings-head">
+            <span class="settings-title-text">CONTROL</span>
+            <button id="controlClose" class="settings-close" title="Volver a Main">✕</button>
+          </div>
+          <div class="design-placeholder">
+            <svg class="control-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="6"  x2="20" y2="6"/><circle cx="9"  cy="6"  r="2"/>
+              <line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/>
+              <line x1="4" y1="18" x2="20" y2="18"/><circle cx="7"  cy="18" r="2"/>
+            </svg>
+            <div class="design-placeholder-title">CONTROL CENTER — En desarrollo</div>
+            <div class="design-placeholder-desc">Estadísticas, ADN de personalidades y configuración avanzada. Próximamente.</div>
+          </div>
+        </div><!-- /.section-inner -->
+      </div><!-- /#section-control -->
+
+      <!-- ── BUG HUNTER ───────────────────────────────────────────────────
+           Control center for bug-bounty hunting. Front-end shell only —
+           mock/in-memory data, no backend yet (see ui/js/bughunter.js).
+           4 subtabs, same .armor-subtabs/.estudio-panel/.estudio-card
+           pattern as ESTUDIO. Hard rule that governs the eventual scanning
+           logic: read-only proof-of-concept only, never exploit, never
+           auto-submit — see AUTO MODE below and ui/js/bughunter.js header
+           comment. Reached only via the app launcher, same as CONTROL
+           above. -->
+      <div class="app-section" id="section-bughunter">
+        <div class="section-inner">
+          <div class="settings-head">
+            <span class="settings-title-text">BUG HUNTER</span>
+            <div class="bughunter-automode-toggle" title="Cuando está activo, LIRA recorre sola la lista de Scope y documenta lo que encuentra en Hallazgos — nunca envía nada por su cuenta.">
+              <span class="toggle-label">MODO AUTO</span>
+              <button class="toggle-switch" id="bughunterAutoModeToggle" role="switch" aria-checked="false"></button>
+            </div>
+            <button id="bughunterClose" class="settings-close" title="Volver a Main">✕</button>
+          </div>
+
+          <div class="armor-subtabs">
+            <button class="armor-subtab active" data-bughunter-sub="scope">Scope</button>
+            <button class="armor-subtab" data-bughunter-sub="programas">Programas</button>
+            <button class="armor-subtab" data-bughunter-sub="status">Status</button>
+            <button class="armor-subtab" data-bughunter-sub="scan">Scan</button>
+            <button class="armor-subtab" data-bughunter-sub="findings">Hallazgos</button>
+            <button class="armor-subtab" data-bughunter-sub="supervision">Supervisión</button>
+          </div>
+
+          <!-- All panels below share the "instrument console" chrome
+               (.estudio-console — hero + body-grid + rail) that ESTUDIO's
+               Investigación detail view established — see
+               project_new_aesthetic_reference memory. Each panel is just a
+               mount point; the full console markup is built and injected
+               by ui/js/bughunter.js, same as _openEstudioInvestigacionDetail
+               does for #estudioDetailBody. -->
+
+          <!-- Scope — allowlist of targets LIRA is permitted to work on.
+               The safety boundary: auto mode and manual scans alike only
+               ever pick from this list. -->
+          <div class="estudio-panel active" id="bughunterScopePanel">
+            <div id="bughunterScopeConsole"><p class="estudio-loading">Cargando…</p></div>
+          </div>
+
+          <!-- Programas — static, curated reference list of major bug
+               bounty platforms (not the Scope allowlist itself — this is
+               "where to go find a program", Scope is "what I've actually
+               authorized LIRA to work on"). Content lives in
+               ui/js/bughunter.js's BH_KNOWN_PROGRAMS, no backend needed. -->
+          <div class="estudio-panel" id="bughunterProgramasPanel">
+            <div id="bughunterProgramasConsole"><p class="estudio-loading">Cargando…</p></div>
+          </div>
+
+          <!-- Status — current activity + recent activity log. -->
+          <div class="estudio-panel" id="bughunterStatusPanel">
+            <div id="bughunterStatusConsole"><p class="estudio-loading">Cargando…</p></div>
+          </div>
+
+          <!-- Scan — manual run: pick one Scope target, watch a live log.
+               Target dropdown is sourced from Scope only, never free text. -->
+          <div class="estudio-panel" id="bughunterScanPanel">
+            <div id="bughunterScanConsole"><p class="estudio-loading">Cargando…</p></div>
+          </div>
+
+          <!-- Hallazgos — findings list, each with a "Copiar reporte" button
+               that puts a submission-ready write-up on the clipboard. LIRA
+               never auto-submits — this is the hand-off point to Joan. -->
+          <div class="estudio-panel" id="bughunterFindingsPanel">
+            <div id="bughunterFindingsConsole"><p class="estudio-loading">Cargando…</p></div>
+          </div>
+
+          <!-- Supervisión — live granular trace of every step a scan takes
+               (each header check, TLS handshake, crt.sh query), as it
+               happens — closer to watching a tool-call transcript than
+               reading a summary log after the fact. In-memory only, spans
+               the whole app session (manual AND auto-mode scans alike),
+               resets on reload — see project_bug_hunter_supervision_idea
+               memory. Fed by the same 'bughunter_scan_log' socket event
+               the Scan tab's own live log already used. -->
+          <div class="estudio-panel" id="bughunterSupervisionPanel">
+            <div id="bughunterSupervisionConsole"></div>
+          </div>
+
+          <!-- Finding detail — slides in over the tabs, same recipe as
+               ESTUDIO's #estudioDetail (see #section-bughunter .section-inner's
+               position:relative in ui/css/bughunter.css). Only ever
+               populated from a Hallazgos card click. -->
+          <div class="estudio-detail" id="bughunterFindingDetail">
+            <button id="bughunterFindingDetailClose" class="estudio-detail-close">← Volver</button>
+            <div id="bughunterFindingDetailBody"></div>
+          </div>
+        </div><!-- /.section-inner -->
+      </div><!-- /#section-bughunter -->
+
+      <!-- ── ESTUDIO ───────────────────────────────────────────────────────
+           5 subsections (Investigación/Resúmenes/Esquemas/Ideas/Documentos),
+           all logic in ui/js/estudio.js, all styling in ui/css/estudio.css —
+           this is HTML structure only. Reached only via the app launcher,
+           same as NÚCLEO LIRA/CONTROL above. Backed by GET /api/estudio
+           (core/estudio_routes.py). -->
+      <div class="app-section" id="section-estudio">
+        <div class="section-inner">
+          <div class="settings-head">
+            <span class="settings-title-text">ESTUDIO</span>
+            <button id="estudioClose" class="settings-close" title="Volver a Main">✕</button>
+          </div>
+
+          <div class="armor-subtabs">
+            <button class="armor-subtab active" data-estudio-sub="investigacion">Investigación</button>
+            <button class="armor-subtab" data-estudio-sub="resumenes">Resúmenes</button>
+            <button class="armor-subtab" data-estudio-sub="esquemas">Esquemas</button>
+            <button class="armor-subtab" data-estudio-sub="exploraciones">Exploraciones</button>
+            <button class="armor-subtab" data-estudio-sub="ideas">Ideas</button>
+            <button class="armor-subtab" data-estudio-sub="documentos">Documentos</button>
+          </div>
+
+          <!-- Investigación — GET /api/estudio's 'investigations' array,
+               sourced from data/investigations.json. Cards are clickable —
+               see #estudioDetail below for the expanded question/
+               methodology/sources/conclusions/confidence view. -->
+          <div class="estudio-panel active" id="estudioInvestigacionPanel">
+            <div class="estudio-card-list" id="estudioInvestigacionList"></div>
+          </div>
+
+          <!-- Resúmenes — data/summaries.json. -->
+          <div class="estudio-panel" id="estudioResumenesPanel">
+            <div class="estudio-card-list" id="estudioResumenesList"></div>
+          </div>
+
+          <!-- Esquemas — data/schemas.json. -->
+          <div class="estudio-panel" id="estudioEsquemasPanel">
+            <div class="estudio-card-list" id="estudioEsquemasList"></div>
+          </div>
+
+          <!-- Exploraciones — data/explorations.json. LIRA's OWN
+               autonomous sleep-time discoveries (active web search during
+               Curiosidad, Phase 8, and its "curiosidad profunda" deep-dive
+               — see core/sleep_curiosity_search.py), kept deliberately
+               separate from Resúmenes above, which only ever shows
+               summaries Joan explicitly asked for. -->
+          <div class="estudio-panel" id="estudioExploracionesPanel">
+            <div class="estudio-card-list" id="estudioExploracionesList"></div>
+          </div>
+
+          <!-- Ideas — NOT a new data source: reads the existing
+               data/sleep_insights.json 'ideas' array (already populated by
+               core.sleep's Phase 3 idea-generator every sleep cycle), just
+               a dedicated relevance-sorted view onto it — see
+               core/estudio_routes.py's _load_ideas(). -->
+          <div class="estudio-panel" id="estudioIdeasPanel">
+            <div class="estudio-card-list" id="estudioIdeasList"></div>
+          </div>
+
+          <!-- Documentos — data/documents.json. -->
+          <div class="estudio-panel" id="estudioDocumentosPanel">
+            <div class="estudio-card-list" id="estudioDocumentosList"></div>
+          </div>
+
+          <!-- Expanded detail — slides in from the right over the tabs/
+               panels above (same transform/opacity recipe as NÚCLEO LIRA's
+               #coreMapaDetail), only ever populated from an Investigación
+               card click — see _openEstudioInvestigacionDetail() in
+               ui/js/estudio.js. -->
+          <div class="estudio-detail" id="estudioDetail">
+            <button id="estudioDetailClose" class="estudio-detail-close">← Volver</button>
+            <div id="estudioDetailBody"></div>
+          </div>
+        </div><!-- /.section-inner -->
+      </div><!-- /#section-estudio -->
+
+    </div><!-- /#sectionContainer -->
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         PERSISTENT BAR — always visible above the nav bar.
+         Contains: mute, mode toggle, personality indicator, conn status,
+         restart and power buttons.
+    ════════════════════════════════════════════════════════════════════════ -->
+    <div id="persistentBar">
+      <!-- Mic controls -->
+      <button id="muteBtn" class="shutdown-btn" title="Mute microphone">🎤</button>
+      <!-- Voice output (TTS) mute — mic stays active, LIRA just stops speaking -->
+      <button id="ttsMuteBtn" class="shutdown-btn" title="Mute LIRA's voice">🔊</button>
+      <!-- Listen mode toggle -->
+      <button id="modeBtn" class="shutdown-btn mode-wake" title="Toggle listen mode">Wake Word</button>
+      <!-- Personality indicator — static now (LIRA is the only personality,
+           no switcher modal left to open). Kept as its own element rather
+           than plain text since applyPersonality() still colors the dot
+           from --p-color and sets the name text (see personality-switch.js). -->
+      <div id="personalityIndicator">
+        <div class="p-indicator-dot"></div>
+        <span class="p-indicator-name">L I R A</span>
+      </div>
+      <!-- Test Mode indicator — subtle, always-visible red dot while
+           modo_test is on, so it's never possible to forget a test-mode
+           conversation is ephemeral. display:none by default; shown via
+           body.test-mode-active (see _applyTestModeUI() in the script). -->
+      <div class="test-mode-bar-indicator" id="testModeBarIndicator" title="Modo Test activo — conversación no guardada"></div>
+      <!-- Sleep indicator — subtle, always-visible while LIRA is in a
+           continuous sleep cycle (mantenimiento de memoria en segundo
+           plano). display:none by default; shown via body.sleeping (see
+           _applySleepBodyState() in the script — driven by both the
+           always-on ambient poll and the Ajustes detailed poll). -->
+      <div class="sleep-bar-indicator" id="sleepBarIndicator" title="LIRA está durmiendo — mantenimiento de memoria en curso">ZZZ</div>
+      <!-- Design Studio autopilot indicator — same always-visible-regardless-
+           of-section philosophy as the sleep/test-mode dots above. display:none
+           by default; shown/updated via body.ds-autopilot-active + JS text
+           updates in _dsRunAutopilot() (ui/js/design-studio.js). Clickable —
+           navigates back to the Design Studio workspace at any point. -->
+      <div class="ds-ap-bar-indicator" id="dsApBarIndicator" title="Piloto automático de diseño en curso — clic para ver">
+        <span class="ds-ap-bar-dot"></span>
+        <span id="dsApBarText">DISEÑANDO...</span>
+      </div>
+      <!-- Connection status -->
+      <div class="conn-status">
+        <div class="status-dot"></div>
+        <div class="status-label" id="statusLabel">Offline</div>
+      </div>
+      <!-- System actions -->
+      <button id="restartBtn" class="shutdown-btn" title="Restart Jarvis">↻</button>
+      <button id="statusPowerBtn" class="shutdown-btn power-online" title="Stop Jarvis">⏻</button>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         BOTTOM NAV BAR — switches between the 4 app sections
+    ════════════════════════════════════════════════════════════════════════ -->
+    <nav id="bottomNav">
+      <button class="nav-item active" data-section="home">
+        <span class="nav-item-icon">⌂</span>
+        <span>Main</span>
+      </button>
+      <button class="nav-item" data-section="chat">
+        <span class="nav-item-icon">◎</span>
+        <span>Chat</span>
+      </button>
+      <button class="nav-item" data-section="maintenance">
+        <span class="nav-item-icon">⚙</span>
+        <span>Sistema</span>
+        <span class="nav-badge" id="navMaintBadge"></span>
+      </button>
+      <button class="nav-item" data-section="armor">
+        <span class="nav-item-icon">⬡</span>
+        <span>Armaduras</span>
+      </button>
+      <button class="nav-item" data-section="settings">
+        <span class="nav-item-icon">✦</span>
+        <span>Ajustes</span>
+      </button>
+    </nav>
+
+  </div><!-- /.layout -->
+</div><!-- /mainUI -->
+
+<!-- ── CONCEPT DELETE CONFIRMATION ─────────────────────────────────────── -->
+<div id="conceptDeleteConfirm" class="concept-confirm-overlay">
+  <div class="concept-confirm-box">
+    <div class="concept-confirm-text">¿Seguro que quieres eliminar este concepto? Esta acción no se puede deshacer.</div>
+    <div class="concept-confirm-btns">
+      <button id="cptDelConfirm" class="concept-confirm-btn danger">Eliminar</button>
+      <button id="cptDelCancel" class="concept-confirm-btn">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── UNSAVED CONCEPT-EDIT WARNING ─────────────────────────────────────────
+     Shown by switchSection() when navigating away from a section while the
+     concept modal (#conceptModalOverlay) has unsaved changes — see
+     _conceptFormHasUnsavedChanges()/_showUnsavedConceptDialog() in the
+     script. Higher z-index than the concept modal itself (see the
+     .unsaved-concept-overlay CSS rule) since it needs to appear ON TOP of
+     it — the concept modal stays open behind it until the user decides. -->
+<div id="unsavedConceptModal" class="concept-confirm-overlay unsaved-concept-overlay">
+  <div class="concept-confirm-box">
+    <div class="concept-confirm-text">Tienes cambios sin guardar en este concepto. ¿Quieres guardar antes de salir?</div>
+    <div class="concept-confirm-btns">
+      <button id="unsavedConceptCancelBtn" class="concept-confirm-btn">Cancelar</button>
+      <button id="unsavedConceptDiscardBtn" class="concept-confirm-btn danger">Descartar</button>
+      <button id="unsavedConceptSaveBtn" class="concept-confirm-btn unsaved-concept-save-btn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CONCEPT CREATE/EDIT MODAL ────────────────────────────────────────────
+     Large centered workspace (see CSS block "CONCEPT CREATE/EDIT MODAL").
+     Shared by both create ("+ Nuevo Concepto") and edit (card ✎ button) —
+     #cptModalTitle swaps text, the fields below are pre-filled for edit by
+     _beginEdit() in the script. Field IDs are unchanged from the old inline
+     form, so the existing save/edit/cancel logic needed no rewrite. -->
+<div id="conceptModalOverlay">
+  <div id="conceptModalBox">
+    <div class="concept-modal-header">
+      <span class="concept-modal-title" id="cptModalTitle">Nuevo Concepto</span>
+      <button class="concept-modal-close" id="cptModalClose" title="Cerrar">✕</button>
+    </div>
+    <div class="concept-modal-body">
+      <div class="concept-modal-field">
+        <label class="concept-modal-label" for="cptName">Nombre del concepto</label>
+        <input id="cptName" class="concept-modal-name" placeholder="Nombre provisional…" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="concept-modal-field grow">
+        <label class="concept-modal-label" for="cptDesc">Descripción</label>
+        <textarea id="cptDesc" class="concept-modal-desc" placeholder="Descripción, materiales, electrónica, capacidades…"></textarea>
+      </div>
+      <div class="concept-modal-field">
+        <label class="concept-modal-label" for="cptStatus">Estado</label>
+        <select id="cptStatus" class="concept-modal-status">
+          <option value="idea">Idea</option>
+          <option value="en desarrollo">En desarrollo</option>
+          <option value="descartado">Descartado</option>
+        </select>
+      </div>
+    </div>
+    <div class="concept-modal-footer">
+      <button id="cptCancel" class="concept-modal-cancel">Cancelar</button>
+      <button id="cptSave" class="concept-modal-save">Guardar</button>
+    </div>
+  </div>
+</div>
+
+
+<script src="/js/bootstrap-auth.js"></script>
+<script src="/js/notifications.js"></script>
+<script src="/js/connection.js"></script>
+<script src="/js/boot-power-state.js"></script>
+<script src="/js/section-nav.js"></script>
+<script src="/js/status-diamond-grid.js"></script>
+<script src="/js/diamond-motion.js"></script>
+<script src="/js/diamond-text-launcher.js"></script>
+<script src="/js/core-tabs-sleep-panel.js"></script>
+<script src="/js/mind-map.js"></script>
+<script src="/js/personality-switch.js"></script>
+<script src="/js/chat-render.js"></script>
+<script src="/js/settings-updates.js"></script>
+<script src="/js/clock-boot-splash-wiring.js"></script>
+<script src="/js/mm-wiring.js"></script>
+<script src="/js/armor-svg-grid.js"></script>
+<script src="/js/armor-detail-concepts-load.js"></script>
+<script src="/js/concepts-edit.js"></script>
+<script src="/js/estudio.js"></script>
+<script src="/js/bughunter.js"></script>
+<script src="/js/design-studio.js"></script>
+</body>
+</html>

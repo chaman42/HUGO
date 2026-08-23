@@ -1,0 +1,253 @@
+/* nav-personality-modal.css — Maintenance section, persistent bar (incl. the
+   personality indicator), and bottom nav items. The personality switch
+   modal this file used to also style is gone — LIRA is the only
+   personality now, nothing left to switch to (kept the filename to avoid
+   a churn-only rename across index.html's <link> and any doc references). */
+/* ── Maintenance section — full-width, no inner wrapper ── */
+#section-maintenance .maint-header {
+  flex: 0 0 auto;
+  position: relative; /* sits above ::before's grid layer, same reasoning as .maint-log */
+  z-index: 1;
+}
+#section-maintenance .maint-log {
+  flex: 1 1 0;
+}
+/* Sistema premium pass: same 40px grid overlay technique as
+   #armorDetailView::before (Armor Bay pass) — this section's own instance,
+   #section-maintenance is already position:absolute via .app-section, no
+   extra positioning setup needed. */
+#section-maintenance::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg,  rgba(63,169,245,0.04) 0px, rgba(63,169,245,0.04) 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(90deg, rgba(63,169,245,0.04) 0px, rgba(63,169,245,0.04) 1px, transparent 1px, transparent 40px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PERSISTENT BAR — always visible above the nav bar
+   Contains: mute, mode toggle, personality indicator, conn status, actions
+═══════════════════════════════════════════════════════════════════════════ */
+/* Toolbar premium pass — exact spec tokens: rgba(0,4,10,0.92) bg,
+   blur(20px) saturate(180%), 0.5px accent border instead of the old
+   1px var(--accent-dim). Explicit height (not just padding+content) so
+   "consistent, never arbitrary" holds regardless of what's inside on any
+   given screen — also clears the 44px touch-target minimum for the
+   buttons inside. */
+#persistentBar {
+  flex: 0 0 auto;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border-top: 0.5px solid rgba(63,169,245,0.2);
+  background: rgba(0,4,10,0.92);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  transition: border-color var(--tt);
+}
+
+/* Personality indicator — static now (LIRA is the only personality, no
+   switcher modal to open on click — see this file's own header comment).
+   Angular clip-path corners instead of border-radius, matching this pass's
+   "no border-radius anywhere" rule. */
+#personalityIndicator {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 3px 10px;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  border: 1px solid transparent;
+  min-width: 0;
+}
+/* personality-owned: dot and name track active personality color. Subtle
+   pulse per spec ("dot pulses subtly") — gentle opacity breathe, not the
+   sharper state-driven pulses elsewhere (.mm-status-dot etc.), since this
+   dot has no listening/processing/speaking state of its own to reflect. */
+.p-indicator-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--p-color);
+  box-shadow: 0 0 6px var(--p-glow);
+  flex-shrink: 0;
+  transition: background var(--tt), box-shadow var(--tt);
+  animation: p-indicator-dot-pulse 2.4s ease-in-out infinite;
+}
+@keyframes p-indicator-dot-pulse {
+  0%, 100% { opacity: 1;    }
+  50%      { opacity: 0.55; }
+}
+/* Rajdhani (toolbar premium pass) — same identity face as .mm-name/
+   .mm-status-label in the main menu, so LIRA's own name reads consistently
+   wherever it appears. */
+.p-indicator-name {
+  font-family: var(--mm-font-display);
+  font-weight: 600;
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--p-color);
+  transition: color var(--tt);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Connection status cluster */
+.conn-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* TEST MODE — always-visible persistent-bar indicator. Subtle (small,
+   dim-until-you-notice-it) rather than a loud banner, per spec — but never
+   hidden behind a menu, since forgetting test mode is on is exactly the
+   failure this exists to prevent. Angular (no border-radius), sharp
+   square rather than a soft circle to match this pass's mechanical
+   aesthetic instead of the round .status-dot/.p-indicator-dot elsewhere. */
+.test-mode-bar-indicator {
+  display: none;
+  width: 6px; height: 6px;
+  flex-shrink: 0;
+  background: rgba(255,68,68,0.75);
+  box-shadow: 0 0 5px rgba(255,68,68,0.5);
+  animation: test-mode-pulse 2.4s ease-in-out infinite;
+}
+body.test-mode-active .test-mode-bar-indicator { display: block; }
+@keyframes test-mode-pulse {
+  0%, 100% { opacity: 1;    }
+  50%      { opacity: 0.45; }
+}
+
+/* SLEEP — always-visible persistent-bar indicator, same subtle/never-
+   hidden-behind-a-menu philosophy as the test-mode dot above (Joan should
+   always be able to tell LIRA is mid-maintenance without opening Ajustes),
+   but a small monospace "ZZZ" glyph instead of a plain dot — reads more
+   like "sleeping" at a glance than an undifferentiated colored square
+   would, and stays consistent with the mechanical/JetBrains-Mono chrome
+   used elsewhere in this bar (.nav-item, .status-label). Cool blue-violet
+   tone (vs. the alarm-red test-mode dot) and a slow 3.2s pulse — calmer,
+   matching the orb's own slowed "breathing" during body.sleeping below,
+   not an urgent notification. */
+.sleep-bar-indicator {
+  display: none;
+  flex-shrink: 0;
+  font-family: var(--mm-font-mono, 'JetBrains Mono', monospace);
+  font-size: 8px;
+  letter-spacing: 0.05em;
+  color: rgba(140,170,255,0.8);
+  text-shadow: 0 0 6px rgba(120,150,255,0.5);
+  animation: sleep-bar-pulse 3.2s ease-in-out infinite;
+}
+body.sleeping .sleep-bar-indicator { display: block; }
+@keyframes sleep-bar-pulse {
+  0%, 100% { opacity: 0.9;  }
+  50%      { opacity: 0.35; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BOTTOM NAV BAR — 4-section switcher
+═══════════════════════════════════════════════════════════════════════════ */
+#bottomNav {
+  flex: 0 0 auto;
+  height: 56px;
+  display: flex;
+  border-top: 0.5px solid rgba(63,169,245,0.2);
+  /* Same glass/blur treatment as #persistentBar directly above it */
+  background: rgba(0,4,10,0.92);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  transition: border-color var(--tt);
+}
+
+/* JetBrains Mono / 10px / 0.15em (toolbar premium pass) — default text is
+   the spec's rgba(255,255,255,0.35); active is rgba(63,169,245,0.9) with a
+   thin 1px top border as the ONLY active indicator (the old 2px border +
+   rounded pulsing dot below it are gone — spec: "not a dot or rounded
+   pill"). Hover transition tightened to the spec's 120ms. */
+.nav-item {
+  flex: 1;
+  background: none;
+  border: none;
+  border-top: 1px solid transparent;
+  color: rgba(255,255,255,0.35);
+  font-family: var(--mm-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 7px 4px 5px;
+  cursor: pointer;
+  outline: none;
+  transition: color 120ms, border-color 120ms;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  position: relative;
+}
+.nav-item:hover {
+  color: rgba(255,255,255,0.6);
+}
+/* Console-family touch: a soft glow on the active top border — same accent-
+   glow language as everywhere else in the app (item-card borders, gauge
+   rings). Kept as a shadow on the existing thin border rather than adding
+   a dot/pill, per this bar's own "sharp, not a bubble" design intent. */
+.nav-item.active {
+  color: rgba(63,169,245,0.9);
+  border-top-color: #3fa9f5;
+  box-shadow: inset 0 1px 6px -2px rgba(63,169,245,0.5);
+}
+.nav-item-icon { font-size: 0.80rem; line-height: 1; }
+
+/* Unread badge (system messages) on the Sistema nav item — sharp corners,
+   no border-radius, per spec ("small, 6px, sharp — not rounded bubbles").
+   Kept slightly larger than a literal 6px square (spec's own reference
+   point, "the yellow dot on SISTEMA") since this one actually renders a
+   live count (_sysCount in the script, 1-2 digits) rather than being a
+   plain unread dot — a true 6px box couldn't hold that text and stay
+   legible, so this keeps the spirit (sharp, small, no pill) without
+   losing the count. */
+.nav-badge {
+  position: absolute;
+  top: 3px; right: calc(50% - 16px);
+  background: rgba(240,165,0,0.85);
+  color: rgba(10,10,10,0.95);
+  font-family: var(--mm-font-mono);
+  font-size: 0.42rem;
+  min-width: 10px; height: 10px;
+  border-radius: 0;
+  padding: 0 3px;
+  display: flex; align-items: center; justify-content: center;
+}
+.nav-badge:empty { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UNIVERSAL PRESS FEEDBACK — brief scale-down + brightness flash on :active,
+   shared across every clickable control. Deliberately set only on the
+   :active rule itself (not the base selector) so it doesn't touch each
+   element's own `transition` list above — a single `transition` declaration
+   replaces the whole list rather than merging, so editing those in place
+   would have silently dropped their existing hover transitions.
+═══════════════════════════════════════════════════════════════════════════ */
+.send-btn:active, .shutdown-btn:active,
+.mm-action-btn:active, .nav-item:active, .view-tab:active,
+.armor-subtab:active, .armor-card:active,
+.concept-new-btn:active, .concept-modal-save:active, .concept-modal-cancel:active,
+.concept-modal-close:active, .concept-confirm-btn:active,
+.settings-close:active, .maint-clear:active, .maint-close:active,
+.detail-back-btn:active, .concept-card-edit:active, .concept-card-del:active,
+.settings-update-btn:active, .power-btn:active {
+  transform: scale(0.93);
+  filter: brightness(1.5);
+  transition: transform 0.08s ease, filter 0.08s ease;
+}
+/* .armor-card already animates transform on hover (scale(1.04)) — keep the
+   press effect from fighting that by scaling down from wherever it is */
+.armor-card:active { transform: scale(0.98); }

@@ -1,0 +1,9 @@
+{
+  "name": "calculator",
+  "version": "1.0",
+  "description": "Evaluación local de expresiones aritméticas",
+  "dependencies": [],
+  "permissions": [],
+  "entry_point": "calculator.py",
+  "auto_start": true
+}

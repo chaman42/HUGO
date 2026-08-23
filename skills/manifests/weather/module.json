@@ -1,0 +1,9 @@
+{
+  "name": "weather",
+  "version": "1.0",
+  "description": "Clima actual para la ubicación detectada (Open-Meteo)",
+  "dependencies": [],
+  "permissions": ["network"],
+  "entry_point": "weather.py",
+  "auto_start": true
+}

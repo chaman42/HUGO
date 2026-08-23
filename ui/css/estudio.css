@@ -1,0 +1,683 @@
+/* estudio.css — ESTUDIO app: subsection panels, card lists, and the
+   slide-in expanded detail view. Premium mechanical aesthetic — angular
+   clip-path corners everywhere, no border-radius, matching Armor Bay's
+   own card language (.armor-card/.concept-card). Section tabs reuse
+   .armor-subtabs/.armor-subtab as-is (already JetBrains Mono 10px,
+   angular) rather than duplicating that CSS here. */
+
+/* Containing block for .estudio-detail's absolute overlay below — same
+   reasoning as #armorSection's own `position: relative` for
+   #armorDetailView. Scoped to #section-estudio so the shared
+   .section-inner base rule (overflow:hidden, static position) stays
+   untouched for every other section. */
+#section-estudio .section-inner { position: relative; }
+
+/* ── Panel switching — same on/off pattern as .core-panel, kept as its
+      own class so ESTUDIO stays self-contained (not coupled to NÚCLEO
+      LIRA's own panel styling). ── */
+.estudio-panel {
+  display: none;
+  flex: 1 1 0;
+  flex-direction: column;
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(63,169,245,0.5) rgba(63,169,245,0.2);
+}
+.estudio-panel.active { display: flex; }
+.estudio-panel::-webkit-scrollbar { width: 2px; }
+.estudio-panel::-webkit-scrollbar-track { background: rgba(63,169,245,0.2); }
+.estudio-panel::-webkit-scrollbar-thumb { background: rgba(63,169,245,0.5); border-radius: 0; }
+
+.estudio-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 0 12px;
+}
+
+/* ── Cards — glass panel + angular clip-path corners, exact spec values. ── */
+.estudio-card {
+  border: 1px solid rgba(63,169,245,0.15);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  background: rgba(0,4,10,0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+.estudio-card[data-expandable="true"] { cursor: pointer; }
+.estudio-card:hover {
+  border-color: rgba(63,169,245,0.4);
+  box-shadow: inset 0 0 24px rgba(63,169,245,0.03);
+}
+
+.estudio-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.estudio-card-title {
+  font-family: var(--mm-font-display);
+  font-weight: 500;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.85);
+  flex: 1;
+  min-width: 0;
+}
+.estudio-card-date {
+  font-family: var(--mm-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.3);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.estudio-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Status/type/source pill — small angular tag, same clip-path language at
+   a smaller radius. Color varies by status (investigaciones only). */
+.estudio-tag {
+  font-family: var(--mm-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 0.5px solid rgba(63,169,245,0.3);
+  clip-path: polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px);
+  color: rgba(63,169,245,0.75);
+}
+.estudio-tag.status-activa      { border-color: rgba(63,169,245,0.4);  color: rgba(63,169,245,0.9); }
+.estudio-tag.status-incubando   { border-color: rgba(240,192,64,0.35); color: rgba(240,192,64,0.85); }
+.estudio-tag.status-completada  { border-color: rgba(255,255,255,0.25); color: rgba(255,255,255,0.45); }
+/* Ready-for-review — green, pulsing to draw the eye (a conclusion is
+   waiting on Joan specifically, unlike the other 3 passive states). */
+.estudio-tag.status-lista_para_revision {
+  border-color: rgba(0,255,136,0.5);
+  color: rgba(0,255,136,0.95);
+  animation: estudio-ready-pulse 1.8s ease-in-out infinite;
+}
+@keyframes estudio-ready-pulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(0,255,136,0); }
+  50%      { box-shadow: 0 0 8px rgba(0,255,136,0.65); }
+}
+
+.estudio-card-summary {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.5;
+}
+
+/* Ideas — relevance score readout instead of a status tag */
+.estudio-card-relevance {
+  font-family: var(--mm-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: rgba(63,169,245,0.6);
+}
+
+/* Documents — word count readout */
+.estudio-card-wordcount {
+  font-family: var(--mm-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.35);
+}
+
+/* ── Empty states ── */
+.estudio-empty {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 24px;
+  font-family: var(--mm-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.2);
+}
+
+/* ── Expanded detail — slides in from the right, covers the tabs/panels
+      above (same transform/opacity recipe as .core-map-detail, just full-
+      width/height instead of anchored inside a small graph container). ── */
+.estudio-detail {
+  position: absolute;
+  inset: 0;
+  background: rgba(6,8,12,0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 16px;
+  overflow-y: auto;
+  transform: translateX(100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform var(--tt), opacity var(--tt);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(63,169,245,0.5) rgba(63,169,245,0.2);
+}
+.estudio-detail.open {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+.estudio-detail::-webkit-scrollbar { width: 2px; }
+.estudio-detail::-webkit-scrollbar-track { background: rgba(63,169,245,0.2); }
+.estudio-detail::-webkit-scrollbar-thumb { background: rgba(63,169,245,0.5); border-radius: 0; }
+
+.estudio-detail-close {
+  background: none;
+  border: none;
+  color: rgba(63,169,245,0.7);
+  font-family: var(--mm-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 6px 0 14px;
+  outline: none;
+  transition: color 120ms;
+}
+.estudio-detail-close:hover { color: rgba(63,169,245,0.95); }
+
+.estudio-detail-title {
+  font-family: var(--mm-font-display);
+  font-weight: 600;
+  font-size: 1rem;
+  color: rgba(255,255,255,0.9);
+  margin-bottom: 4px;
+}
+.estudio-detail-section {
+  margin-top: 16px;
+}
+.estudio-detail-label {
+  font-family: var(--mm-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(63,169,245,0.5);
+  margin-bottom: 5px;
+}
+.estudio-detail-body {
+  font-size: 0.74rem;
+  color: rgba(255,255,255,0.75);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.estudio-detail-sources {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.estudio-detail-sources li {
+  font-size: 0.7rem;
+  color: rgba(63,169,245,0.7);
+  padding-left: 12px;
+  position: relative;
+}
+.estudio-detail-sources li::before {
+  content: '›';
+  position: absolute;
+  left: 0;
+  color: rgba(63,169,245,0.4);
+}
+
+/* ── ESQUEMAS/EXPLORACIONES detail — both now use the shared
+      estudio-console-* "instrument console" chrome (same as Investigación/
+      Resúmenes/Armaduras), not a bespoke layout. What's left here is only
+      what's genuinely specific to schema nodes: a title+type header row
+      inside an item-card (reused as-is elsewhere for plain text), and the
+      single-column body-grid variant for esquemas, which has no rail
+      content. ── */
+.estudio-console-item-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.estudio-console-item-type {
+  font-family: var(--mm-font-mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  color: var(--hc, var(--accent));
+}
+.estudio-console-item-title {
+  font-family: var(--mm-font-sans);
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.88);
+}
+.estudio-console-item-links {
+  font-family: var(--mm-font-mono);
+  font-size: 9px;
+  color: rgba(63,169,245,0.5);
+  margin-top: 6px;
+}
+.estudio-console-body-grid.single-col {
+  grid-template-columns: 1fr;
+}
+
+/* Source URL — subtle mono link, per spec's literal color/size. Clicking
+   it opens a new-window navigation that Electron's main process
+   (electron/window.js's setWindowOpenHandler) intercepts and routes to
+   shell.openExternal() instead of a real in-app window — this file never
+   needs to know it's running inside Electron at all. In a plain browser
+   tab it's just a normal target="_blank" link. */
+.estudio-detail-link {
+  display: inline-block;
+  font-family: var(--mm-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: rgba(63,169,245,0.6);
+  word-break: break-all;
+  text-decoration: none;
+  transition: color 120ms;
+}
+.estudio-detail-link:hover { color: rgba(63,169,245,0.9); text-decoration: underline; }
+
+/* 'Marcar como leído' — same angular premium-button language as
+   .concept-new-btn (not shared directly: this one goes to a muted
+   "already done" look once clicked, .concept-new-btn never does). */
+.estudio-mark-read-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%;
+  background: transparent;
+  border: 1px solid #3fa9f5;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  color: #3fa9f5; font-family: var(--mm-font-mono);
+  font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 9px 14px;
+  cursor: pointer; outline: none;
+  transition: border-color 150ms, color 150ms, box-shadow 150ms, background 150ms;
+}
+.estudio-mark-read-btn:hover:not(:disabled) {
+  box-shadow: 0 0 10px rgba(63,169,245,0.2);
+  background: rgba(63,169,245,0.05);
+}
+.estudio-mark-read-btn:disabled {
+  border-color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.3);
+  cursor: default;
+}
+
+/* ── Card list — unread indicator + read dimming (Exploraciones only,
+      but scoped by presence rather than a section selector so nothing
+      else needs to change if another tab reuses these later). ── */
+.estudio-unread-dot {
+  flex: 0 0 auto;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #f0c040;
+  box-shadow: 0 0 4px #f0c040;
+  align-self: center;
+}
+.estudio-card.read {
+  opacity: 0.55;
+}
+
+/* ── Investigación detail — "instrument console" redesign. Replaces the
+      old flat text-only layout: a hero band pairs the title with a large
+      glowing confidence gauge, hypotheses become individual mini-cards
+      with a horizontal confidence bar instead of a bare "text — NN%" row
+      (split into "lo que tiene más claro" ≥60% / "aún no está segura"
+      below), the conclusion gets an illuminated checkmark-badge verdict
+      card, and open questions get their own violet identity (reusing the
+      schema node "connection" hue) instead of blending into the same
+      gray as everything else. Body copy uses --mm-font-sans (Inter)
+      instead of inheriting the page's default Courier New — labels/data
+      stay on --mm-font-mono, same split the Main Menu redesign already
+      established elsewhere. ── */
+.estudio-console {
+  position: relative;
+  background: linear-gradient(155deg, rgba(11,15,22,0.92) 0%, rgba(13,20,29,0.92) 100%);
+  border: 1px solid rgba(63,169,245,0.18);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  overflow: hidden;
+}
+
+.estudio-console-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 22px 18px;
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(63,169,245,0.14), transparent 60%),
+    linear-gradient(180deg, rgba(63,169,245,0.05), transparent 70%);
+  border-bottom: 1px solid rgba(63,169,245,0.14);
+}
+.estudio-console-hero-main { flex: 1; min-width: 0; }
+.estudio-console-hero-eyebrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.estudio-console-chip {
+  font-family: var(--mm-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 3px 9px 3px 8px;
+  border: 1px solid rgba(63,169,245,0.3);
+  color: rgba(63,169,245,0.75);
+  background: rgba(63,169,245,0.06);
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.estudio-console-chip::before {
+  content: '';
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+.estudio-console-chip.status-activa      { border-color: rgba(63,169,245,0.4);  color: rgba(63,169,245,0.9); }
+.estudio-console-chip.status-incubando   { border-color: rgba(240,192,64,0.4);  color: var(--p-color); background: rgba(240,192,64,0.08); }
+.estudio-console-chip.status-completada  { border-color: rgba(255,255,255,0.25); color: rgba(255,255,255,0.5); }
+.estudio-console-chip.status-lista_para_revision {
+  border-color: rgba(0,255,136,0.5);
+  color: var(--green);
+  background: rgba(0,255,136,0.08);
+  animation: estudio-ready-pulse 1.8s ease-in-out infinite;
+}
+.estudio-console-meta-readout {
+  font-family: var(--mm-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: rgba(255,255,255,0.32);
+}
+.estudio-console-hero-title {
+  font-family: var(--mm-font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  letter-spacing: 0.005em;
+  color: rgba(255,255,255,0.92);
+  text-wrap: balance;
+  margin-bottom: 8px;
+}
+.estudio-console-hero-subtitle {
+  font-family: var(--mm-font-sans);
+  font-style: italic;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.55);
+  line-height: 1.5;
+  border-left: 2px solid rgba(63,169,245,0.3);
+  padding-left: 10px;
+}
+
+.estudio-inv-gauge-wrap {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+.estudio-inv-gauge {
+  --pct: 0;
+  --gc: var(--accent);
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  position: relative;
+  background: conic-gradient(var(--gc) calc(var(--pct) * 1%), rgba(255,255,255,0.08) 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--gc) 45%, transparent));
+}
+.estudio-inv-gauge::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: radial-gradient(120% 120% at 30% 20%, rgba(13,20,29,0.98), rgba(11,15,22,0.98));
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.estudio-inv-gauge-value {
+  position: relative;
+  z-index: 1;
+  font-family: var(--mm-font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: rgba(255,255,255,0.92);
+  font-variant-numeric: tabular-nums;
+}
+.estudio-inv-gauge-caption {
+  font-family: var(--mm-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.32);
+}
+
+.estudio-console-body-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  gap: 22px;
+  padding: 18px 22px 22px;
+}
+@media (max-width: 620px) {
+  .estudio-console-body-grid { grid-template-columns: 1fr; }
+}
+
+.estudio-console-section-label {
+  font-family: var(--mm-font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 9px;
+  color: rgba(63,169,245,0.75);
+}
+.estudio-console-section-label .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+.estudio-console-section-label.confident { color: var(--green); }
+.estudio-console-section-label.uncertain { color: var(--p-color); }
+.estudio-console-section-label.open      { color: #9a78f5; }
+.estudio-console-section-label.neutral   { color: rgba(63,169,245,0.75); }
+
+.estudio-console-verdict {
+  position: relative;
+  background: linear-gradient(135deg, rgba(0,255,136,0.09), rgba(0,255,136,0.02));
+  border: 1px solid rgba(0,255,136,0.32);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  gap: 13px;
+}
+.estudio-console-verdict-badge {
+  flex: 0 0 auto;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(0,255,136,0.9), rgba(0,255,136,0.25));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 14px rgba(0,255,136,0.45);
+}
+.estudio-console-verdict-badge svg { width: 14px; height: 14px; }
+.estudio-console-verdict-copy { flex: 1; min-width: 0; }
+.estudio-console-verdict-label {
+  font-family: var(--mm-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 5px;
+}
+.estudio-console-verdict-text {
+  font-family: var(--mm-font-sans);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.9);
+}
+
+.estudio-console-block { margin-bottom: 20px; }
+.estudio-console-block:last-child { margin-bottom: 0; }
+
+/* Flowing prose — RESÚMENES' actual narrative paragraph (core.commands.
+   generate_summary()'s RESUMEN: line), deliberately NOT a bulleted/card
+   layout so a resumen still reads as text, distinct from ESQUEMAS' node
+   graph which is the bullet/mind-map treatment. */
+.estudio-console-prose {
+  font-family: var(--mm-font-sans);
+  font-size: 0.82rem;
+  line-height: 1.75;
+  color: rgba(255,255,255,0.82);
+  max-width: 62ch;
+}
+.estudio-console-item-card {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-left: 2px solid var(--hc, var(--accent));
+  padding: 10px 12px;
+  margin-bottom: 7px;
+}
+.estudio-console-item-card:last-child { margin-bottom: 0; }
+.estudio-console-item-text {
+  font-family: var(--mm-font-sans);
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.88);
+  margin-bottom: 8px;
+}
+.estudio-inv-hyp-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.estudio-inv-hyp-bar-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  position: relative;
+  overflow: hidden;
+}
+.estudio-inv-hyp-bar-fill {
+  position: absolute;
+  inset: 0;
+  width: var(--w, 50%);
+  background: linear-gradient(90deg, transparent, var(--hc, var(--accent)));
+}
+.estudio-inv-hyp-pct {
+  font-family: var(--mm-font-mono);
+  font-size: 9.5px;
+  color: var(--hc, var(--accent));
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  width: 30px;
+  text-align: right;
+}
+
+.estudio-inv-open-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.estudio-inv-open-list li {
+  font-family: var(--mm-font-sans);
+  font-size: 0.76rem;
+  color: rgba(255,255,255,0.6);
+  line-height: 1.5;
+  padding-left: 16px;
+  position: relative;
+}
+.estudio-inv-open-list li::before {
+  content: '?';
+  position: absolute;
+  left: 0;
+  top: -1px;
+  font-family: var(--mm-font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: #9a78f5;
+}
+
+/* Generic dense bullet list — cyan '›' marker, same layout as
+   .estudio-inv-open-list above (mono marker + Inter body text) but neutral-
+   toned, for terse one-line items that don't need a full item-card (e.g.
+   NÚCLEO Memoria's fact rows — many short lines read better as a list than
+   as a stack of bordered cards). */
+.estudio-console-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.estudio-console-list li {
+  font-family: var(--mm-font-sans);
+  font-size: 0.76rem;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.5;
+  padding-left: 14px;
+  position: relative;
+}
+.estudio-console-list li::before {
+  content: '›';
+  position: absolute;
+  left: 0;
+  color: rgba(63,169,245,0.5);
+}
+
+.estudio-console-rail {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(63,169,245,0.14);
+  padding: 14px;
+  align-self: start;
+}
+.estudio-console-rail-section { margin-bottom: 16px; }
+.estudio-console-rail-section:last-child { margin-bottom: 0; }
+.estudio-console-rail-body {
+  font-family: var(--mm-font-sans);
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.55);
+}
+.estudio-console-source-link,
+.estudio-console-source-plain {
+  display: block;
+  font-family: var(--mm-font-mono);
+  font-size: 9.5px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  word-break: break-word;
+}
+.estudio-console-source-link:last-child,
+.estudio-console-source-plain:last-child { border-bottom: none; }
+.estudio-console-source-link {
+  color: rgba(63,169,245,0.75);
+  text-decoration: none;
+  transition: color 120ms;
+}
+.estudio-console-source-link::before { content: '↗ '; color: rgba(255,255,255,0.3); }
+.estudio-console-source-link:hover { color: rgba(255,255,255,0.9); }
+.estudio-console-source-plain { color: rgba(255,255,255,0.35); }

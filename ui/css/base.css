@@ -1,0 +1,445 @@
+/* base.css — Global variables, reset, and boot-splash intro visuals (diamond gem, background particles, power button). */
+/* ═══════════════════════════════════════════════════════════════════════════
+   VARIABLES
+═══════════════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* ── SHELL color: HUD chrome — borders, buttons, status, scrollbars, system text.
+        Fixed at #3fa9f5; never changed by applyPersonality(). ──────────────────── */
+  --accent:      #3fa9f5;
+  --accent-mid:  rgba(63, 169, 245, 0.35);
+  --accent-dim:  rgba(63, 169, 245, 0.12);
+  --accent-glow: rgba(63, 169, 245, 0.55);
+  --accent-a02:  rgba(63, 169, 245, 0.20);
+  --accent-a04:  rgba(63, 169, 245, 0.40);
+  --accent-a015: rgba(63, 169, 245, 0.15);
+  --accent-a035: rgba(63, 169, 245, 0.35);
+  --accent-a018: rgba(63, 169, 245, 0.18);
+  --scanline:    rgba(63, 169, 245, 0.010);
+
+  /* ── PERSONALITY color: orb, name label, messages — set by applyPersonality().
+        LIRA is the only personality now: always #f0c040. ─────────────── */
+  --p-color:  #f0c040;
+  --p-mid:    rgba(240, 192, 64, 0.35);
+  --p-dim:    rgba(240, 192, 64, 0.12);
+  --p-glow:   rgba(240, 192, 64, 0.55);
+  --p-a02:    rgba(240, 192, 64, 0.20);
+  --p-a04:    rgba(240, 192, 64, 0.40);
+  --p-a015:   rgba(240, 192, 64, 0.15);
+  --p-a035:   rgba(240, 192, 64, 0.35);
+  --p-a018:   rgba(240, 192, 64, 0.18);
+
+  /* Fixed colors */
+  --bg:     #0a0a0a;
+  --white:  #e8e8e8;
+  --yellow: #f0a500;
+  --red:    #ff4455;
+  --green:  #00ff88;
+
+  /* Typography */
+  --font: 'Courier New', Courier, monospace;
+
+  /* ── Main-menu-only design tokens (commercial-grade redesign spec) — used
+        exclusively inside #section-home; every other section keeps its
+        existing look untouched. Kept as real custom properties (not
+        one-off literals) so every rule in that section reads from the
+        same source of truth the spec defines. ──────────────────────────── */
+  --mm-font-sans: 'Inter', -apple-system, sans-serif;
+  --mm-font-mono: 'JetBrains Mono', var(--font);
+  /* Reserved for .mm-name/.mm-status-label only — LIRA's own identity mark,
+     distinct from the system-chrome Inter/JetBrains Mono pairing above. */
+  --mm-font-display: 'Rajdhani', var(--mm-font-sans);
+  --mm-surface-1:      rgba(255,255,255,0.03);
+  --mm-surface-2:      rgba(255,255,255,0.06);
+  --mm-border:         rgba(63,169,245,0.15);
+  --mm-border-hover:   rgba(63,169,245,0.3);
+  --mm-border-active:  rgba(63,169,245,0.5);
+  --mm-text-primary:   rgba(255,255,255,0.92);
+  --mm-text-secondary: rgba(255,255,255,0.45);
+  --mm-text-tertiary:  rgba(255,255,255,0.22);
+  --mm-error:          #ff4444;
+  --mm-error-border:   rgba(255,68,68,0.5);
+  --mm-error-text:     rgba(255,68,68,0.8);
+  --mm-error-glow:     rgba(255,68,68,0.15);
+  --mm-panel-bg:       rgba(0,8,20,0.7);
+  --mm-tray-bg:        rgba(0,6,16,0.88);
+
+  /* Theme transition speed */
+  --tt: 0.8s ease;
+}
+
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--accent);
+  font-family: var(--font);
+  transition: color var(--tt);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCANLINE + GRID OVERLAY
+═══════════════════════════════════════════════════════════════════════════ */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px, transparent 3px,
+      var(--scanline) 3px, var(--scanline) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px, transparent 39px,
+      var(--scanline) 39px, var(--scanline) 40px
+    );
+  pointer-events: none;
+  z-index: 9998;
+  transition: background var(--tt);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLOBAL ATMOSPHERE — a living background behind every section.
+   #bgField (see markup right after <body>) sits at z-index 0, below all UI,
+   and never intercepts clicks (pointer-events: none throughout). It layers:
+     1. a faint radar-style grid that drifts diagonally via background-position
+     2. a few soft glow "particles" that drift via transform (compositor-only,
+        so this stays cheap even left running indefinitely)
+   Everything here is intentionally near-invisible (opacity <= 0.05 on the
+   grid, low-alpha personality-colored glow on the particles) — the goal is
+   "never completely static", not a visible effect.
+═══════════════════════════════════════════════════════════════════════════ */
+#bgField {
+  position: fixed; inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.bg-grid {
+  position: absolute;
+  inset: -60px; /* overscan so the drifting tile edge never shows a hard seam */
+  background-image:
+    repeating-linear-gradient(0deg,  var(--accent-a015) 0px, var(--accent-a015) 1px, transparent 1px, transparent 60px),
+    repeating-linear-gradient(90deg, var(--accent-a015) 0px, var(--accent-a015) 1px, transparent 1px, transparent 60px);
+  opacity: 0.05;
+  animation: bg-grid-drift 90s linear infinite;
+  transition: background-image var(--tt);
+}
+@keyframes bg-grid-drift {
+  from { background-position: 0 0,     0 0; }
+  to   { background-position: 60px 60px, -60px 60px; }
+}
+.bg-particle {
+  position: absolute;
+  border-radius: 50%;
+  /* personality-owned: particle glow tracks the active personality color */
+  background: radial-gradient(circle, var(--p-a015) 0%, transparent 70%);
+  opacity: 0.4;
+  will-change: transform;
+  transition: background var(--tt);
+}
+.bg-particle.p1 { width: 340px; height: 340px; top: 6%;  left: 10%; animation: bg-drift-1 46s ease-in-out infinite; }
+.bg-particle.p2 { width: 260px; height: 260px; top: 58%; left: 70%; animation: bg-drift-2 58s ease-in-out infinite; }
+.bg-particle.p3 { width: 200px; height: 200px; top: 76%; left: 18%; animation: bg-drift-3 64s ease-in-out infinite; }
+@keyframes bg-drift-1 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(40px, -30px); } }
+@keyframes bg-drift-2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-50px, 25px); } }
+@keyframes bg-drift-3 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(30px, 35px); } }
+
+/* Global noise/grain texture — layered onto body::after (body::before is the
+   pre-existing scanline grid above). A tiny inline SVG fractal-noise filter,
+   so this needs no image asset or library. Kept at very low opacity with
+   mix-blend-mode so it adds grain/depth without tinting or dimming content. */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  z-index: 9997;
+  pointer-events: none;
+  opacity: 0.03;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BOOT OVERLAY
+═══════════════════════════════════════════════════════════════════════════ */
+#bootOverlay {
+  position: fixed; inset: 0; z-index: 9000;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+  opacity: 1;
+  transition: opacity 0.7s ease;
+}
+#bootOverlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.boot-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+/* Diamond power button — LIRA's diamond orb (same clip-path/motif as the
+   main-menu orb, see .mm-orb-shape below), not a circular power-icon
+   button with a diamond frame drawn around it. Fixed gold regardless of
+   personality, matching #bootSplash's own "always LIRA's diamond" brand
+   intro rule — the overlay is the same boot animation continuing, not a
+   different, older one underneath. */
+/* Sized ~46% larger than the original 130px — more prominent/cinematic on
+   this final loading screen, per design feedback. .boot-diamond-glow's and
+   .boot-diamond-core's insets below are scaled by the same 190/130 factor
+   to keep the glow bleed and core proportion unchanged; .boot-diamond-gem
+   (corner decorations) and .boot-diamond-trace (border loading animation)
+   are scaled to match too — see their own comments. */
+.boot-diamond-wrap {
+  position: relative;
+  width: 190px; height: 190px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.boot-diamond-glow {
+  position: absolute; inset: -35px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(240,192,64,0.35) 0%, transparent 70%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Subtle breathing glow while waiting for a click — unchanged from before,
+   already exactly the "breathing" effect asked for. */
+.boot-diamond-ring {
+  position: absolute; inset: 0;
+  clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
+  border: 1.5px solid #f0c040;
+  box-shadow: 0 0 18px #f0c040, inset 0 0 18px rgba(240,192,64,0.3);
+  animation: boot-diamond-breathe 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes boot-diamond-breathe {
+  0%, 100% { opacity: 0.55; transform: scale(1.00); }
+  50%       { opacity: 1.00; transform: scale(1.04); }
+}
+
+.boot-diamond-core {
+  position: absolute; inset: 50px;
+  clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
+  background: radial-gradient(circle, rgba(240,192,64,0.5) 0%, transparent 75%);
+  pointer-events: none;
+}
+
+/* "starting" state — faster, brighter pulse instead of the old spinning
+   arc; same diamond, just reads as actively working. */
+#bootOverlay[data-state="starting"] .boot-diamond-ring {
+  animation: boot-diamond-pulse-fast 0.9s ease-in-out infinite;
+}
+@keyframes boot-diamond-pulse-fast {
+  0%, 100% { opacity: 0.6; box-shadow: 0 0 18px #f0c040, inset 0 0 18px rgba(240,192,64,0.3); }
+  50%       { opacity: 1;   box-shadow: 0 0 30px #f0c040, inset 0 0 26px rgba(240,192,64,0.5); }
+}
+
+/* Loading indicator — identical technique to #bootSplash's own border
+   trace (see .boot-splash-trace above: same viewBox/polygon/stroke-
+   dasharray, and reuses its @keyframes boot-trace-loop directly) so this
+   is "the same one implemented in the waiting state after the boot
+   animation", just applied to this diamond too. Loops continuously for as
+   long as #bootOverlay itself is visible — i.e. until the user clicks
+   (data-state → "starting") and all the way through to jarvis actually
+   finishing startup (data-state → "running", overlay hides). */
+.boot-diamond-trace {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+.boot-diamond-trace polygon {
+  fill: none;
+  stroke: #f0c040;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 60 194;
+  filter: drop-shadow(0 0 4px #f0c040);
+  animation: boot-trace-loop 1.6s linear infinite;
+}
+
+/* Power button — the diamond itself is now the button (clip-path matches
+   .boot-diamond-ring/.boot-diamond-core exactly), not a circular button
+   with a power icon sitting inside a diamond frame. clip-path also shapes
+   the click hit-area, so — same as the main-menu orb — clicking the
+   diamond's bounding-box corners (outside its silhouette) correctly
+   misses the button. No icon: the diamond is the affordance. */
+.power-btn {
+  position: absolute; inset: 0;
+  clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
+  border: none;
+  background: radial-gradient(circle, rgba(240,192,64,0.15) 0%, transparent 70%);
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  transition: background 0.3s ease, opacity 0.3s ease;
+}
+.power-btn:hover {
+  background: radial-gradient(circle, rgba(240,192,64,0.32) 0%, transparent 70%);
+}
+.power-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Four corner diamond decorations — same gem motif as .orb-gem/.mm-orb-gem
+   (glowing markers at the diamond's 4 points), sized/positioned for this
+   190px diamond (scaled up from the original 130px along with the wrap
+   above — 9px→13px, -5px→-7px offset, same ratio). Uses its own
+   hardcoded-gold keyframes rather than .orb-gem's personality-linked
+   gem-sparkle, matching every other element on this screen being fixed
+   gold regardless of personality (see the design-rationale comment above). */
+.boot-diamond-gem {
+  position: absolute;
+  width: 13px; height: 13px;
+  background: #f0c040;
+  border: 1px solid #f0c040;
+  box-shadow: 0 0 4px #f0c040, 0 0 8px rgba(240,192,64,0.55);
+  pointer-events: none;
+  animation: boot-gem-sparkle 2.6s ease-in-out infinite;
+}
+.boot-diamond-gem.top    { top: -7px;    left: 50%;   transform: translateX(-50%) rotate(45deg); }
+.boot-diamond-gem.right  { top: 50%;     right: -7px; transform: translateY(-50%) rotate(45deg); }
+.boot-diamond-gem.bottom { bottom: -7px; left: 50%;   transform: translateX(-50%) rotate(45deg); }
+.boot-diamond-gem.left   { top: 50%;     left: -7px;  transform: translateY(-50%) rotate(45deg); }
+@keyframes boot-gem-sparkle {
+  0%, 100% { box-shadow: 0 0 4px #f0c040, 0 0 8px rgba(240,192,64,0.55); }
+  50%       { box-shadow: 0 0 8px #f0c040, 0 0 16px rgba(240,192,64,0.55); }
+}
+
+.boot-label {
+  font-size: 1.0rem;
+  letter-spacing: 0.55em;
+  text-transform: uppercase;
+  color: #f0c040;
+  text-shadow: 0 0 12px rgba(240,192,64,0.55);
+}
+
+#bootMsg {
+  font-size: 0.68rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(232, 232, 232, 0.35);
+  min-height: 1em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BOOT SPLASH — see the HTML comment above #bootSplash for the full design
+   rationale (fixed ~3.5s intro, layered above #bootOverlay, never touches
+   its state machine). Driven by _playBootSplash() in the script.
+═══════════════════════════════════════════════════════════════════════════ */
+#bootSplash {
+  position: fixed; inset: 0;
+  z-index: 9999;
+  background: #000;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.6s ease;
+}
+#bootSplash.fading { opacity: 0; pointer-events: none; }
+#bootSplash.gone   { display: none; }
+
+/* Beat 1: dark screen, then a subtle grid fades in — then breathes gently
+   for as long as it's on screen, same "never completely static" principle
+   as #bgField's own grid (base.css's GLOBAL ATMOSPHERE), just scoped here
+   instead of sharing that element (the boot splash needs its own
+   independent opacity lifecycle). */
+.boot-splash-grid {
+  position: absolute; inset: -60px;
+  background-image:
+    repeating-linear-gradient(0deg,  rgba(240,192,64,0.05) 0px, rgba(240,192,64,0.05) 1px, transparent 1px, transparent 32px),
+    repeating-linear-gradient(90deg, rgba(240,192,64,0.05) 0px, rgba(240,192,64,0.05) 1px, transparent 1px, transparent 32px);
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+.boot-splash-grid.visible {
+  opacity: 1;
+  animation: boot-grid-breathe 7s ease-in-out 1s infinite;
+}
+@keyframes boot-grid-breathe {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+
+.boot-splash-content {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 18px;
+  width: min(320px, 80vw);
+}
+
+/* Beat 2: the real boot-stage checklist, typewriter style — one
+   .boot-terminal-line div per real stage (see BOOT_STAGES in the script),
+   appended and faded/slid in individually, exactly like the old scripted
+   lines did. What's new: each line carries a status glyph that starts
+   pending (hollow) and flips to a checkmark the moment its real
+   'boot_progress' event actually arrives — see _applyBootProgress(). */
+.boot-terminal {
+  width: 100%;
+  min-height: 130px;
+  display: flex; flex-direction: column; gap: 6px;
+  font-family: var(--font);
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  color: rgba(240,192,64,0.55);
+  transition: opacity 0.4s ease, transform 0.5s ease, font-size 0.5s ease, min-height 0.5s ease;
+}
+/* Beat 4+: recedes into a smaller supporting readout once the diamond
+   takes over as the centerpiece — critically, still fully visible and
+   still live-updating for the rest of the real wait (see
+   _applyBootProgress in the script), unlike the old behavior where the
+   whole checklist just vanished here. */
+.boot-terminal.settled {
+  min-height: 0;
+  font-size: 0.58rem;
+  gap: 3px;
+  transform: scale(0.94);
+  opacity: 0.75;
+}
+.boot-terminal-line {
+  display: flex; align-items: center; gap: 8px;
+  opacity: 0;
+  transform: translateY(3px);
+  transition: opacity 0.15s ease, transform 0.15s ease, color 0.3s ease;
+}
+.boot-terminal-line.visible { opacity: 1; transform: translateY(0); }
+.boot-terminal-glyph {
+  flex: 0 0 auto;
+  width: 1em;
+  text-align: center;
+  color: rgba(240,192,64,0.4);
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+/* Done: brighter text, filled glyph, and a brief flash the instant a real
+   stage completes — visually distinct from a line that was simply always
+   already-done by the time it was revealed (no flash, just appears lit). */
+.boot-terminal-line.done { color: #f0c040; }
+.boot-terminal-line.done .boot-terminal-glyph { color: #f0c040; transform: scale(1.1); }
+.boot-terminal-line.just-completed .boot-terminal-glyph {
+  animation: boot-check-flash 0.5s ease-out;
+}
+@keyframes boot-check-flash {
+  0%   { text-shadow: 0 0 0 rgba(240,192,64,0); transform: scale(1); }
+  40%  { text-shadow: 0 0 10px rgba(240,192,64,0.9); transform: scale(1.4); }
+  100% { text-shadow: 0 0 0 rgba(240,192,64,0); transform: scale(1.1); }
+}
+/* Blinking cursor after whichever line is currently the active (not yet
+   done) one — same idea as the old "most recently revealed line" cursor,
+   moved to track real progress instead of reveal order. */
+.boot-terminal-line.active::after {
+  content: '▍';
+  margin-left: 2px;
+  animation: boot-cursor-blink 0.9s step-end infinite;
+}
+.boot-terminal.fading { opacity: 0; }
+@keyframes boot-cursor-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+

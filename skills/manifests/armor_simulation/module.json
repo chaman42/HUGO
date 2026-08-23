@@ -1,0 +1,9 @@
+{
+  "name": "armor_simulation",
+  "version": "0.1",
+  "description": "Simulación física de la armadura antes de construirla",
+  "dependencies": [],
+  "permissions": [],
+  "entry_point": "armor_simulation.py",
+  "auto_start": false
+}

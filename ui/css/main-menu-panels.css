@@ -1,0 +1,308 @@
+/* main-menu-panels.css — Main menu system items, action buttons, and floating text/input. */
+/* ── Weather panel (type: 'weather') ── */
+.panel-weather-icon {
+  width: 44px; height: 44px;
+  color: var(--accent);
+  filter: drop-shadow(0 0 6px var(--accent-dim));
+  margin: 0 auto 4px;
+  display: block;
+}
+.panel-weather-icon svg { width: 100%; height: 100%; }
+.panel-weather-temp {
+  font-family: var(--font);
+  font-size: 2.1rem;
+  line-height: 1;
+  color: #e8f2fc;
+  text-shadow: 0 0 16px var(--accent-glow);
+  text-align: center;
+}
+.panel-weather-condition {
+  font-family: var(--font);
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-align: center;
+  margin-bottom: 8px;
+}
+.panel-weather-feels {
+  font-family: var(--font);
+  font-size: 0.5rem;
+  color: rgba(232,232,232,0.4);
+  text-align: center;
+  margin-bottom: 10px;
+}
+.panel-weather-details {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border-top: 1px solid var(--accent-dim);
+  padding-top: 8px;
+}
+
+/* ── Time panel (type: 'time') ── */
+.panel-time-clock {
+  font-family: var(--font);
+  font-size: 2.2rem;
+  letter-spacing: 0.06em;
+  color: #e8f2fc;
+  text-shadow: 0 0 18px var(--accent-glow);
+  text-align: center;
+}
+.panel-time-date {
+  font-family: var(--font);
+  font-size: 0.5rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-align: center;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+@media (max-width: 400px) {
+  /* Identity shift + panel width are already intrinsically responsive
+     (max()/min() above) — just tighten padding/font-size/icon so the
+     panel's content doesn't feel cramped once min(172px, 44vw) shrinks it. */
+  .mm-context-panel { padding: 10px 12px; right: 2px; }
+  .panel-weather-temp, .panel-time-clock { font-size: 1.6rem; }
+  .panel-weather-icon { width: 34px; height: 34px; }
+}
+
+
+/* ── Quick stats glass panel — spec's exact glass-morphism recipe: 8px
+     angular clip-path corners, rgba(0,8,20,0.7) + blur(20px) saturate(180%),
+     1px rgba(63,169,245,0.15) border brightening to 0.35 on hover in 150ms,
+     16px/12px inner padding (put on the panel itself; .mm-stat's own
+     padding below is the gap BETWEEN stat columns, not the panel edge). ── */
+.mm-stats-panel {
+  flex: 0 0 auto;
+  display: flex;
+  width: calc(100% - 40px);
+  border: 1px solid var(--mm-border);
+  background: var(--mm-panel-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  overflow: hidden;
+  margin: 8px 20px;
+  padding: 12px 16px;
+  transition: border-color 150ms;
+}
+.mm-stats-panel:hover { border-color: var(--mm-border-hover); }
+.mm-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  border-right: 1px solid var(--mm-border);
+}
+.mm-stat:last-child { border-right: none; }
+/* Label (11px mono) / value (18px Inter "secondary" — a live number, more
+   prominent than a plain label but not the section's primary/display text) */
+.mm-stat-label {
+  font-family: var(--mm-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mm-text-tertiary);
+}
+.mm-stat-val {
+  font-family: var(--mm-font-sans);
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 1.2;
+  color: var(--accent);
+  transition: color var(--tt);
+}
+
+/* Floating response text — reserves a small fixed slot (min-height) so
+   fading text in/out never shifts the stats panel or action buttons
+   around it; when empty it just reads as blank space in that slot. Fixed
+   blue/white HUD palette (not var(--p-color)), same "chrome color"
+   convention as .mm-context-panel above. */
+.mm-floating-text {
+  flex: 0 0 auto;
+  min-height: 2.4em;
+  max-width: 300px;
+  width: calc(100% - 32px);
+  margin: 2px 16px 6px;
+  padding: 0 6px;
+  font-family: var(--mm-font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--mm-text-primary);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.mm-floating-text.visible { opacity: 1; }
+/* The user's own echoed message — dimmer/italic, distinct from LIRA's
+   reply that (almost always) follows right after it. */
+.mm-floating-text.user-echo { color: rgba(232,232,232,0.5); font-style: italic; }
+
+/* Compact text input, same visual language as .text-input in Chat (thin
+   border, transparent background) — see requirement's "consistent with
+   HUD aesthetic". Always present, not tied to the floating text's fade.
+   Last element in the main menu (after .mm-sys-strip) — margin-top gives
+   it clear separation from the status strip above rather than sitting
+   flush against it. */
+/* Angular (no border-radius, spec: "zero tolerance for generic"), surface-1
+   fill so it reads as a real input field rather than a bare line. */
+.mm-floating-input {
+  flex: 0 0 auto;
+  width: calc(100% - 32px);
+  max-width: 300px;
+  margin: 6px 16px 10px;
+  display: block;
+  background: var(--mm-surface-1);
+  border: 1px solid var(--mm-border);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  color: var(--mm-text-primary);
+  font-family: var(--mm-font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 12px 16px;
+  outline: none;
+  cursor: text;
+  transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+.mm-floating-input::placeholder { color: var(--mm-text-tertiary); }
+.mm-floating-input:hover { border-color: var(--mm-border-hover); }
+.mm-floating-input:focus {
+  border-color: var(--mm-border-active);
+  background: var(--mm-surface-2);
+  box-shadow: 0 0 8px var(--accent-dim);
+}
+.mm-floating-input:focus-visible {
+  outline: 1px solid rgba(63,169,245,0.6);
+  outline-offset: 3px;
+}
+
+/* ── Quick access buttons ── */
+.mm-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 0 16px 8px;
+  width: 100%;
+}
+/* Buttons — spec's exact state machine, zero tolerance for generic:
+   default transparent / border 0.2 / text 0.6 alpha; hover border 0.5,
+   text 0.92, bg tint 0.05, 120ms; active/pressed bg 0.1, border 0.7,
+   scale(0.98), 80ms; muted/error border+text+glow at the spec's exact
+   #ff4444-based values. Angular clip-path always, no border-radius. Min
+   44px touch target on every viewport. */
+.mm-action-btn {
+  flex: 1;
+  min-height: 44px;
+  background: transparent;
+  border: 1px solid rgba(63,169,245,0.2);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  color: rgba(255,255,255,0.6);
+  font-family: var(--mm-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 8px 4px 6px;
+  cursor: pointer;
+  outline: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: color 120ms, border-color 120ms, background 120ms, box-shadow 120ms;
+}
+.mm-action-btn:hover {
+  color: rgba(255,255,255,0.92);
+  border-color: rgba(63,169,245,0.5);
+  background: rgba(63,169,245,0.05);
+}
+.mm-action-btn:active {
+  background: rgba(63,169,245,0.1);
+  border-color: rgba(63,169,245,0.7);
+  transform: scale(0.98);
+  transition-duration: 80ms;
+}
+/* Custom focus ring (keyboard nav) — never the browser default outline */
+.mm-action-btn:focus-visible {
+  outline: 1px solid rgba(63,169,245,0.6);
+  outline-offset: 3px;
+}
+.mm-action-icon { font-size: 14px; line-height: 1; }
+.mm-action-label { pointer-events: none; }
+/* Muted/error state — spec's exact #ff4444-based border/text/glow */
+.mm-action-btn.active-muted {
+  color: var(--mm-error-text);
+  border-color: var(--mm-error-border);
+  box-shadow: 0 0 12px var(--mm-error-glow);
+}
+.mm-action-btn.active-conv { color: var(--accent); border-color: rgba(63,169,245,0.5); box-shadow: 0 0 6px var(--accent-dim); }
+
+/* ── System status strip — mic / mode / connection. Angular, monospace,
+     all-caps, dot indicator (::before) ahead of each label instead of the
+     old emoji icon column. The spec's "1px divider above it" is the
+     .mm-tray-body border this now always sits inside (see SLIDING TRAYS
+     below) — no separate border-top needed here. ── */
+.mm-sys-strip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 10px 5px;
+}
+.mm-sys-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--mm-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mm-text-tertiary);
+  white-space: nowrap;
+  transition: color 0.3s ease;
+  flex: 1;
+  text-align: center;
+}
+/* Status dot — 6px, glows in its own color, pulses continuously (2s), and
+   cross-fades to the new color over 300ms whenever the item's status class
+   changes (background-color/box-shadow both key off currentColor, so they
+   animate along with the `color` transition above rather than needing a
+   second JS-driven state). */
+.mm-sys-item::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+  flex-shrink: 0;
+  animation: mm-dot-pulse 2s ease-in-out infinite;
+  transition: background-color 300ms ease, box-shadow 300ms ease;
+}
+@keyframes mm-dot-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+.mm-sys-sep { width: 1px; height: 14px; background: rgba(255,255,255,0.08); flex-shrink: 0; }
+.mm-sys-item.sys-active  { color: var(--accent); }
+.mm-sys-item.sys-muted   { color: var(--mm-error); }
+.mm-sys-item.sys-conv    { color: var(--accent); }
+.mm-sys-item.sys-online  { color: var(--green); }
+.mm-sys-item.sys-offline { color: var(--mm-error); }
+
+/* Orb state animations (body.listening/.processing/.speaking driving
+   .mm-orb-ring/.mm-orb-glow/etc.), the sleep/wake filter+flash rules, the
+   faceted-SVG layout rule, and the gold particle field rule that used to
+   live here all moved to diamond-toggles.css/diamond-core.css as
+   .lira-diamond states/`.context-main` variants — #mmOrbWrap and its whole
+   decorative subtree no longer exist (see #mmOrbSlot's own comment in
+   main-menu-orb.css); #liraDiamond is the only diamond element now. */
+@keyframes mm-quote-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+

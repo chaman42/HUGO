@@ -1,0 +1,458 @@
+/* boot-splash.css — Boot splash orb/status/terminal visuals and the start of the settings section. */
+
+/* Ambient depth — same drifting-glow technique as #bgField's .bg-particle
+   (base.css), gold-tinted and scoped to the splash so it never has to
+   coordinate with the personality-color system the global one tracks.
+   Independent, slower drift per particle so the motion never reads as
+   mechanical/looped. */
+.boot-splash-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(240,192,64,0.12) 0%, transparent 70%);
+  pointer-events: none;
+  will-change: transform;
+}
+.boot-splash-particle.bp1 { width: 420px; height: 420px; top: 8%;  left: 62%; animation: boot-particle-drift-1 34s ease-in-out infinite; }
+.boot-splash-particle.bp2 { width: 300px; height: 300px; top: 60%; left: 12%; animation: boot-particle-drift-2 42s ease-in-out infinite; }
+.boot-splash-particle.bp3 { width: 220px; height: 220px; top: 78%; left: 74%; animation: boot-particle-drift-3 50s ease-in-out infinite; }
+.boot-splash-particle.bp4 { width: 260px; height: 260px; top: 24%; left: 4%;  animation: boot-particle-drift-4 38s ease-in-out infinite; }
+@keyframes boot-particle-drift-1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-50px, 30px) scale(1.08); } }
+@keyframes boot-particle-drift-2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(40px, -25px) scale(0.94); } }
+@keyframes boot-particle-drift-3 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-30px, -35px) scale(1.12); } }
+@keyframes boot-particle-drift-4 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(35px, 40px) scale(0.9); } }
+
+/* Cinematic edge darkening — pulls focus toward the diamond/terminal at
+   center, same as a real boot/splash screen on a premium device. */
+.boot-splash-vignette {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%);
+}
+
+/* Beat 4: the LIRA diamond orb reveal — scale up from small with a glow
+   burst, not just a fade. Terminal fades out as this plays. */
+.boot-splash-orb {
+  position: absolute;
+  width: 112px; height: 112px;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  transform: scale(0.2);
+  pointer-events: none;
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(.34,1.56,.64,1);
+}
+.boot-splash-orb.reveal { opacity: 1; transform: scale(1); }
+.boot-splash-orb-glow {
+  position: absolute; inset: -37px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(240,192,64,0.65) 0%, transparent 70%);
+  opacity: 0;
+}
+.boot-splash-orb.reveal .boot-splash-orb-glow {
+  animation: boot-orb-burst 0.7s ease-out forwards;
+}
+@keyframes boot-orb-burst {
+  0%   { opacity: 0; transform: scale(0.3); }
+  40%  { opacity: 1; transform: scale(1.6); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.boot-splash-orb-ring {
+  position: absolute; inset: 0;
+  clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
+  border: 1.5px solid #f0c040;
+  box-shadow: 0 0 16px #f0c040, inset 0 0 16px rgba(240,192,64,0.3);
+  /* Held invisible until the outline-draw animation above actually
+     finishes tracing (500ms — see the choreography comment on
+     .boot-splash-draw), then solidifies over the SAME 300ms the draw
+     spends fading out — a crossfade handoff, not a gap. */
+  opacity: 0;
+  transition: opacity 0.3s ease 0.5s;
+}
+.boot-splash-orb.reveal .boot-splash-orb-ring { opacity: 1; }
+/* Gentle continuous pulse once revealed — separate from the one-time burst
+   above, and on box-shadow rather than transform so it never fights the
+   orb's own scale-up transition. This is the "pulsing" the orb keeps doing
+   for as long as it's waiting on the real jarvis_ready — see
+   _enterBootSplashWait() in the script. */
+.boot-splash-orb.reveal .boot-splash-orb-ring {
+  animation: boot-orb-idle-pulse 2.4s ease-in-out infinite;
+}
+@keyframes boot-orb-idle-pulse {
+  0%, 100% { box-shadow: 0 0 16px #f0c040, inset 0 0 16px rgba(240,192,64,0.3); }
+  50%       { box-shadow: 0 0 26px #f0c040, inset 0 0 22px rgba(240,192,64,0.45); }
+}
+.boot-splash-orb-core {
+  position: absolute; inset: 30px;
+  clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
+  background: radial-gradient(circle, rgba(240,192,64,0.5) 0%, transparent 75%);
+}
+
+/* Ambient energy field — a slow, continuous rotating ring further out than
+   the diamond itself, same "something is genuinely alive/working" language
+   as the main HUD's own .lira-diamond-energy-field (see diamond-core.css),
+   scaled down to a single dashed ring rather than that element's full dual-
+   breathing system since this only needs to read as "systems active" for a
+   few seconds, not carry a whole idle personality. Only spins once revealed
+   and stays spinning for the entire wait, unlike the one-shot burst/draw/
+   sweep above. */
+.boot-splash-orb-field {
+  position: absolute; inset: -20px;
+  border-radius: 50%;
+  border: 1px dashed rgba(240,192,64,0.25);
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.boot-splash-orb.reveal .boot-splash-orb-field {
+  opacity: 1;
+  animation: boot-field-spin 18s linear infinite;
+}
+@keyframes boot-field-spin { to { transform: rotate(360deg); } }
+
+/* One-shot outline "draw" — the diamond's own border traces itself in as
+   the orb reveals, on top of the scale-up burst, so it reads as the shape
+   materializing rather than an icon popping in. Same stroke-dasharray
+   trick as .boot-splash-trace below (~254 ≈ the polygon's own perimeter),
+   but animated once via stroke-dashoffset instead of looping. Separate SVG
+   from the continuous trace so the two animations never share state. */
+.boot-splash-draw {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+.boot-splash-draw polygon {
+  fill: none;
+  stroke: #f0c040;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 254;
+  stroke-dashoffset: 254;
+  filter: drop-shadow(0 0 4px #f0c040);
+}
+/* Choreography (bug fix — these used to overlap: the fade started at
+   500ms while the line itself didn't finish drawing until 600ms, so the
+   outline visibly cut off mid-draw instead of completing first. Every
+   delay below is now derived FROM the step before it, never guessed
+   independently, so this can't drift out of sync again):
+     0ms            draw-line starts (500ms)
+     500ms          draw-line done -> draw-fade starts (400ms), ring starts solidifying (300ms)
+     800ms          ring fully solid
+     900ms          draw-fade fully gone
+     900ms          sweep starts (550ms)
+    1450ms          sweep done — reveal choreography fully settled */
+.boot-splash-orb.reveal .boot-splash-draw {
+  opacity: 1;
+  animation: boot-draw-fade 0.4s ease-out 0.5s forwards;
+}
+.boot-splash-orb.reveal .boot-splash-draw polygon {
+  animation: boot-draw-line 0.5s ease-out forwards;
+}
+@keyframes boot-draw-line { to { stroke-dashoffset: 0; } }
+@keyframes boot-draw-fade { to { opacity: 0; } }   /* hands off to the ring once drawn */
+
+/* One-shot light sweep — a diagonal glint crossing the polished diamond
+   right after the burst settles, purely cosmetic, never repeats. */
+.boot-splash-orb-sweep {
+  position: absolute; inset: 0;
+  clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
+  overflow: hidden;
+  pointer-events: none;
+}
+.boot-splash-orb-sweep::after {
+  content: '';
+  position: absolute;
+  top: -40%; bottom: -40%;
+  width: 30%;
+  left: -40%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,0.55), transparent);
+  transform: skewX(-20deg);
+  opacity: 0;
+}
+.boot-splash-orb.reveal .boot-splash-orb-sweep::after {
+  /* Starts once the ring has fully solidified (800ms — see the
+     choreography comment on .boot-splash-draw), so the glint crosses an
+     already-finished gem instead of a still-forming one. */
+  animation: boot-sweep 0.55s ease-in-out 0.8s forwards;
+}
+@keyframes boot-sweep {
+  0%   { left: -40%; opacity: 0; }
+  15%  { opacity: 0.9; }
+  60%  { opacity: 0.9; }
+  100% { left: 130%; opacity: 0; }
+}
+
+/* Loading indicator — a short dash traveling around the diamond's own
+   perimeter, continuously, for as long as #bootOverlay's state machine is
+   still resolving (see _enterBootSplashWait() in the script). Only enabled
+   while .boot-splash-orb carries .tracing — stopped on error, let to finish
+   one last lap on success before the whole splash fades. */
+.boot-splash-trace {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.boot-splash-trace polygon {
+  fill: none;
+  stroke: #f0c040;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 60 194;   /* ~254 total ≈ the diamond's own perimeter */
+  filter: drop-shadow(0 0 4px #f0c040);
+}
+.boot-splash-orb.tracing .boot-splash-trace { opacity: 1; }
+.boot-splash-orb.tracing .boot-splash-trace polygon {
+  animation: boot-trace-loop 1.6s linear infinite;
+}
+@keyframes boot-trace-loop {
+  to { stroke-dashoffset: -254; }
+}
+
+/* Beat 5: "L I R A" fades in below the orb once it's revealed, and stays
+   visible for as long as the orb does — i.e. for the entire real wait on
+   jarvis_ready, not just the fixed intro. Keep it minimal: name only. */
+.boot-splash-name {
+  margin-top: 122px;   /* clears the orb (now 112px + field bleed), which sits above as a flow sibling */
+  font-family: var(--font);
+  font-size: 0.85rem;
+  letter-spacing: 0.5em;
+  color: #f0c040;
+  text-shadow: 0 0 10px rgba(240,192,64,0.55);
+  text-align: center;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+.boot-splash-name.visible { opacity: 1; }
+.boot-splash-name.fading  { opacity: 0; }
+
+/* "Cargando..." — sits below the name, pulses gently while waiting;
+   swaps to a static red "Error de conexión" if the boot times out or the
+   start request fails (see _enterBootSplashWait() in the script). */
+.boot-splash-status {
+  font-family: var(--font);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(240,192,64,0.6);
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.6s ease, color 0.3s ease;
+}
+.boot-splash-status.visible { opacity: 1; }
+.boot-splash-status.fading  { opacity: 0; }
+.boot-splash-status.pulsing { animation: boot-status-pulse 1.8s ease-in-out infinite; }
+@keyframes boot-status-pulse {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 0.9; }
+}
+.boot-splash-status.error {
+  color: #ff4455;
+  animation: none;
+  opacity: 1;
+}
+
+/* Real boot progress — see the HTML comment above #bootRealProgress.
+   Monotonic on purpose: launcher.py and jarvis.py emit 'boot_progress' on
+   two independent sockets, so a later, lower-percent event arriving after
+   an earlier, higher one is possible — the bar must never visibly regress
+   (see _applyBootProgress() in the script). */
+.boot-real-progress {
+  width: 100%;
+  max-width: 200px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.boot-real-progress.visible { opacity: 1; }
+.boot-real-progress-track {
+  width: 100%; height: 2px;
+  background: rgba(240,192,64,0.12);
+  overflow: hidden;
+  border-radius: 1px;
+}
+.boot-real-progress-fill {
+  width: 0%; height: 100%;
+  background: #f0c040;
+  box-shadow: 0 0 6px rgba(240,192,64,0.6);
+  transition: width 0.5s ease;
+}
+.boot-real-progress-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+}
+.boot-real-progress-label {
+  font-family: var(--font);
+  font-size: 0.52rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(240,192,64,0.45);
+  text-align: center;
+  min-height: 1em;
+}
+/* Numeric readout — same real percent as the fill's width, just spelled
+   out, so the wait has a concrete number to watch tick up instead of only
+   a bar and a rotating label. */
+.boot-real-progress-percent {
+  font-family: var(--font);
+  font-size: 0.6rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  color: #f0c040;
+  min-width: 2.4em;
+}
+
+/* "Reintentar" — hidden until a genuine timeout/error; clicking it re-runs
+   the real #powerBtn start flow (see _enterBootSplashWait() in the script). */
+.boot-splash-retry {
+  font-family: var(--font);
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #ff4455;
+  background: transparent;
+  border: 1px solid rgba(255,68,85,0.5);
+  border-radius: 3px;
+  padding: 6px 18px;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease, box-shadow 0.25s ease;
+}
+.boot-splash-retry:hover {
+  box-shadow: 0 0 10px rgba(255,68,85,0.35);
+}
+.boot-splash-retry.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PERSONALITY FLASH
+═══════════════════════════════════════════════════════════════════════════ */
+#personalityFlash {
+  position: fixed; z-index: 9100;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0.88);
+  background: rgba(10, 10, 10, 0.90);
+  /* personality-owned: flash text uses the active personality color */
+  border: 1px solid var(--p-color);
+  box-shadow: 0 0 40px var(--p-glow);
+  color: var(--p-color);
+  font-family: var(--font);
+  font-size: 0.78rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  padding: 16px 36px;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease, border-color var(--tt), color var(--tt), box-shadow var(--tt);
+}
+#personalityFlash.visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAIN UI (fades in/out)
+═══════════════════════════════════════════════════════════════════════════ */
+#mainUI {
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.7s ease;
+}
+#mainUI.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAYOUT — full-height flex column; sections handle their own max-width
+═══════════════════════════════════════════════════════════════════════════ */
+.layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ── Window drag region — native macOS window dragging ───────────────────
+   electron/main.js's BrowserWindow uses frame:false + titleBarStyle:
+   'hiddenInset', so macOS still draws the traffic-light buttons but there is
+   no native title bar left to grab — without an explicit
+   -webkit-app-region:drag element the window can only be moved by holding
+   Cmd (a non-obvious, non-discoverable gesture). This is a real flex child
+   at the TOP of .layout (not a floating overlay on top of section content),
+   so #sectionContainer's flex:1 1 0 simply shrinks by this element's own
+   height to make room — content is never covered or clipped by it, and
+   nothing needs its own no-drag override just to remain reachable. The
+   blanket `no-drag` rule below is still added, defensively, for any
+   interactive element that ever ends up here (e.g. the floating LIRA
+   diamond's top-left/top-right safe zones sit at 80px, comfortably below
+   this bar, but the rule costs nothing and covers every section, present
+   and future). */
+#windowDragBar {
+  flex: 0 0 auto;
+  height: 32px;
+  -webkit-app-region: drag;
+}
+/* Every real interactive element opts out of the drag region wherever it
+   happens to render, not just within #windowDragBar's own bounds — cheap
+   insurance against a future fixed-position control landing in that band. */
+button, input, textarea, select, a[href], [role="button"] {
+  -webkit-app-region: no-drag;
+}
+
+/* Inner wrapper used by chat + armor sections to cap width and center */
+.section-inner {
+  max-width: 680px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 16px;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Ajustes scrolling: previously handled by making #section-settings's own
+   .section-inner overflow-y:auto (scrolling the header along with the
+   content). Superseded by the premium pass's .settings-scroll wrapper
+   (controls-bar.css) — a dedicated scroll child sitting below the now-fixed
+   .settings-head, matching chat/armor's own "header stays put, inner
+   wrapper scrolls" pattern instead of scrolling the whole .section-inner.
+*/
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ORB
+═══════════════════════════════════════════════════════════════════════════ */
+.orb-section {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 0 20px;
+  gap: 16px;
+}
+
+/* Layout placeholder only — same role as .mm-orb-slot (main-menu-orb.css),
+   see its own comment. #liraDiamond overlays this slot's rect while on
+   Chat instead of a separate #chatOrbWrap element being swapped in. The
+   110px breakpoint override lives in personality-nav.css, retargeted from
+   .orb-wrap to .chat-orb-slot alongside this. */
+.chat-orb-slot {
+  width: 148px; height: 148px;
+}
+
+/* (.orb-shape/.orb-glow, the dead never-triggered .personality-shift
+   liquify block, and everything else that used to live in this ORB
+   section moved to diamond-toggles.css/diamond-core.css as .lira-diamond
+   `.context-chat` variants, or were deleted as unreachable — see
+   #liraDiamond's own markup comment in index.html.) */
+

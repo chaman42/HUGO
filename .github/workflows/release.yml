@@ -1,0 +1,107 @@
+# Automated release pipeline for LIRA (JarvisLite Electron app)
+#
+# Triggers on every push to main. Bumps the patch version, builds a universal
+# macOS DMG + ZIP, commits the version change back to main (with [skip ci] so
+# this commit does NOT re-trigger the workflow), then creates a GitHub Release
+# and uploads the artifacts. The installed app's electron-updater reads
+# latest-mac.yml from the release to detect and download updates automatically.
+#
+# Required secret: GITHUB_TOKEN — built-in to every GitHub repo, no manual setup needed.
+
+name: Release
+
+on:
+  push:
+    branches:
+      - main   # only main pushes; pull requests are NOT affected
+
+# GITHUB_TOKEN needs write access to:
+#   - push the version-bump commit back to main
+#   - create the GitHub Release and upload assets
+# Without this, git push returns 403 and release creation is silently skipped.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and release LIRA
+    runs-on: macos-latest   # universal build requires macOS runner
+
+    steps:
+      # ── Step 1: Checkout ──────────────────────────────────────────────────
+      # Use the built-in GITHUB_TOKEN so the later "git push" step is authorised
+      # to write back to the repository without extra setup.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0   # full history so git push works correctly
+
+      # ── Step 2: Node.js ───────────────────────────────────────────────────
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: electron/package-lock.json
+
+      # ── Step 3: Install Electron dependencies ─────────────────────────────
+      - name: Install Electron dependencies
+        run: cd electron && npm install
+
+      # ── Step 4: Bump patch version ────────────────────────────────────────
+      # Increments the patch segment of the version in electron/package.json
+      # and electron/package-lock.json (e.g. 1.0.0 → 1.0.1 → 1.0.2…).
+      # --no-git-tag-version: modifies the files only; no commit or tag yet.
+      - name: Bump patch version
+        id: version
+        run: |
+          cd electron
+          npm version patch --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+          echo "Bumped to v${NEW_VERSION}"
+
+      # ── Step 5: Build universal macOS app ─────────────────────────────────
+      # Produces electron/dist/LIRA-<version>-universal.dmg,
+      #          electron/dist/LIRA-<version>-universal-mac.zip, and
+      #          electron/dist/latest-mac.yml (used by electron-updater).
+      # CSC_IDENTITY_AUTO_DISCOVERY=false disables code-signing entirely — no
+      # certificate or Apple ID is required; Gatekeeper will show a warning on
+      # first launch (same behaviour as the current local build).
+      - name: Build LIRA (universal macOS)
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: cd electron && npm run build
+
+      # ── Step 8: Commit version bump back to main ──────────────────────────
+      # Committing before the release so the tag points to the bumped-version
+      # commit. The [skip ci] trailer prevents this commit from re-triggering
+      # this workflow and causing an infinite loop.
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add electron/package.json electron/package-lock.json
+          git commit -m "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]"
+          git push
+
+      # ── Steps 6 & 7: Create GitHub Release and upload assets ──────────────
+      # Creates a release tagged v<version> and uploads the DMG, ZIP, and the
+      # latest-mac.yml metadata file. electron-updater in the installed app
+      # fetches latest-mac.yml on startup to decide whether an update is
+      # available and where to download it.
+      - name: Create GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: LIRA v${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            electron/dist/LIRA-*-universal.dmg
+            electron/dist/LIRA-*-universal-mac.zip
+            electron/dist/latest-mac.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

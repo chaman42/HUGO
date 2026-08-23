@@ -1,0 +1,665 @@
+/* armor-mindmap-detail.css — Mind-map node graph and armor/mind-map detail panel styles. */
+/* .armor-detail-left/-right/.detail-name-lg/.detail-body (the old flat
+   two-column text layout) are gone — both Armor Bay's own detail sheet and
+   Conceptuales' INSPECCIONAR view (ui/css/concepts.css) now use the
+   estudio-console-* hero/body-grid shell instead. */
+
+/* ── Armor detail sheet — "instrument console" treatment, same
+      estudio-console-* chrome as ESTUDIO's Investigación/Resúmenes detail
+      views (ui/css/estudio.css). .detail-sec/.detail-sec-title/
+      -body/-list (the old flat text-section look) are gone — sections now
+      render as estudio-console-block/-prose/-item-card via
+      armor-detail-concepts-load.js's _openDetail(), same "prose reads as
+      text, lists get item cards" split RESÚMENES already established. ── */
+/* Bug fix: .armor-detail-page is a flex ROW; with .armor-console as its
+   only child, default align-items:stretch forced the console to exactly
+   the page's own height instead of its content height — combined with
+   .estudio-console's overflow:hidden (needed for the clip-path corners),
+   anything past that height was silently clipped instead of making
+   .armor-detail-page's own overflow-y:auto scroll. align-self:flex-start
+   lets the console size to its actual content again. */
+.armor-console {
+  align-self: flex-start;
+  width: 100%;
+  min-width: 0;
+}
+.armor-console-sil-wrap {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+/* confident/uncertain/open item-card tint — matches the same section-label
+   color each armor block already carries (innovaciones=green,
+   limitaciones=amber, evolución=violet); resumen/specs stay the default
+   cyan (--accent) .estudio-console-item-card already falls back to. */
+.estudio-console-block.confident .estudio-console-item-card { --hc: var(--green); }
+.estudio-console-block.uncertain .estudio-console-item-card { --hc: var(--p-color); }
+.estudio-console-block.open      .estudio-console-item-card { --hc: #9a78f5; }
+
+.detail-silhouette-wrap {
+  width: 108px; height: 140px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  background: radial-gradient(120% 120% at 50% 30%, rgba(63,169,245,0.09), transparent 70%);
+  border: 1px solid rgba(63,169,245,0.18);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+.detail-silhouette-wrap .armor-silhouette {
+  width: 76%; height: 76%;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 8px rgba(63,169,245,0.4));
+}
+.detail-silhouette-label {
+  font-size: 0.56rem; letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: rgba(232,232,232,0.30);
+}
+
+.detail-sec { display: flex; flex-direction: column; gap: 4px; }
+/* Armor Bay premium pass: JetBrains Mono 10px/0.3em, spec's own
+   rgba(63,169,245,0.6). Its border-bottom doubles as the spec's "divider
+   between sections" (0.5px solid rgba(63,169,245,0.1)) — one rule instead
+   of a separate divider element between every .detail-sec. Scan-sweep
+   kept (not mentioned as removed by this spec, unlike the tabs above). */
+.detail-sec-title {
+  position: relative;
+  font-family: var(--mm-font-mono);
+  font-size: 10px; letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(63,169,245,0.6);
+  border-bottom: 0.5px solid rgba(63,169,245,0.1);
+  padding-bottom: 3px;
+  overflow: hidden;
+}
+/* Animated scan — a bright segment sweeps along the header's bottom border */
+.detail-sec-title::after {
+  content: '';
+  position: absolute;
+  left: -30%; bottom: -1px;
+  width: 30%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: header-scan 3.5s ease-in-out infinite;
+}
+@keyframes header-scan {
+  0%   { left: -30%; }
+  100% { left: 130%; }
+}
+.detail-sec-body {
+  font-family: var(--mm-font-sans);
+  font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.6;
+}
+
+/* CONTROLAR / VER HUD placeholder action buttons — Armor Bay premium
+   pass: angular clip-path, 1px solid accent border (was dashed, per the
+   old "reads as not live yet" rationale — the spec now wants the same
+   solid-border language as every other button in this pass; a disabled
+   state is added defensively even though nothing currently sets
+   disabled/.disabled on these buttons — see _CONTROLAR_MESSAGES/
+   _HUD_MESSAGES in the script for the per-model click behavior, untouched). */
+.detail-actions {
+  display: flex;
+  gap: 10px;
+}
+.detail-action-btn {
+  flex: 1 1 0;
+  background: transparent;
+  border: 1px solid rgba(63,169,245,0.2);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  color: rgba(255,255,255,0.5);
+  font-family: var(--mm-font-mono);
+  font-size: 0.64rem; letter-spacing: 0.10em; text-transform: uppercase;
+  padding: 9px 10px;
+  cursor: pointer; outline: none;
+  transition: border-color 120ms, color 120ms, box-shadow 120ms;
+}
+.detail-action-btn:hover {
+  border-color: rgba(63,169,245,0.5);
+  color: var(--accent);
+  box-shadow: 0 0 8px var(--accent-dim);
+}
+.detail-action-btn:disabled,
+.detail-action-btn.disabled {
+  color: rgba(255,255,255,0.15);
+  border-color: rgba(63,169,245,0.1);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Modelo 8 light controls — hidden by default, revealed by Controlar
+   (toggled via .open, same reveal pattern as #armorStatusPicker above).
+   Same .detail-action-btn look, just a second row. */
+.detail-light-controls {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.detail-light-controls.open { display: flex; }
+.detail-light-controls-label {
+  font-family: var(--mm-font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+}
+.detail-light-controls-row {
+  display: flex;
+  gap: 10px;
+}
+.detail-light-controls-row .detail-action-btn { flex: 1 1 0; }
+.detail-light-controls-warning {
+  font-size: 0.6rem;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  color: rgba(240, 180, 80, 0.75);
+  margin-top: 2px;
+}
+
+/* Inline toast — fades/expands in below the buttons, not a modal.
+   Auto-hides after a few seconds (see _showDetailToast in the script). */
+.detail-action-toast {
+  font-size: 0.62rem;
+  color: rgba(232,232,232,0.55);
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+.detail-action-toast.visible {
+  max-height: 40px;
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ARMOR BAY — CONCEPTUALES TAB (concept form + card list)
+═══════════════════════════════════════════════════════════════════════════ */
+#conceptPanel {
+  display: none; flex: 1 1 0;
+  flex-direction: column; overflow: hidden;
+}
+#conceptPanel.active { display: flex; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ARMOR BAY — DISEÑO TAB (placeholder only — no functionality yet, just the
+   tab and an empty state; same show/hide pattern as #conceptPanel above)
+═══════════════════════════════════════════════════════════════════════════ */
+#designPanel {
+  display: none; flex: 1 1 0;
+  flex-direction: column; overflow: hidden;
+}
+#designPanel.active { display: flex; }
+
+/* Diseño's own Armaduras | Mecanismos | HUDs toggle — same thin-top-border
+   tab treatment as .armor-subtab/.concept-type-btn (JetBrains Mono 10px,
+   uppercase, letter-spaced), kept as its own class pair rather than reusing
+   .concept-type-btn: that class is queried unscoped in concepts-edit.js, so
+   sharing it here would make Diseño's clicks also toggle/track Conceptuales'
+   Armaduras | Conceptos Generales state. */
+.design-subtabs {
+  flex: 0 0 auto;
+  display: flex;
+  border-bottom: 0.5px solid rgba(63,169,245,0.15);
+  margin-bottom: 10px;
+  transition: border-color var(--tt);
+}
+.design-subtab {
+  flex: 1 1 0;
+  background: transparent;
+  border: none;
+  border-top: 1px solid transparent;
+  color: rgba(255,255,255,0.35);
+  font-family: var(--mm-font-mono);
+  font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 7px 8px; cursor: pointer; outline: none;
+  transition: color 120ms, border-color 120ms;
+}
+.design-subtab:hover { color: rgba(255,255,255,0.6); }
+.design-subtab.active {
+  color: rgba(63,169,245,0.9);
+  border-top-color: #3fa9f5;
+}
+
+.design-sub-content {
+  display: none; flex: 1 1 0;
+  flex-direction: column; overflow: hidden;
+}
+.design-sub-content.active { display: flex; }
+
+.design-placeholder {
+  flex: 1 1 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 20px;
+}
+.design-placeholder-icon {
+  font-size: 2rem;
+  color: var(--accent);
+  opacity: 0.35;
+  text-shadow: 0 0 16px var(--accent-dim);
+}
+.design-placeholder-title {
+  font-size: 0.76rem; letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(232,232,232,0.55);
+}
+.design-placeholder-desc {
+  font-size: 0.68rem; line-height: 1.6;
+  color: rgba(232,232,232,0.30);
+  max-width: 280px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIRA CORE — Estado/Pensamiento/Memoria/Mapa sub-tabs. .core-panel follows
+   the exact same "display:none, .active → flex" toggle #conceptPanel/
+   #designPanel already use above, driven by _switchCoreSubTab() — see the
+   script. Estado/Memoria reuse .info-row/.info-key/.info-val (Ajustes'
+   own key-value row styling) directly rather than inventing new ones.
+═══════════════════════════════════════════════════════════════════════════ */
+.core-panel {
+  display: none;
+  flex: 1 1 0;
+  flex-direction: column;
+  overflow-y: auto;
+  min-height: 0;
+}
+.core-panel.active { display: flex; }
+
+.core-section-label {
+  font-size: 0.56rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(232,232,232,0.30);
+  margin: 14px 0 4px;
+}
+.core-section-label:first-child { margin-top: 4px; }
+
+/* Pensamiento — one estudio-console-item-card per thinking block, newest
+   first (see core-tabs-sleep-panel.js's _renderCoreThinkList — same shell
+   ESTUDIO/Armor Bay use, .core-think-list here is just the flex list
+   container, no card styling of its own anymore). */
+.core-think-list {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px 16px;
+}
+.core-think-empty {
+  color: rgba(232,232,232,0.30);
+  font-size: 0.68rem;
+  font-style: italic;
+  text-align: center;
+  padding: 24px 12px;
+}
+
+/* Sleep insights (PREGUNTAS DURANTE EL SUEÑO / REFLEXIONES DEL SUEÑO) —
+   reuse .estudio-console-item-card wholesale; these two rules are the only
+   genuinely new styling they need. */
+.estudio-console-item-card.core-sleep-resolved { opacity: 0.55; }
+.core-sleep-resolved-tag { color: var(--green); text-transform: none; letter-spacing: 0.02em; }
+
+/* ÚLTIMO SUEÑO (Estado tab) — current-status line, pulsing while a
+   continuous-sleep cycle is actually running (per spec: "with a subtle
+   pulsing animation"). Plain rows below it (date/cycles/duration/deleted/
+   merged/promoted/insights/connections) reuse .info-row/.core-fact-row —
+   no new styling needed for those. */
+.core-sleep-status {
+  font-size: 0.7rem;
+  padding: 8px 0 4px;
+  color: var(--accent);
+}
+.core-sleep-status-active { animation: core-sleep-pulse 2.6s ease-in-out infinite; }
+@keyframes core-sleep-pulse {
+  0%, 100% { opacity: 1;    }
+  50%      { opacity: 0.5;  }
+}
+
+/* Memoria — facts render as .estudio-console-list bullets (ui/css/
+   estudio.css), episodes as .estudio-console-item-card with a head row
+   (date/importance via .estudio-console-item-type/-title). .core-fact-row
+   is still the base .info-row used for the single HUD-context row below. */
+.core-fact-row { padding: 6px 0; }
+.core-empty-note {
+  color: rgba(232,232,232,0.28);
+  font-size: 0.64rem;
+  font-style: italic;
+  padding: 6px 0;
+}
+
+/* Módulos — capability catalog (core.module_manager, data/
+   modules_catalog.json). One collapsible section per category, one
+   clickable row per capability; clicking a row expands its detail block
+   (description/dependencies/permissions/priority) beneath it. */
+.core-module-category { margin-bottom: 4px; }
+.core-module-category-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(232,232,232,0.1);
+  padding: 8px 0;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.core-module-category-chevron {
+  font-size: 0.6rem;
+  color: rgba(232,232,232,0.35);
+  width: 10px;
+  flex-shrink: 0;
+}
+.core-module-category-name {
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.core-module-category-count {
+  font-size: 0.54rem;
+  color: rgba(232,232,232,0.3);
+  margin-left: auto;
+}
+.core-module-category-body { padding: 2px 0 8px; }
+
+/* Console-family touch (shared with .info-row above, ui/css/estudio.css's
+   .estudio-console-item-card) — a left accent tick instead of the old flat
+   border-radius hover fill, angular rather than rounded to match the rest
+   of the app. Shared by Personas via .core-module-row/-detail reuse. */
+.core-module-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: background 0.15s, border-left-color 0.15s;
+}
+.core-module-row:hover, .core-module-row.expanded {
+  background: rgba(255,255,255,0.03);
+  border-left-color: rgba(63,169,245,0.35);
+}
+.core-module-emoji { flex-shrink: 0; font-size: 0.7rem; line-height: 1; }
+.core-module-name {
+  font-size: 0.64rem;
+  letter-spacing: 0.03em;
+  color: rgba(232,232,232,0.85);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.core-module-version {
+  flex-shrink: 0;
+  font-size: 0.54rem;
+  color: rgba(232,232,232,0.3);
+}
+.core-module-status-label {
+  flex-shrink: 0;
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  min-width: 74px;
+  text-align: right;
+  color: rgba(232,232,232,0.4);
+}
+.core-module-status-installed, .core-module-status-ready { color: var(--green); }
+.core-module-status-error                                { color: var(--red); }
+.core-module-status-updating                              { color: var(--yellow); }
+.core-module-status-developing, .core-module-status-testing,
+.core-module-status-designing, .core-module-status-researching { color: rgba(232,232,232,0.5); }
+.core-module-status-planned { color: rgba(232,232,232,0.28); }
+
+/* Blocked tag on the collapsed row + the detail view's block/priority
+   controls (core.module_manager.set_catalog_blocked/set_catalog_priority).
+   The expanded detail itself (both Módulos and Personas) is now a full
+   .estudio-console hero/body-grid/rail shell — see _renderCatalogRow/
+   _renderPersonaRow — so .core-module-detail/-detail-actions (the old
+   plain-indent wrapper) are gone. */
+.core-module-blocked-tag {
+  flex-shrink: 0;
+  font-size: 0.6rem;
+  opacity: 0.8;
+}
+.core-module-row.blocked { opacity: 0.55; }
+.core-module-row.blocked .core-module-name { text-decoration: line-through; text-decoration-color: rgba(232,232,232,0.3); }
+
+.core-module-priority-editor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.core-module-priority-value {
+  font-size: 0.64rem;
+  color: rgba(232,232,232,0.7);
+  min-width: 1em;
+  text-align: center;
+}
+.core-module-priority-btn {
+  flex-shrink: 0;
+  width: 20px; height: 20px;
+  border: 1px solid rgba(232,232,232,0.15);
+  background: none;
+  color: rgba(232,232,232,0.6);
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.core-module-priority-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.core-module-block-btn {
+  flex-shrink: 0;
+  font-size: 0.54rem;
+  letter-spacing: 0.04em;
+  padding: 5px 10px;
+  border: 1px solid rgba(232,232,232,0.15);
+  background: none;
+  color: rgba(232,232,232,0.5);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.core-module-block-btn:hover { border-color: var(--red); color: var(--red); }
+.core-module-block-btn.is-blocked { border-color: var(--red); color: var(--red); }
+
+/* Módulos — build/update trigger (core.code_engine.CodeEngine.create_module/
+   update_module via POST /api/code-engine/create|update). */
+.core-module-build-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+.core-module-build-btn {
+  flex-shrink: 0;
+  font-size: 0.54rem;
+  letter-spacing: 0.04em;
+  padding: 5px 10px;
+  border: 1px solid var(--accent-dim);
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.core-module-build-btn:hover { border-color: var(--accent); background: rgba(63,169,245,0.08); }
+.core-module-change-input {
+  flex: 1 1 160px;
+  min-width: 120px;
+  font-family: inherit;
+  font-size: 0.6rem;
+  padding: 5px 8px;
+  border: 1px solid rgba(232,232,232,0.15);
+  background: rgba(232,232,232,0.03);
+  color: rgba(232,232,232,0.85);
+}
+.core-module-change-input:focus { outline: none; border-color: var(--accent); }
+.core-module-change-input::placeholder { color: rgba(232,232,232,0.3); }
+.core-module-build-status {
+  font-size: 0.56rem;
+  color: rgba(232,232,232,0.45);
+  font-style: italic;
+}
+.core-module-build-hint {
+  font-size: 0.56rem;
+  color: rgba(232,232,232,0.3);
+  font-style: italic;
+}
+
+/* Mapa — decorative node-graph SVG above the placeholder text (empty state
+   only; the real D3 graph below has its own nodes). */
+.core-map-svg {
+  width: 180px;
+  height: auto;
+  color: var(--accent);
+  opacity: 0.4;
+}
+#coreMapaEmpty.core-map-hidden { display: none; }
+
+/* Mapa — the real D3 graph. Hidden by default; _renderCoreMapa() toggles
+   .active once it has data (see #coreMapaEmpty above for the alternate,
+   empty-state view). position:relative so .core-map-detail can anchor to
+   this container rather than the whole viewport. */
+.core-map-graph {
+  display: none;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+.core-map-graph.active { display: flex; }
+.core-map-canvas {
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 0;
+}
+.core-map-node-group { cursor: grab; }
+.core-map-node-group:active { cursor: grabbing; }
+.core-map-link {
+  stroke: rgba(232,232,232,0.16);
+  stroke-width: 1;
+  fill: none;
+}
+/* Reflective-mode-generated connections (data/mind_map_connections.json,
+   see core.reflective) — a distinct teal-green so they read as separate
+   from the default gray edges above and from every node-type color
+   already in use (blue/gold/purple). Stroke-width itself is set inline
+   per-link, scaled by 'strength' (see _renderCoreMapa's linkSel). */
+.core-map-link-reflective {
+  stroke: rgba(95,224,165,0.55);
+}
+/* Distinct shape + color per node type, per spec — facts/episodes are
+   filled circles, armor is an outlined diamond, concepts a filled hexagon. */
+.core-map-node-fact    { fill: #3fa9f5; stroke: none; }
+.core-map-node-episode { fill: #f0c040; stroke: none; }
+.core-map-node-armor   { fill: rgba(63,169,245,0.15); stroke: #3fa9f5; stroke-width: 1.5; }
+.core-map-node-concept { fill: #b44fff; stroke: none; }
+.core-map-node-group.core-map-node-selected .core-map-node-fact,
+.core-map-node-group.core-map-node-selected .core-map-node-episode,
+.core-map-node-group.core-map-node-selected .core-map-node-concept {
+  stroke: #fff; stroke-width: 1.5;
+}
+.core-map-node-group.core-map-node-selected .core-map-node-armor {
+  stroke: #fff;
+}
+.core-map-node-group.core-map-node-selected {
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.55));
+}
+.core-map-label {
+  font-size: 8px;
+  fill: rgba(232,232,232,0.45);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PERSONAS — reuses .core-module-row/-detail/-build-btn/-block-btn/
+   -change-input and .toggle-switch/.toggle-row/.toggle-label wholesale
+   (see ui/js/core-tabs-sleep-panel.js's own comment on why — same visual
+   language as Módulos, no new row/detail shell needed). Only two things
+   don't exist yet anywhere else: the trust-tier badge/picker and the
+   inline "add person" form's <select>.
+═══════════════════════════════════════════════════════════════════════════ */
+.core-persona-badge {
+  flex-shrink: 0;
+  font-size: 0.5rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 1px solid currentColor;
+}
+.core-persona-badge-owner    { color: var(--yellow); }
+.core-persona-badge-private  { color: var(--accent); }
+.core-persona-badge-personal { color: var(--green); }
+.core-persona-badge-public   { color: rgba(232,232,232,0.45); }
+.core-persona-badge-unknown  { color: rgba(232,232,232,0.28); border-style: dashed; }
+.core-persona-knows-tag { flex-shrink: 0; font-size: 0.6rem; opacity: 0.7; }
+
+/* Segmented tier picker — shared markup between a person's own expanded
+   detail (data-persona-tier, live POST on click) and the add-person form
+   (data-add-tier, staged locally until Guardar). */
+.core-persona-tier-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(232,232,232,0.06);
+}
+.core-persona-tier-buttons { display: flex; gap: 4px; }
+.core-persona-tier-btn {
+  flex-shrink: 0;
+  font-family: inherit;
+  font-size: 0.54rem;
+  letter-spacing: 0.03em;
+  padding: 5px 9px;
+  border: 1px solid rgba(232,232,232,0.15);
+  background: none;
+  color: rgba(232,232,232,0.5);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.core-persona-tier-btn:hover { border-color: var(--accent); color: var(--accent); }
+.core-persona-tier-btn.active {
+  border-color: var(--accent);
+  background: rgba(63,169,245,0.1);
+  color: var(--accent);
+}
+.core-persona-tier-fixed {
+  font-size: 0.56rem;
+  color: var(--yellow);
+  font-style: italic;
+}
+
+.core-persona-knows-row { padding: 8px 0 0; border: none; }
+.core-persona-name-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.core-persona-add { margin-bottom: 6px; }
+.core-persona-add-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px 12px;
+  border-bottom: 1px solid rgba(232,232,232,0.1);
+}
+.core-persona-select {
+  font-family: inherit;
+  font-size: 0.6rem;
+  padding: 5px 8px;
+  border: 1px solid rgba(232,232,232,0.15);
+  background: rgba(232,232,232,0.03);
+  color: rgba(232,232,232,0.85);
+}
+.core-persona-select:focus { outline: none; border-color: var(--accent); }
+.core-persona-add-actions { display: flex; gap: 8px; flex-basis: 100%; }
+

@@ -1,0 +1,563 @@
+/* diamond-toggles.css — Lira floating diamond intro styles plus settings toggle switches and test-mode UI. */
+/* Feature toggles — same .info-row rhythm (label left, control right,
+   hairline divider) so the list reads as part of the same panel; the
+   control is a skinned switch instead of a static value. See
+   _renderFeatureToggles() in the script. */
+.settings-toggles {
+  flex: 0 0 auto;
+  margin-top: 16px;
+}
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(232,232,232,0.06);
+  gap: 12px;
+}
+.toggle-row:last-child { border-bottom: none; }
+/* Premium pass: label color itself now reflects the switch's own on/off
+   state (spec calls for the LABEL, not just the control, to read dim when
+   off / accent-lit when on) — :has() lets the sibling switch drive it
+   without extra JS just to toggle a class here. */
+.toggle-label {
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.toggle-row:has(.toggle-switch.on) .toggle-label { color: rgba(63,169,245,0.9); }
+/* Angular mechanical switch — clip-path corners instead of a rounded pill,
+   matching .test-mode-toggle's language below rather than a generic iOS-
+   style slider. Same 150ms transition rhythm as the rest of this pass. */
+.toggle-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 36px; height: 18px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 0;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  cursor: pointer;
+  outline: none;
+  padding: 0;
+  transition: border-color 0.15s, background 0.15s, opacity 0.15s;
+}
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 10px; height: 10px;
+  background: rgba(255,255,255,0.3);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.toggle-switch.on {
+  border-color: #3fa9f5;
+  background: rgba(63,169,245,0.08);
+}
+.toggle-switch.on::after {
+  transform: translateX(16px);
+  background: #3fa9f5;
+  box-shadow: 0 0 6px rgba(63,169,245,0.6);
+}
+.toggle-switch:disabled { opacity: 0.4; cursor: default; }
+
+/* MOTOR DE VOZ (XTTS / KOKORO engine toggle) moved to its own premium
+   redesign in ui/css/components.css — see that file. */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODO TEST — dedicated angular toggle (see #testModeToggle's own HTML
+   comment for why this isn't one of the generic .toggle-switch entries
+   above). Angular clip-path corners, 1px border, no border-radius — same
+   premium-mechanical language as .mm-action-btn/.shutdown-btn elsewhere.
+═══════════════════════════════════════════════════════════════════════════ */
+.test-mode-toggle {
+  flex: 0 0 auto;
+  width: 100%;
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  color: rgba(255,255,255,0.4);
+  font-family: var(--font);
+  font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 9px 12px; cursor: pointer; outline: none;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, color 0.15s;
+}
+.test-mode-toggle:hover { border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.7); }
+/* Active — "toggle glows red" per spec */
+.test-mode-toggle.on {
+  border-color: rgba(255,68,68,0.6);
+  background: rgba(255,68,68,0.06);
+  color: rgba(255,68,68,0.8);
+  box-shadow: 0 0 10px rgba(255,68,68,0.25), inset 0 0 8px rgba(255,68,68,0.06);
+}
+.test-mode-toggle-dot {
+  width: 6px; height: 6px;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.3);
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.test-mode-toggle.on .test-mode-toggle-dot {
+  background: #ff4444;
+  box-shadow: 0 0 6px rgba(255,68,68,0.7);
+  animation: test-mode-pulse 2.4s ease-in-out infinite;
+}
+/* Hint label — "small label appears" per spec: collapsed (not just
+   invisible) when off, so it doesn't reserve dead space in the panel. */
+.test-mode-hint {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  text-align: center;
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  color: rgba(255,68,68,0.65);
+  transition: max-height 0.25s ease, opacity 0.25s ease, margin-top 0.25s ease;
+}
+.test-mode-hint.visible {
+  max-height: 2em;
+  opacity: 1;
+  margin-top: 6px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TEST TOOLS PANEL — Modo Test's expandable sub-menu (voice-identification
+   test controls). Same angular/collapsible language as .test-mode-toggle/
+   .test-mode-hint just above (this whole block sits directly after them
+   in ui/index.html); .toggle-row/.toggle-switch rows inside are the exact
+   shared components FUNCIONES uses, so it doesn't need its own switch
+   styling. See _renderTestToolsToggles()/_wireTestToolsPanel() in
+   chat-render.js.
+═══════════════════════════════════════════════════════════════════════════ */
+.test-tools-expand-btn {
+  flex: 0 0 auto;
+  width: 100%;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  color: rgba(255,255,255,0.35);
+  font-family: var(--font);
+  font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 7px 12px; cursor: pointer; outline: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+.test-tools-expand-btn:hover { border-color: rgba(255,255,255,0.25); color: rgba(255,255,255,0.6); }
+.test-tools-expand-chevron {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+.test-tools-expand-btn.open .test-tools-expand-chevron { transform: rotate(180deg); }
+
+.test-tools-panel {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.25s ease, opacity 0.2s ease, margin-top 0.2s ease;
+}
+.test-tools-panel.open {
+  max-height: 200px;   /* generous cap — 3 toggle rows never come close */
+  opacity: 1;
+  margin-top: 4px;
+}
+.test-tools-panel .toggle-row:first-child { border-top: none; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PARTIAL TRANSCRIPT
+═══════════════════════════════════════════════════════════════════════════ */
+#partialTranscript {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  opacity: 0;
+  transition: opacity 0.3s ease, color var(--tt);
+  text-align: center;
+  padding: 2px 8px;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   OFFLINE BANNER
+═══════════════════════════════════════════════════════════════════════════ */
+.offline-banner {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 8500;
+  background: rgba(255,68,85,0.10);
+  border-bottom: 1px solid rgba(255,68,85,0.4);
+  color: var(--red);
+  text-align: center;
+  font-size: 0.68rem;
+  letter-spacing: 0.15em;
+  padding: 6px;
+  display: none;
+}
+.offline-banner.show { display: block; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UNIFIED FLOATING LIRA DIAMOND — single persistent point of interaction
+   with LIRA whenever NOT on Main or Chat (both have their own equivalents
+   — Main's floating text+input, Chat's full log+input). Replaces the old
+   Siri-style overlay entirely (was scoped to only Armaduras/Sistema/
+   Ajustes; this shows on every other section, including LIRA CORE/
+   CONTROL). Autonomous — LIRA controls her own position, the user cannot
+   drag her (see _applyDiamondState/_bestIdlePosition in the script); while
+   idle she picks the lowest-density corner of a density-scored grid
+   computed fresh from the current viewport + DOM (see
+   _diamondGridCells()/_diamondProtectedRects()/_bestPositionInRegions()),
+   with two transient attention-state overrides (wake, speaking) that glide
+   her toward the best spot in the bottom-center region instead. z-index
+   8600: above normal section content, below modals/flashes/boot overlay
+   (9xxx).
+═══════════════════════════════════════════════════════════════════════════ */
+.lira-diamond {
+  position: fixed;
+  /* top/left are now PERMANENTLY 0 — never touched again after this rule.
+     Bug fix (round 3 — "still resizes before it moves", "moves so
+     unnaturally... not like an organic being"): rounds 1-2 (matching
+     transition DURATION, then matching the CURVE too) still wasn't
+     enough, because the underlying motion itself was never actually one
+     continuous thing — the old top/left approach glided in a straight
+     line, and a "long move" bowed through a hard-cornered TWO-SEGMENT
+     polyline (a straight line to a midpoint, then a second straight line
+     to the target — see the removed DIAMOND_ARC_* constants in
+     diamond-motion.js), which is a genuinely mechanical, kinked path no
+     amount of curve-matching could make read as organic, and which
+     ALSO gave scale a real seam to visibly desync at (the leg1→leg2
+     boundary, a brand new CSS transition restarting mid-flight).
+     Position now rides a genuine single SVG quadratic-bezier curve via
+     `offset-path`/`offset-distance` (set fresh per move by
+     _setDiamondPosition() in the script — see its own comment) instead
+     of top/left at all: ONE smooth arc from wherever she currently is to
+     the target, ONE transition, same duration/curve as the scale
+     transform below, so position and size are — for the first time —
+     mechanically incapable of finishing at different moments, because
+     they're driven by the exact same transition timeline start to
+     finish, not two independently-triggered property transitions that
+     merely happened to share settings. */
+  top: 0;
+  left: 0;
+  offset-rotate: 0deg;   /* she stays upright — doesn't rotate to face the curve's direction */
+  offset-anchor: center; /* path coordinates (see _diamondCurvePath in the script) are her CENTER point, not a corner */
+  offset-distance: 0%;
+  z-index: 8600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity        0.35s ease,
+    offset-distance 0.42s cubic-bezier(0.23, 1, 0.32, 1),
+    transform       0.42s cubic-bezier(0.23, 1, 0.32, 1);
+  transform: scale(var(--diamond-scale, 1));
+}
+.lira-diamond.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Arrival overshoot — "slight overshoot on arrival, spring feel" (per
+   spec). Toggled briefly by _playDiamondArrivalBounce() the instant a
+   glide genuinely settles (see that function's own JS comment for why the
+   overshoot comes from this curve rather than the keyframe values, and why
+   it's a temporary class rather than a permanent second transform owner).
+   Bug fix: every settle plays this now (not just ambient moves — a docked
+   arrival onto Main/Chat used to bypass it entirely via the old dock-
+   arrive callback, which no longer exists). The keyframe values must
+   scale relative to --diamond-scale, not literal 1→1.045 — a docked
+   diamond (--diamond-scale e.g. ~3.4) would otherwise visibly SNAP down
+   to floating-size for the animation's 0.35s before jumping back up once
+   it ends and this class is removed. */
+.lira-diamond.arrived {
+  animation: lira-diamond-arrival-bounce 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 1;
+}
+@keyframes lira-diamond-arrival-bounce {
+  0%   { transform: scale(var(--diamond-scale, 1)); }
+  100% { transform: scale(calc(var(--diamond-scale, 1) * 1.045)); }
+}
+
+/* Dark-glass response callout, angular (premium pass) — replaces the old
+   pill (border-radius:999px, gold border) with the same glass-panel
+   language as the main menu's own panels: rgba(0,4,10,0.88) + blur(16px),
+   0.5px accent-blue border, 6px-cut clip-path corners instead of
+   border-radius. Text materializes organically, word by word, via
+   _showDiamondText() → _organicReveal() (see .lira-organic-word's own CSS
+   comment, untouched by this pass) — not a plain textContent swap, and
+   deliberately NOT the character-by-character _typewriterReveal() LIRA
+   CORE's Pensamiento tab uses (a system panel, out of scope for LIRA's-
+   own-animation changes). */
+.lira-diamond-text {
+  max-width: 280px;
+  margin-bottom: 12px;
+  padding: 9px 18px;
+  border: 0.5px solid rgba(63,169,245,0.2);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  background: rgba(0,4,10,0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: rgba(255,255,255,0.85);
+  font-family: var(--mm-font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.lira-diamond-text.visible { opacity: 1; }
+.lira-diamond-text:empty { display: none; }
+
+/* ── Organic word-by-word text reveal/dissolve ────────────────────────────
+   Shared by every LIRA-own response text surface — .lira-diamond-text
+   (above), .mm-floating-text (Main Menu) and .lira-diamond-bubble-text
+   (the click-to-expand bubble) — via _organicReveal()/_organicDissolve()
+   in the script. Deliberately NOT used by _typewriterReveal() (LIRA CORE's
+   Pensamiento tab, a diagnostic system panel, out of scope here).
+
+   Reveal: each word gets its own <span>, staggered by animation-delay, and
+   fades/drifts/sharpens in — opacity + transform(translateY) drive the
+   drift, exactly per the "transform and opacity only" rule; filter:blur is
+   the one deliberate exception, used only for the explicitly-requested
+   "letters slightly blurring in then sharpening" — un-suppressible with
+   transform/opacity alone, and (like clip-path elsewhere in this file) a
+   compositor-friendly property that never triggers layout.
+
+   Dissolve: reads as "dissipating energy" rather than a flat fade — scales
+   UP slightly while blurring and drifting further, rather than just
+   fading to 0 in place. */
+.lira-organic-word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(6px);
+  filter: blur(4px);
+  animation: lira-word-in 0.5s cubic-bezier(0.22,0.61,0.36,1) both;
+}
+@keyframes lira-word-in {
+  0%   { opacity: 0;    transform: translateY(6px);  filter: blur(4px); }
+  60%  { opacity: 0.85; transform: translateY(-1px); filter: blur(1px); }
+  100% { opacity: 1;    transform: translateY(0);     filter: blur(0); }
+}
+.lira-organic-word.lira-dissolving {
+  animation: lira-word-out 0.55s cubic-bezier(0.55,0,0.85,0.3) forwards;
+}
+@keyframes lira-word-out {
+  0%   { opacity: 1; transform: translateY(0)     scale(1);    filter: blur(0); }
+  100% { opacity: 0; transform: translateY(-10px) scale(1.15); filter: blur(5px); }
+}
+
+/* The diamond itself, fixed gold regardless of active personality — same
+   "always LIRA's diamond" rule the boot overlay follows. .lira-diamond-orb
+   is an UNCLIPPED positioning/click-target wrapper only — the actual
+   geometry (clip-path, background, border) lives on the .lira-diamond-shape
+   child instead, same "wrapper vs. shape" split as .orb-wrap/.orb-shape
+   elsewhere in this file. That split exists specifically so
+   .lira-diamond-glow (a sibling of .lira-diamond-shape, see its own CSS
+   block) can bloom BEYOND the diamond's silhouette — if the clip-path were
+   on .lira-diamond-orb itself, it would clip the glow to the same diamond
+   outline too, and the halo would never actually be visible past her
+   edges. Precise geometry: an exact 45°-rotated square (clip-path touches
+   every edge at 0/50/100), not the old 5%-inset polygon, for sharper
+   corners. Four distinct animated states (idle/wake/processing/speaking),
+   toggled by _applyDiamondState() — see setStatus()'s own hook for when
+   each fires. Not draggable — cursor: pointer, just a click target for the
+   response bubble (see _toggleDiamondBubble).
+   Premium pass: 42px -> 32px idle (see .lira-diamond.speaking
+   .lira-diamond-orb below for the 40px speaking target — a state-level
+   scale on the orb wrapper, same pattern .lira-diamond.wake already uses
+   on the whole widget, NOT a retuned keyframe peak; the existing speaking
+   ripple keyframe is untouched and composes on top of it). The old flat
+   radial-gradient fill +
+   ::before diagonal highlight are GONE — .lira-diamond-facet-svg (new,
+   below) is the same real 4-facet SVG used on the main-menu orb and is now
+   what's actually visible as the colored diamond body. .lira-diamond-shape
+   itself becomes background:transparent and keeps only its border/
+   box-shadow — every existing state animation (idle breathe's clip-path
+   wobble, wake/speaking's border-color pulse, personality-shift's hue
+   ripple) still runs on it exactly as before, so it now reads as a
+   reactive outline ring layered on top of the facets rather than a flat
+   fill — the wobble/pulse effects are unchanged, just applied to a border
+   instead of a border+fill. .lira-diamond-facet-svg shares the SAME
+   animation names (added via compound selectors throughout this block) so
+   its clip-path/transform stay pixel-locked to the ring underneath it. */
+/* transform here (not on .lira-diamond-shape/-facet-svg) is the "diamond
+   scales up to 40px" state target — .lira-diamond.speaking sets scale(1.25)
+   below (40/32px), same pattern .lira-diamond.wake already uses on the
+   whole widget, just scoped to the orb only so the text bubble/click
+   popup don't grow too. The existing ripple keyframes on the children
+   underneath are UNCHANGED and compose multiplicatively on top of this —
+   "scales up to 40px" is the resting speaking size, the ripple is the
+   layered-on "warps and pulses with speech" texture, not the same thing.
+   Spring-easing transition (premium pass, "returns to idle size with
+   spring easing") — reuses the same overshoot bezier the diamond's own
+   position moves used to use, so leaving 'speaking' settles back to 32px
+   like a spring, not a snap. */
+.lira-diamond-orb {
+  position: relative;
+  width: 32px; height: 32px;
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.lira-diamond.speaking .lira-diamond-orb {
+  transform: scale(1.25);
+}
+/* New facet layer — real 4-facet SVG (top/left/right/bottom fills +
+   top-left specular stroke + inner radial glow), identical geometry to the
+   main-menu orb's own .mm-orb-facet-svg. Sibling of .lira-diamond-shape,
+   painted first (DOM order) so the border ring above stays on top of it. */
+.lira-diamond-facet-svg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  /* _mmVisualLoop() (mm-wiring.js) sets this element's own `transform`
+     inline every frame while .context-main is active — transform-origin
+     matches the old .mm-orb-facet-svg so that breathing scales from center. */
+  transform-origin: center;
+}
+.lira-diamond-shape {
+  position: absolute; inset: 0;
+  /* 5%-inset polygon — matches .mm-orb-shape/.orb-shape exactly (both big
+     docking targets), not a full-bleed 0/50/100 diamond. A geometry
+     mismatch here used to make the border ring visibly "pop" in size at
+     the docking/undocking swap instant even when position+scale matched
+     perfectly, since the ring sat flush with the diamond's silhouette on
+     one side of the swap but floated outside the (already 5%-inset)
+     facet-SVG fill on the other. */
+  clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
+  background: transparent;
+  border: 1px solid rgba(240,192,64,0.8);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+}
+.lira-diamond-orb:hover .lira-diamond-shape { border-color: #f0c040; }
+
+/* Idle — organic breathing, not a mechanical pulse: irregular keyframe
+   spacing (0/17/41/63/88/100, not evenly-spaced quarters) with a DIFFERENT
+   cubic-bezier per segment (set via animation-timing-function on each
+   keyframe stop — real per-segment easing, not one curve applied
+   uniformly), so the rhythm itself varies rather than repeating a
+   perfect sine loop. transform (scale, ~0-2%) is the primary driver;
+   clip-path adds the "slightly distorts the diamond shape... made of
+   energy, not rigid geometry" wobble the spec explicitly asks for —
+   compositor-friendly, doesn't trigger layout, but IS a shape/paint
+   property rather than transform/opacity, which is why it's used only
+   here and nowhere else non-negotiable. Amplitude stays tiny (per-point
+   drift ≤1% of the shape) — "present but not distracting," per spec.
+   Glow now lives entirely on the separate .lira-diamond-glow layer (see
+   its own CSS block) — border-color/box-shadow are no longer part of
+   this loop at all. */
+.lira-diamond.idle .lira-diamond-shape,
+.lira-diamond.idle .lira-diamond-facet-svg {
+  animation: lira-diamond-breathe 5.4s infinite;
+}
+@keyframes lira-diamond-breathe {
+  0%   { transform: scale(1);      clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%); animation-timing-function: cubic-bezier(0.42,0,0.58,1); }
+  17%  { transform: scale(1.012);  clip-path: polygon(51% 6%, 94% 49%, 50% 94%, 6% 51%); animation-timing-function: cubic-bezier(0.30,0.10,0.60,0.90); }
+  41%  { transform: scale(1.004);  clip-path: polygon(49% 5%, 95% 51%, 51% 95%, 5% 49%); animation-timing-function: cubic-bezier(0.50,0,0.40,1); }
+  63%  { transform: scale(1.018);  clip-path: polygon(50% 6%, 94% 50%, 49% 94%, 5% 50%); animation-timing-function: cubic-bezier(0.36,0.08,0.60,0.95); }
+  88%  { transform: scale(1.006);  clip-path: polygon(51% 5%, 95% 49%, 50% 95%, 6% 51%); animation-timing-function: cubic-bezier(0.44,0,0.50,1); }
+  100% { transform: scale(1);      clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%); }
+}
+
+/* Wake word detected — transient attention state (see
+   LIRA_DIAMOND_WAKE_HOLD_MS): glides to bottom-center, grows slightly
+   (via _glideDiamondTo's scale param — see _triggerDiamondWake in
+   diamond-motion.js — not a CSS rule here, since --diamond-scale is the
+   ONE mechanism controlling her whole-widget size now, whatever the
+   reason for the change), and pulses noticeably faster/brighter than
+   idle's breathe to draw the eye. Settles into 'processing' if a real
+   command follows, or back to 'idle' at its corner if it was a false
+   alarm. */
+.lira-diamond.wake .lira-diamond-shape {
+  animation: lira-diamond-wake-pulse 0.6s ease-in-out infinite;
+}
+@keyframes lira-diamond-wake-pulse {
+  0%, 100% {
+    border-color: rgba(240,192,64,0.85);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 8px rgba(240,192,64,0.5);
+  }
+  50% {
+    border-color: #ffd76a;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.45), 0 0 16px rgba(255,215,110,0.7);
+  }
+}
+
+/* Listening — new 5th state, added by this pass so Main's/Chat's old
+   body.listening pulse (formerly on .mm-orb-ring/.orb-ring) has an
+   equivalent now that they're gone; also gives the floating diamond a
+   "resting but actively listening" look she never had on her own before.
+   Same moderate always-on pulse in every context. */
+.lira-diamond.listening .lira-diamond-shape {
+  animation: lira-diamond-listen-pulse 2.5s ease-in-out infinite;
+}
+@keyframes lira-diamond-listen-pulse {
+  0%, 100% { box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 8px rgba(240,192,64,0.35); }
+  50%      { box-shadow: 0 2px 10px rgba(0,0,0,0.45), 0 0 16px rgba(240,192,64,0.6); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CONTEXT-GATED DECORATIONS — Main's/Chat's own extra decorative layers,
+   formerly separate #mmOrbWrap/#chatOrbWrap elements entirely, now sibling
+   layers inside THIS element shown only while docked onto that section (see
+   _resolveDiamondTarget() in section-nav.js, which toggles context-main/
+   context-chat on #liraDiamond alongside every glide). Absolute-px values
+   here are recomputed proportionally against her own 32px base size (not
+   copied verbatim from the old ~120px/148px designs) since she now reaches
+   Main's/Chat's actual size via transform:scale() (--diamond-scale) rather
+   than being natively laid out at that size — scaling an already-correct
+   32px-relative value up via transform reproduces the original proportions;
+   copying the old absolute px values verbatim would NOT (they'd get scaled
+   twice). Ratio used throughout: 32 / ~115 (splitting Main's 80-120px clamp
+   range and Chat's 148px, since gems/glow-inset converged to near-identical
+   recomputed values for both anyway — not worth separate context-main vs
+   context-chat variants for anything this subtle).
+═══════════════════════════════════════════════════════════════════════════ */
+/* Gem markers at the diamond's 4 points — shown while docked onto either
+   section (formerly .mm-orb-gem/.orb-gem), hidden while floating (she
+   never carried gems on her own, by existing design). Siblings of
+   .lira-diamond-shape, not children, so the clip-path never clips them. */
+.lira-diamond-gem {
+  position: absolute;
+  width: 2px; height: 2px;
+  background: var(--p-color);
+  border: 1px solid var(--p-color);
+  box-shadow: 0 0 2px var(--p-color), 0 0 4px var(--p-glow);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.lira-diamond.context-main .lira-diamond-gem,
+.lira-diamond.context-chat .lira-diamond-gem {
+  opacity: 1;
+  animation: gem-sparkle 2.6s ease-in-out infinite;
+}
+.lira-diamond-gem.top    { top: -1px;    left: 50%; transform: translateX(-50%) rotate(45deg); }
+.lira-diamond-gem.right  { top: 50%;     right: -1px; transform: translateY(-50%) rotate(45deg); }
+.lira-diamond-gem.bottom { bottom: -1px; left: 50%; transform: translateX(-50%) rotate(45deg); }
+.lira-diamond-gem.left   { top: 50%;     left: -1px; transform: translateY(-50%) rotate(45deg); }
+@keyframes gem-sparkle {
+  0%, 100% { box-shadow: 0 0 2px var(--p-color), 0 0 4px var(--p-glow); }
+  50%       { box-shadow: 0 0 4px var(--p-color), 0 0 8px var(--p-glow); }
+}
+
+/* Idle particle dust (.lira-diamond-particle-N, see diamond-core.css) is
+   floating-context only — Main gets its own richer rAF-driven field
+   instead (.lira-diamond-particles below), Chat gets neither. */
+.lira-diamond.context-main .lira-diamond-particle,
+.lira-diamond.context-chat .lira-diamond-particle {
+  display: none;
+}
+

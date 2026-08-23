@@ -1,0 +1,9 @@
+{
+  "name": "investigations",
+  "version": "1.0",
+  "description": "Investigaciones de fondo incubadas durante el sueño",
+  "dependencies": [],
+  "permissions": ["memory_read", "memory_write"],
+  "entry_point": "investigations.py",
+  "auto_start": true
+}

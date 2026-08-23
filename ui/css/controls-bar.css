@@ -1,0 +1,575 @@
+/* controls-bar.css — Settings update button, status/mode/mute buttons, and the text input bar. */
+/* ═══════════════════════════════════════════════════════════════════════════
+   TEXT INPUT
+═══════════════════════════════════════════════════════════════════════════ */
+/* Chat premium pass: glass panel treatment on the whole input row —
+   background+blur instead of a plain top border, matching the persistent
+   bar's own rgba(0,4,10,...)/blur(...) language elsewhere in this pass. */
+.input-section {
+  position: relative; /* containing block for .attach-menu below, which pops up from #attachBtn */
+  flex: 0 0 auto;
+  width: 100%;
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(0,4,10,0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 0.5px solid rgba(63,169,245,0.15);
+}
+
+.text-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: rgba(255,255,255,0.8);
+  font-family: var(--mm-font-sans);
+  font-size: 14px;
+  padding: 7px 12px;
+  outline: none;
+  transition: box-shadow 0.25s ease;
+  caret-color: var(--accent);
+}
+.text-input::placeholder { color: rgba(255,255,255,0.2); }
+.text-input:focus {
+  box-shadow: 0 -1px 0 rgba(63,169,245,0.4) inset; /* thin bottom-edge highlight, no border added */
+}
+.text-input:disabled {
+  opacity: 0.30;
+  cursor: not-allowed;
+}
+
+/* Angular clip-path send button, per spec */
+.send-btn {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 1px solid rgba(63,169,245,0.3);
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  color: var(--accent);
+  font-family: var(--font);
+  font-size: 1.0rem;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: border-color 120ms, box-shadow 120ms, opacity 120ms;
+  outline: none;
+}
+.send-btn:hover:not(:disabled) {
+  border-color: rgba(63,169,245,0.6);
+  box-shadow: 0 0 8px var(--accent-dim);
+}
+.send-btn:disabled { opacity: 0.30; cursor: not-allowed; }
+
+/* Attach button — same angular clip-path language as .send-btn, kept as its
+   own rule rather than sharing a class since its content (an emoji glyph)
+   needs different padding/sizing than the arrow. */
+.attach-btn {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 1px solid rgba(63,169,245,0.3);
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  color: var(--accent);
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: border-color 120ms, box-shadow 120ms, opacity 120ms;
+  outline: none;
+}
+.attach-btn:hover {
+  border-color: rgba(63,169,245,0.6);
+  box-shadow: 0 0 8px var(--accent-dim);
+}
+
+/* Attach type menu — pops up above #attachBtn (see ui/js/chat-render.js's
+   .open toggle). Same "dark glass card" recipe used everywhere else in
+   this app for a small floating panel (.lira-diamond-text/-bubble,
+   .mm-context-panel): rgba(0,4,10,0.88) + blur(16px), 0.5px accent-blue
+   border, angular clip-path corners — no new visual language introduced.
+   No existing small-anchored-popup pattern existed in this app before
+   this (checked) — the open/close mechanics here (opacity+transform
+   transition, pointer-events toggle) are new but the CARD look isn't. */
+.attach-menu {
+  position: absolute;
+  left: 12px;
+  bottom: calc(100% + 8px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 150px;
+  padding: 6px;
+  border: 0.5px solid rgba(63,169,245,0.2);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  background: rgba(0,4,10,0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.attach-menu.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.attach-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.75);
+  font-family: var(--mm-font-sans);
+  font-size: 13px;
+  text-align: left;
+  padding: 7px 8px;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.attach-menu-item:hover:not(:disabled) {
+  background: rgba(63,169,245,0.1);
+  color: var(--white);
+}
+.attach-menu-item:disabled {
+  color: rgba(255,255,255,0.28);
+  cursor: not-allowed;
+}
+.attach-menu-icon { flex: 0 0 auto; font-size: 14px; line-height: 1; }
+.attach-menu-soon {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.25);
+}
+
+/* Attachment preview strip — sits above .input-section, only takes up space
+   once at least one file is staged (see chat-render.js). */
+.attach-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 12px;
+}
+.attach-preview:empty { display: none; }
+
+/* Bug fix: this was the one rounded-corner element left in the app — every
+   other panel/chip/card (chat bubbles, .estudio-console-chip, .armor-badge,
+   etc.) uses the angular clip-path corner language. Switched to match. */
+.attach-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(63,169,245,0.08);
+  border: 1px solid rgba(63,169,245,0.25);
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  padding: 4px 6px 4px 8px;
+  font-family: var(--mm-font-sans);
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  max-width: 200px;
+}
+.attach-chip-thumb {
+  width: 20px;
+  height: 20px;
+  object-fit: cover;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+.attach-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.attach-chip-remove {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  flex: 0 0 auto;
+}
+.attach-chip-remove:hover { color: var(--accent); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STATUS BAR
+═══════════════════════════════════════════════════════════════════════════ */
+.status-section {
+  flex: 0 0 auto;
+  width: 100%;
+  padding: 8px 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: rgba(232,232,232,0.15);
+  transition: background var(--tt), box-shadow var(--tt);
+}
+/* JetBrains Mono / 0.2em (toolbar premium pass) — this is the same element
+   that shows both connection state (Online/Offline/Reconectando…) and the
+   listening/processing/speaking label (see statusEl in the script); color-
+   by-state already comes from the body.listening/.processing/.speaking
+   rules below, this only touches typography. */
+.status-label {
+  font-family: var(--mm-font-mono);
+  font-size: 0.70rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  flex: 1;
+  transition: color 0.4s ease;
+  color: rgba(232,232,232,0.25);
+}
+
+/* Shutdown / action buttons in status bar — angular clip-path corners
+   (toolbar premium pass), same 6px-cut language as .mm-action-btn in the
+   main menu, replacing the old border-radius. Every state below (hover,
+   .muted, .restarting, .power-*) is untouched — only the corner shape and
+   base border changed. */
+.shutdown-btn {
+  background: none;
+  border: 1px solid rgba(232,232,232,0.10);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  color: rgba(232,232,232,0.25);
+  font-size: 0.85rem;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: color 0.25s, border-color 0.25s, box-shadow 0.25s;
+  outline: none;
+  line-height: 1.4;
+}
+.shutdown-btn:hover {
+  color: var(--red);
+  border-color: rgba(255,68,85,0.5);
+  box-shadow: 0 0 8px rgba(255,68,85,0.2);
+}
+
+/* Mute button — active/muted state */
+#muteBtn:hover {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 8px var(--accent-dim);
+}
+#muteBtn.muted {
+  color: var(--red);
+  border-color: rgba(255,68,85,0.45);
+  animation: mute-pulse 2.4s ease-in-out infinite;
+}
+#muteBtn.muted:hover {
+  box-shadow: 0 0 8px rgba(255,68,85,0.25);
+}
+/* Subtle red breathing glow while muted — reminder that the mic is off */
+@keyframes mute-pulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(255,68,85,0);    }
+  50%       { box-shadow: 0 0 10px rgba(255,68,85,0.35); }
+}
+/* Same reminder pulse on the main-menu quick-action mute button */
+.mm-action-btn.active-muted { animation: mute-pulse 2.4s ease-in-out infinite; }
+
+/* TTS (voice output) mute button — separate from #muteBtn (mic input).
+   Same interaction language, different icon (🔊/🔈 vs 🎤/🔇) so the two
+   are never confused at a glance. */
+#ttsMuteBtn:hover {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 8px var(--accent-dim);
+}
+#ttsMuteBtn.muted {
+  color: var(--red);
+  border-color: rgba(255,68,85,0.45);
+  animation: mute-pulse 2.4s ease-in-out infinite;
+}
+#ttsMuteBtn.muted:hover {
+  box-shadow: 0 0 8px rgba(255,68,85,0.25);
+}
+
+/* Restart button — restarting state */
+#restartBtn:hover {
+  color: var(--yellow);
+  border-color: rgba(240,165,0,0.45);
+  box-shadow: 0 0 8px rgba(240,165,0,0.2);
+}
+#restartBtn.restarting {
+  color: var(--yellow);
+  border-color: rgba(240,165,0,0.45);
+  animation: dot-blink 0.8s ease-in-out infinite;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STATUS POWER BUTTON  — always-visible start/stop toggle in the status bar.
+   Three CSS states driven by JS: power-online, power-offline, power-transitioning.
+═══════════════════════════════════════════════════════════════════════════ */
+/* Online: dim red hint — clicking will STOP jarvis */
+#statusPowerBtn.power-online {
+  color: rgba(255, 68, 85, 0.55);
+  border-color: rgba(255, 68, 85, 0.22);
+}
+#statusPowerBtn.power-online:hover {
+  color: var(--red);
+  border-color: rgba(255, 68, 85, 0.5);
+  box-shadow: 0 0 8px rgba(255, 68, 85, 0.22);
+}
+/* Offline: accent-highlighted — clicking will START jarvis */
+#statusPowerBtn.power-offline {
+  color: var(--green);
+  border-color: rgba(0, 255, 136, 0.30);
+  box-shadow: 0 0 6px rgba(0, 255, 136, 0.12);
+}
+#statusPowerBtn.power-offline:hover {
+  box-shadow: 0 0 12px rgba(0, 255, 136, 0.35);
+}
+/* Transitioning (starting / stopping): blink, no interaction */
+#statusPowerBtn.power-transitioning {
+  color: var(--yellow);
+  border-color: rgba(240, 165, 0, 0.35);
+  opacity: 0.65;
+  pointer-events: none;
+  cursor: not-allowed;
+  animation: dot-blink 0.8s ease-in-out infinite;
+}
+
+/* ── OFFLINE BODY STATE ─────────────────────────────────────────────────────
+   When body has class jarvis-offline, disable controls except power button
+   and the chat input (chat input stays enabled so user can see "Sin conexión"
+   feedback — socket guard lives in sendTextCommand()).
+─────────────────────────────────────────────────────────────────────────── */
+/* [CHANGE] .text-input and .send-btn removed: chat input stays always enabled */
+body.jarvis-offline #muteBtn,
+body.jarvis-offline #ttsMuteBtn,
+body.jarvis-offline #restartBtn,
+body.jarvis-offline #modeBtn {
+  opacity: 0.10;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODE TOGGLE BUTTON
+   Part 2: follows the same design language as the mute/restart/shutdown
+   buttons (shutdown-btn class base) but uses accent colour when active.
+═══════════════════════════════════════════════════════════════════════════ */
+#modeBtn {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  padding: 3px 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+/* Wake-word mode (default): subtle, same as other action buttons */
+#modeBtn.mode-wake {
+  color: rgba(232,232,232,0.30);
+  border-color: rgba(232,232,232,0.10);
+}
+#modeBtn.mode-wake:hover {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 8px var(--accent-dim);
+}
+/* Conversation mode: accent-highlighted to show the active state clearly */
+#modeBtn.mode-conversation {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 6px var(--accent-dim);
+}
+#modeBtn.mode-conversation:hover {
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   AJUSTES (SETTINGS) SECTION
+   Was a slide-in overlay (#settingsPanel, fixed/right/open-toggle); now a
+   full nav section like Chat/Sistema/Armaduras — position/visibility come
+   from .app-section/.app-section.active, content sits in the same
+   .section-inner (max-width 680px, centered) chat and armor already use.
+   Everything below (header, rows, update button) keeps its original
+   class-based styling untouched.
+═══════════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   AJUSTES — premium commercial-grade pass, same mechanical/organic language
+   as the redesigned main menu/chat/armor bay (angular clip-path corners,
+   Rajdhani display face, JetBrains Mono technical labels, thin accent
+   dividers). Scoped to #section-settings throughout so none of it leaks
+   into the shared .toggle-switch/.info-row usages elsewhere (the CORE
+   tab's fact rows, ...).
+═══════════════════════════════════════════════════════════════════════════ */
+.settings-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0 14px;
+  border-bottom: 1px solid rgba(63,169,245,0.15);
+}
+.settings-title-text {
+  font-family: var(--mm-font-display);
+  font-weight: 700;
+  font-size: 0.92rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.9);
+}
+.settings-close {
+  background: none;
+  border: none;
+  color: rgba(232,232,232,0.35);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 4px 6px;
+  transition: color 0.2s;
+  outline: none;
+}
+.settings-close:hover { color: var(--white); }
+
+/* Scrollable body — .section-inner itself is overflow:hidden (see base.css),
+   so this is the section's actual scroll path; thin 2px accent scrollbar,
+   same recipe as .log-section/.armor-grid-wrap/.maint-log. Bottom padding
+   keeps the last action button clear of #persistentBar. */
+.settings-scroll {
+  flex: 1 1 0;
+  overflow-y: auto;
+  /* Right padding keeps toggle switches clear of the scrollbar thumb (they
+     used to sit flush against it, 0px gap) and doubles as parking space for
+     the floating LIRA diamond (see _diamondProtectedRects in
+     status-diamond-grid.js) so she has real room to rest beside the toggle
+     column instead of on top of it. */
+  padding: 14px 56px 32px 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(63,169,245,0.5) rgba(63,169,245,0.2);
+}
+.settings-scroll::-webkit-scrollbar { width: 2px; }
+.settings-scroll::-webkit-scrollbar-track { background: rgba(63,169,245,0.2); }
+.settings-scroll::-webkit-scrollbar-thumb { background: rgba(63,169,245,0.5); border-radius: 0; }
+
+/* Section dividers — between system info / toggles / actions.
+   Same "thin line + small uppercase label" language as .core-section-label
+   elsewhere, but with its own hairline rule since this panel's rows don't
+   otherwise have a leading border to imply the break. */
+.settings-divider {
+  margin: 20px 0 10px;
+  padding-top: 10px;
+  border-top: 0.5px solid rgba(63,169,245,0.08);
+}
+.settings-divider:first-child { margin-top: 0; }
+.settings-divider span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mm-font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(63,169,245,0.5);
+}
+/* Same glowing-dot marker as ui/css/estudio.css's .estudio-console-section-
+   label — final console-family touch tying AJUSTES' section dividers into
+   the same visual language as its own info panel above (and everywhere
+   else this pass reached), without touching the toggles/buttons below. */
+.settings-divider span::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(63,169,245,0.6);
+  box-shadow: 0 0 6px rgba(63,169,245,0.6);
+}
+
+/* Console-family touch (shared with ui/css/estudio.css's .estudio-console-*
+   item-cards): a left accent tick that lights up on hover, tying this
+   key/value row — used across AJUSTES/Memoria/Módulos/Personas — into the
+   same instrument-console visual language, without a bigger markup change
+   across all four call sites. */
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 9px 0 9px 8px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.05);
+  border-left: 2px solid transparent;
+  gap: 12px;
+  transition: border-left-color 150ms;
+}
+.info-row:hover { border-left-color: rgba(63,169,245,0.35); }
+.info-row:last-child { border-bottom: none; }
+.info-key {
+  font-family: var(--mm-font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(63,169,245,0.5);
+  flex-shrink: 0;
+}
+.info-val {
+  font-family: var(--mm-font-display);
+  font-weight: 500;
+  font-size: 0.8125rem;
+  color: rgba(255,255,255,0.8);
+  text-align: right;
+  word-break: break-all;
+}
+
+/* "Actualizar Sistema" — sits below all info rows, at the bottom of the panel.
+   Angular clip-path corners (premium pass — no border-radius anywhere). */
+.settings-update-btn {
+  flex: 0 0 auto;
+  width: 100%;
+  margin-top: 18px;
+  background: transparent;
+  border: 1px solid rgba(63,169,245,0.25); border-radius: 0;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  color: rgba(63,169,245,0.7); font-family: var(--font);
+  font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 9px 12px; cursor: pointer; outline: none;
+  transition: border-color 0.2s, background 0.2s, color 0.2s, opacity 0.2s;
+}
+.settings-update-btn:hover:not(:disabled) {
+  border-color: rgba(63,169,245,0.5);
+  color: rgba(63,169,245,0.95);
+  background: rgba(63,169,245,0.05);
+}
+.settings-update-btn:disabled {
+  border-color: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.2);
+  cursor: not-allowed;
+}
+/* "Iniciar Sueño" while modo_test is active — looks disabled/greyed per
+   spec, but is deliberately NOT the native `disabled` attribute: a
+   disabled button never fires `click` at all, which would silently
+   swallow the "Desactiva el modo test..." inline message instead of
+   showing it (see _showSleepConfirm). Same treatment as :disabled above. */
+.settings-update-btn.test-blocked {
+  border-color: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.2);
+  cursor: not-allowed;
+}
+/* "Detener Sueño" — same shape/rhythm as .settings-update-btn, red-toned
+   like .concept-confirm-btn.danger elsewhere, since this is the one
+   destructive-ish action in this list (interrupts a running continuous
+   sleep cycle). Hidden by default — shown only while continuous.running
+   (see _applySleepStatus in the script), so it never occupies space next
+   to "Iniciar Sueño" when nothing is sleeping. */
+.settings-update-btn.danger-stop {
+  display: none;
+  border-color: rgba(255,68,68,0.3); color: rgba(255,68,68,0.6);
+}
+.settings-update-btn.danger-stop:hover:not(:disabled) {
+  border-color: rgba(255,68,68,0.5);
+  color: rgba(255,68,68,0.9);
+  background: rgba(255,68,68,0.05);
+}
+
+.settings-update-status {
+  flex: 0 0 auto;
+  margin-top: 8px;
+  font-size: 0.66rem;
+  text-align: center;
+  min-height: 1em;
+}
+

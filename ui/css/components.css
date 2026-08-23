@@ -1,0 +1,84 @@
+/* components.css — standalone premium UI components that don't belong to
+   any one section's own stylesheet. Currently just the MOTOR DE VOZ
+   engine selector (Ajustes) — see ui/index.html's own HTML comment above
+   #ttsEngineToggle and _renderTtsEngineToggle()/_setTtsEngine()/
+   _applyTtsEngineState() in ui/js/chat-render.js for the JS side. */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOTOR DE VOZ — engine selector: label above, angular buttons side by side
+   (KOKORO / XTTS / SAY), a small accent dot floating above whichever one is
+   active. Backed by GET/POST /api/tts_engine + /api/set_tts_engine
+   (core/routes_control.py, core/voice.py) — switches live, no restart.
+   .engine-toggle-item's flex:1 1 0 means this row scales to however many
+   .engine-toggle-item children ui/index.html has, no CSS change needed to
+   add/remove an engine option.
+═══════════════════════════════════════════════════════════════════════════ */
+.engine-selector {
+  margin-top: 18px;
+}
+
+.engine-selector-label {
+  font-family: var(--mm-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(63,169,245,0.5);
+  margin-bottom: 10px;
+}
+
+.engine-toggle {
+  display: flex;
+  gap: 10px;
+}
+
+.engine-toggle-item {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Dot indicator — square, not round, to match this app's fully-angular
+   visual language (no border-radius anywhere else either) — same shape
+   convention as .test-mode-toggle-dot. Hidden (opacity 0) on the inactive
+   item; :has() reads the sibling button's own .active state so no extra
+   JS is needed to toggle this independently. */
+.engine-toggle-dot {
+  width: 4px;
+  height: 4px;
+  background: #3fa9f5;
+  box-shadow: 0 0 6px rgba(63,169,245,0.8);
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.engine-toggle-item:has(.engine-toggle-btn.active) .engine-toggle-dot {
+  opacity: 1;
+}
+
+.engine-toggle-btn {
+  width: 100%;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 0;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  color: rgba(255,255,255,0.3);
+  font-family: var(--mm-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  padding: 9px 10px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 120ms, background 120ms, color 120ms, box-shadow 120ms;
+}
+.engine-toggle-btn:hover:not(.active):not(:disabled) {
+  border-color: rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.6);
+}
+.engine-toggle-btn.active {
+  border-color: #3fa9f5;
+  background: rgba(63,169,245,0.1);
+  color: rgba(63,169,245,0.95);
+  box-shadow: inset 0 0 10px rgba(63,169,245,0.15);
+}
+.engine-toggle-btn:disabled { opacity: 0.4; cursor: default; }

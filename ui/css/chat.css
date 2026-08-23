@@ -1,0 +1,293 @@
+/* chat.css — Header bar, chat log section, and message bubble styles. */
+/* The chat orb's decorative layers (.orb-facet-svg/.orb-ring/.orb-spinner/
+   .orb-core/.orb-wave/.bar/.orb-gem, plus their gem-sparkle/wave-bar
+   keyframes) all moved to diamond-toggles.css/diamond-core.css as
+   .lira-diamond `.context-chat` variants — #chatOrbWrap and its whole
+   decorative subtree no longer exist (see #chatOrbSlot's own comment in
+   main-menu-orb.css); #liraDiamond is the only diamond element now. */
+
+/* personality-owned: the name label ("L I R A") — Rajdhani (--mm-font-display),
+   matching the Main Menu's own .mm-name (main-menu-orb.css) now instead of
+   inheriting body's plain monospace system font. Same identity face
+   wherever her name appears prominently, not just on Main Menu. */
+.title {
+  font-family: var(--mm-font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.6em;
+  text-transform: uppercase;
+  color: var(--p-color);
+  text-shadow: 0 0 16px var(--p-glow);
+  user-select: none;
+  transition: color var(--tt), text-shadow var(--tt);
+  cursor: default;
+}
+
+/* Mic indicator — pulses when listening */
+.mic-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+  opacity: 0;
+  transition: background var(--tt), box-shadow var(--tt), transform 0.1s ease, opacity 0.3s ease;
+  transform: scale(1);
+}
+
+/* Mic stream confirmed active — always show indicator */
+.mic-dot.mic-active {
+  opacity: 0.55;
+}
+
+/* Scale with audio level — driven by JS via CSS custom property */
+.mic-dot.mic-active {
+  transform: scale(calc(1 + var(--mic-level, 0) * 2.2));
+  opacity: calc(0.55 + var(--mic-level, 0) * 0.45);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STATUS ANIMATIONS — mic dot + generic .status-dot/.status-label (used by
+   the persistent bar elsewhere). The orb-specific pulse-ring/pulse-fast/
+   spin-arc keyframes and their body.listening/.processing/.speaking
+   .orb-* rules moved to diamond-toggles.css/diamond-core.css.
+═══════════════════════════════════════════════════════════════════════════ */
+@keyframes dot-breathe {
+  0%, 100% { transform: scale(1);   opacity: 1; }
+  50%       { transform: scale(0.5); opacity: 0.4; }
+}
+@keyframes dot-blink { 0%,100%{opacity:1} 50%{opacity:0.15} }
+@keyframes mic-pulse {
+  0%, 100% { box-shadow: 0 0 4px var(--accent);  opacity: 0.55; }
+  50%       { box-shadow: 0 0 10px var(--accent); opacity: 1.00; }
+}
+
+/* listening */
+body.listening .mic-dot   { opacity: 1; animation: mic-pulse 1.8s ease-in-out infinite; }
+body.listening .status-dot   { background: var(--accent); box-shadow: 0 0 6px var(--accent); animation: dot-breathe 2.5s ease-in-out infinite; }
+body.listening .status-label { color: var(--accent); }
+
+/* processing */
+body.processing .status-dot  { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); animation: dot-blink 0.55s ease-in-out infinite; }
+body.processing .status-label { color: var(--yellow); }
+
+/* speaking */
+body.speaking .status-dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: dot-breathe 0.65s ease-in-out infinite; }
+body.speaking .status-label { color: var(--accent); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOG
+═══════════════════════════════════════════════════════════════════════════ */
+/* Chat premium pass: pure black, no grid overlay — deliberate contrast with
+   Sistema's new gridded background, "cleaner for conversation" per spec.
+   No existing #section-chat background rule to override; body's own
+   var(--bg) (#0a0a0a) was showing through, this makes it explicit. */
+#section-chat { background: #000000; }
+.log-section {
+  flex: 1 1 0;
+  width: 100%;
+  overflow-y: auto;
+  padding: 4px 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative; /* containing block for the :empty::before empty-state below */
+  /* Chat premium pass: thin 2px accent scrollbar, matching Armor Bay/Sistema */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(63,169,245,0.5) rgba(63,169,245,0.2);
+  /* Auto-scroll-to-bottom fix: native smooth scrolling driven by a plain
+     `logEl.scrollTop = logEl.scrollHeight` assignment (see addMessage()) —
+     "smooth but fast", not the slower/more elastic feel of
+     scrollTo({behavior:'smooth'})'s easing on a long jump. */
+  scroll-behavior: smooth;
+}
+.log-section::-webkit-scrollbar { width: 2px; }
+.log-section::-webkit-scrollbar-track { background: rgba(63,169,245,0.2); }
+.log-section::-webkit-scrollbar-thumb { background: rgba(63,169,245,0.5); border-radius: 0; }
+/* Empty state — "Sin mensajes aún." Safe to use :empty here: #log's only
+   children are .msg/.divider rows appended by addMessage(), nothing else
+   ever lives inside it, so :empty reliably means zero messages. */
+.log-section:empty::before {
+  content: 'Sin mensajes aún.';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--mm-font-mono);
+  font-size: 11px;
+  color: rgba(255,255,255,0.2);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Chat premium pass: retuned to the spec's exact "fade in + 4px upward
+   drift, 200ms" — was a more pronounced 16px/0.35s entrance, now a tighter,
+   quicker one to match the rest of this pass's snappier microinteractions. */
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Chat premium pass: .msg is now the bubble container itself (background/
+   border/clip-path come from the per-type rules below — .msg alone has no
+   visible chrome, so .msg-system/.msg-error, which don't get a bubble
+   treatment, aren't forced into one). max-width stops any bubble from
+   spanning the full log width; .msg-user gets margin-left:auto for the
+   right-alignment, everything else defaults left via normal flow. */
+.msg {
+  animation: msg-in 0.2s cubic-bezier(.25,.8,.35,1) forwards;
+  padding: 3px 0;
+  max-width: 80%;
+}
+.msg-user { margin-left: auto; }
+/* Bubble panel treatment shared by every non-error message type — angular
+   clip-path, per-type background/border set individually below since the
+   colors differ per type but the shape/padding is identical. */
+.msg-user, .msg-lira {
+  padding: 8px 12px;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+.msg-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+/* .msg-text forced onto its own full-width line below the time+label
+   header line — flex-basis:100% on a wrapped flex item always claims the
+   full row width, pushing it down regardless of how short the text is.
+   Achieves a standard "header line, then body" bubble layout with zero
+   markup changes. */
+.msg-text { flex-basis: 100%; }
+
+/* Timestamp — hidden by default, shown on hover */
+.msg-time {
+  font-size: 0.62rem;
+  color: rgba(232, 232, 232, 0.22);
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-top: 1px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  min-width: 52px;
+}
+.msg:hover .msg-time { opacity: 1; }
+
+.msg-label {
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.msg-text {
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+/* Response-latency display — 'LLM: Xs · VOZ: Xs', see _applyResponseTiming()
+   in chat-render.js. Barely-visible by design (spec: "not distracting") —
+   empty until the first timing event for this reply arrives, then :empty
+   collapses it back to nothing rather than reserving dead space. */
+.msg-timing {
+  font-family: var(--mm-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.2);
+  margin-top: 2px;
+}
+.msg-timing:empty { display: none; }
+
+/* Chat premium pass — user bubble: JetBrains Mono label, Inter body. */
+.msg-user {
+  background: rgba(63,169,245,0.08);
+  border: 0.5px solid rgba(63,169,245,0.25);
+}
+.msg-user .msg-label {
+  font-family: var(--mm-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: rgba(63,169,245,0.5);
+}
+.msg-user .msg-text { color: rgba(255,255,255,0.9); }
+
+/* Chat premium pass — LIRA's assistant bubble: Rajdhani label in her own
+   color, flat Inter body text. Only the label carries color, per spec; no
+   radial-gradient glow wash on the body itself. */
+.msg-lira .msg-label {
+  font-family: var(--mm-font-display);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+}
+.msg-lira .msg-text { color: rgba(255,255,255,0.85); }
+
+.msg-lira { background: rgba(240,192,64,0.05);  border: 0.5px solid rgba(240,192,64,0.2);  }
+.msg-lira .msg-label { color: #f0c040; }
+
+/* .msg-system is currently unreachable — addMessage() has no 'system' TYPES
+   entry, system messages are routed to addMaintMessage() (Sistema panel)
+   instead and never create a .msg-system element. Left unstyled by this
+   pass (dead CSS, out of scope) rather than restyled with no way to verify
+   it visually. */
+
+/* Chat premium pass — error: a flat single log-style line, NOT a bubble
+   (deliberately excluded from the .msg-user/.msg-lira bubble-panel
+   selector above), matching the Sistema panel's own error-entry treatment
+   for consistency across the app. */
+/* Console-family touch: a faint tint behind the border, same "tone-coded
+   surface" language as .estudio-console-item-card's --hc accent border —
+   was a bare line before, easy to miss scanning a fast-moving log. */
+.msg-error {
+  border-left: 2px solid rgba(255,68,68,0.4);
+  background: rgba(255,68,68,0.04);
+  padding: 4px 8px;
+}
+.msg-error .msg-label { display: none; } /* the "Error: ..." text itself already says what it is */
+.msg-error .msg-text {
+  font-family: var(--mm-font-mono);
+  font-size: 11px;
+  color: rgba(255,68,68,0.7);
+}
+
+.divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent 0%, var(--accent-dim) 30%, var(--accent-dim) 70%, transparent 100%);
+  margin: 8px 0;
+  transition: background var(--tt);
+}
+
+/* ── Typing / processing indicator — bouncing dots shown automatically while
+     body.processing is active. Mirrors the existing global processing state
+     (same body class the orb spinner already uses) so no new JS wiring is
+     needed to show/hide it. ── */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 0;
+  padding: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: opacity 0.25s ease, height 0.25s ease;
+}
+body.processing .typing-indicator {
+  opacity: 1;
+  height: 18px;
+  padding: 4px 0;
+}
+.typing-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  /* personality-owned: dots use the active personality color */
+  background: var(--p-color);
+  box-shadow: 0 0 6px var(--p-glow);
+  animation: typing-bounce 1.1s ease-in-out infinite;
+  transition: background var(--tt), box-shadow var(--tt);
+}
+.typing-dot:nth-child(1) { animation-delay: 0s;    }
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s;  }
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0);    opacity: 0.5; }
+  30%            { transform: translateY(-5px); opacity: 1;   }
+}
+

@@ -1,0 +1,9 @@
+{
+  "name": "schema_generator",
+  "version": "1.0",
+  "description": "Genera esquemas y mapas conceptuales para ESTUDIO -> ESQUEMAS",
+  "dependencies": [],
+  "permissions": ["network", "memory_read", "memory_write"],
+  "entry_point": "schema_generator.py",
+  "auto_start": true
+}

@@ -1,0 +1,9 @@
+{
+  "name": "web_search",
+  "version": "1.0",
+  "description": "Búsqueda web en tiempo real (Serper.dev / DuckDuckGo)",
+  "dependencies": [],
+  "permissions": ["network"],
+  "entry_point": "web_search.py",
+  "auto_start": true
+}

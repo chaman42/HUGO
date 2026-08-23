@@ -1,0 +1,219 @@
+/* main-menu-orb.css — Main menu central orb (bar, gem, energy field, spinner). */
+/* Orb + name + status, grouped so they slide together as one unit — see
+   .mm-orb-area.panel-active below. transform (not layout) so this never
+   affects .mm-context-panel's or .mm-quote's own positioning. */
+.mm-orb-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: transform 0.5s cubic-bezier(.4, 0, .2, 1);
+}
+.mm-orb-area.panel-active .mm-orb-identity {
+  /* max() (not min()) because these are negative values — picks whichever
+     is LESS negative, so the slide shrinks automatically on narrow
+     viewports instead of shoving the orb half off-screen. */
+  transform: translateX(max(-84px, -18vw));
+}
+
+/* Quote is flavor text — redundant next to a data panel, so it just fades
+   out rather than trying to slide anywhere. */
+.mm-orb-area.panel-active .mm-quote {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Large personality orb slot — 120px desktop, clamp()'d down for smaller
+     viewports per spec (80px <500px / 100px 500-900px / 120px 900px+,
+     approximated continuously so there's no visible snap at the
+     breakpoints). Pure layout placeholder now: LIRA herself (#liraDiamond,
+     see diamond-toggles.css/diamond-core.css) is the only diamond element
+     that exists — she overlays this slot's own rect (via
+     _resolveDiamondTarget() in section-nav.js) instead of a second element
+     living here. Kept as a real sized box (not display:none) so #mmName/
+     .mm-status-label below keep exactly the flex-sibling layout they
+     always had. */
+.mm-orb-slot {
+  width: clamp(80px, 6vw + 68px, 120px);
+  height: clamp(80px, 6vw + 68px, 120px);
+}
+
+/* (.mm-hud-readout is dead CSS — the 4 HUD readout spans now live inside
+   .mm-edge-readouts, see that block below. Removed rather than left as an
+   orphaned rule.) */
+
+/* Personality name — Rajdhani 700, LIRA's own identity mark rather than the
+   Inter/JetBrains Mono system-chrome pairing used everywhere else in this
+   section (see --mm-font-display). Geometric but with more character than
+   Inter — deliberately not on the strict 11/14/18/28/48 scale (32px is a
+   one-off for this single title). color stays var(--p-color) rather than a
+   hardcoded gold, even though LIRA is now the only personality — #f0c040 is
+   simply what --p-color resolves to. position:relative + the ::after
+   beneath it fake a soft contact-shadow so the label reads as floating
+   just above the panel surface rather than sitting flush on it. */
+.mm-name {
+  position: relative;
+  font-family: var(--mm-font-display);
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1.2;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--p-color);
+  text-shadow: 0 0 22px var(--p-glow);
+  user-select: none;
+  transition: color var(--tt), text-shadow var(--tt);
+}
+.mm-name::after {
+  content: '';
+  position: absolute;
+  left: 50%; bottom: -7px;
+  width: 70%; height: 6px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, var(--p-a015) 0%, transparent 75%);
+  pointer-events: none;
+}
+@media (max-width: 500px) {
+  /* 0.5em letter-spacing at 32px would overflow a narrow phone — scale both
+     down together rather than just the font-size, so the wide-tracked look
+     survives, just smaller. */
+  .mm-name { font-size: 20px; letter-spacing: 0.35em; }
+}
+
+/* Status (Escuchando / Procesando / Hablando) — also Rajdhani (LIRA's own
+   face, paired with .mm-name), not the mono system-chrome font used by
+   every other label in this section — this one line is part of her
+   identity cluster, not system telemetry. Base color is the spec's
+   #3fa9f5 (== var(--accent)); the existing per-state overrides below (glow
+   color while processing, etc.) are untouched, unchanged functionality.
+   .mm-status-dot is new — see markup + STATUS DOT below for its pulse. */
+.mm-status-label {
+  font-family: var(--mm-font-display);
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--accent);
+  transition: color 0.4s ease;
+}
+body.listening  .mm-status-label { color: var(--accent); }
+body.processing .mm-status-label { color: var(--yellow); }
+body.speaking   .mm-status-label { color: var(--accent); }
+
+/* Status dot — a small always-present marker before the status text, pulse
+   speed reflects urgency (steady while speaking: she's already "doing the
+   thing", no need to draw the eye). Kept as its own element (not a
+   ::before, unlike .mm-sys-item's dots) since it needs an independent
+   animation-duration per body state. */
+.mm-status-dot {
+  display: inline-block;
+  width: 5px; height: 5px;
+  margin-right: 2px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 4px currentColor;
+  vertical-align: middle;
+}
+body.listening  .mm-status-dot { animation: mm-status-dot-pulse 2s ease-in-out infinite; }
+body.processing .mm-status-dot { animation: mm-status-dot-pulse 0.7s ease-in-out infinite; }
+body.speaking   .mm-status-dot { animation: none; opacity: 1; } /* steady — no pulse while actively speaking */
+@keyframes mm-status-dot-pulse {
+  0%, 100% { opacity: 1;    }
+  50%      { opacity: 0.35; }
+}
+
+/* Idle "breath" on the status text itself — a single dim-and-return every
+   8-12s while parked on Escuchando, toggled via _scheduleMMStatusBreath()
+   in the script. Transition lives on the base rule (not just .breathe) so
+   removing the class also fades back in smoothly, not snaps. */
+#mmStatus { transition: opacity 0.35s ease; }
+#mmStatus.mm-status-breathe { opacity: 0.3; }
+
+/* Personality quote — now Rajdhani 400 (matches .mm-name/.mm-status-label's
+   identity face) at 13px, a one-off size deliberately below the strict
+   scale's 14px "body" step since this line reads as a soft aside, not
+   primary body text. rgba(255,255,255,0.35) is a literal spec value (sits
+   between --mm-text-secondary's 0.45 and --mm-text-tertiary's 0.22 — no
+   existing token matches, so no token substitution here). Fade timing
+   (.fading / .quote-in) driven by _rotateMMQuote() in the script now,
+   not just applyPersonality()'s old random pick — see that function. */
+.mm-quote {
+  font-family: var(--mm-font-display);
+  font-weight: 400;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.35);
+  text-align: center;
+  max-width: 55%;
+  padding: 0 16px;
+  transition: opacity 0.8s ease;
+}
+.mm-quote.fading { opacity: 0; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CONTEXTUAL PANELS — weather/time/... side panels that slide in beside the
+   orb while LIRA speaks about that topic. See core/commands.py's
+   _maybe_emit_panel() (backend trigger, via the 'show_panel' socket event
+   emitted through core/server.py's emit_show_panel()) and the "CONTEXTUAL
+   PANELS" section in the script below (frontend: PANEL_RENDERERS registry +
+   show/hide wired into setStatus()). Fixed blue/white HUD palette
+   (var(--accent), not var(--p-color)) regardless of active personality —
+   same "fixed chrome color" convention as the rest of the HUD shell
+   (borders, status text, the stats panel above).
+═══════════════════════════════════════════════════════════════════════════ */
+/* Glass panel per spec: rgba(0,8,20,0.7) + blur(20px) saturate(180%), 1px
+   rgba(63,169,245,0.15) border, angular 8px clip-path corners, 16px/12px
+   inner padding, border brightens to rgba(63,169,245,0.35) on hover in
+   150ms. Same recipe reused by .mm-stats-panel/.mm-tray-body below (they
+   differ only in blur amount + bg alpha where the spec calls for it). */
+.mm-context-panel {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  /* min() so this can never overflow a narrow viewport regardless of exact
+     breakpoint tuning below — intrinsically responsive, not just
+     breakpoint-patched. */
+  width: min(172px, 44vw);
+  padding: 16px 12px;
+  border: 1px solid var(--mm-border);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  background: var(--mm-panel-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 0 20px var(--accent-dim), inset 0 0 16px rgba(63,169,245,0.06);
+  opacity: 0;
+  transform: translate(36px, -50%);
+  pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(.4, 0, .2, 1), border-color 150ms;
+}
+.mm-context-panel:hover { border-color: var(--mm-border-hover); }
+.mm-orb-area.panel-active .mm-context-panel {
+  opacity: 1;
+  transform: translate(0, -50%);
+  pointer-events: auto;
+}
+
+/* Shared panel chrome — label (11px mono) + value (14px body) pairs, same
+   visual language as .mm-stat-label/.mm-stat-val in the stats panel below.
+   Reused by every panel type, not just weather. */
+.panel-label {
+  font-family: var(--mm-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mm-text-secondary);
+}
+.panel-val {
+  font-family: var(--mm-font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--mm-text-primary);
+}
+.panel-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+

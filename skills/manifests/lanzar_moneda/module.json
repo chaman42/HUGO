@@ -1,0 +1,10 @@
+{
+  "name": "lanzar_moneda",
+  "version": "0.1",
+  "description": "lanzar una moneda",
+  "dependencies": [],
+  "permissions": [],
+  "entry_point": "lanzar_moneda.py",
+  "auto_start": false,
+  "created_via": "ad_hoc_conversation"
+}

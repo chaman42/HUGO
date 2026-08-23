@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- Background: subtle warm-dark radial depth, not flat black -->
+    <radialGradient id="bgGrad" cx="50%" cy="44%" r="75%">
+      <stop offset="0%"   stop-color="#1a1508"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+
+    <!-- Crown (top facet) — brightest, near white-gold, lit from top-left -->
+    <linearGradient id="crownGrad" x1="15%" y1="0%" x2="60%" y2="100%">
+      <stop offset="0%"   stop-color="#f9ecb0"/>
+      <stop offset="45%"  stop-color="#f5e070"/>
+      <stop offset="100%" stop-color="#f0c040"/>
+    </linearGradient>
+
+    <!-- Left pavilion facet — mid-tone gold, brighter edge toward the light -->
+    <linearGradient id="leftGrad" x1="10%" y1="0%" x2="90%" y2="100%">
+      <stop offset="0%"   stop-color="#f6cf6a"/>
+      <stop offset="55%"  stop-color="#f0c040"/>
+      <stop offset="100%" stop-color="#d9a828"/>
+    </linearGradient>
+
+    <!-- Right pavilion facet — mid-tone gold, falling into shadow bottom-right -->
+    <linearGradient id="rightGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#eabb46"/>
+      <stop offset="55%"  stop-color="#c99a24"/>
+      <stop offset="100%" stop-color="#8a6800"/>
+    </linearGradient>
+
+    <!-- Culet (bottom facet) — darkest, in shadow -->
+    <linearGradient id="bottomGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%"   stop-color="#8a6800"/>
+      <stop offset="100%" stop-color="#5c4400"/>
+    </linearGradient>
+
+    <!-- Warm inner glow, centered slightly above the gem's middle -->
+    <radialGradient id="innerGlow" cx="50%" cy="42%" r="58%">
+      <stop offset="0%"   stop-color="#f0c040" stop-opacity="0.38"/>
+      <stop offset="60%"  stop-color="#f0c040" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#f0c040" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Soft ambient bloom bleeding out behind the gem -->
+    <radialGradient id="outerBloom" cx="50%" cy="46%" r="55%">
+      <stop offset="0%"   stop-color="#f0c040" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#f0c040" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Specular highlight — the glint of light on polished metal -->
+    <radialGradient id="specGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#fffdf2" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#fffdf2" stop-opacity="0"/>
+    </radialGradient>
+
+    <clipPath id="diamondClip">
+      <polygon points="256,91 396.25,256 256,421 115.75,256"/>
+    </clipPath>
+    <clipPath id="crownClip">
+      <polygon points="256,91 396.25,256 115.75,256"/>
+    </clipPath>
+
+    <filter id="blurGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+    <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="5" stdDeviation="9" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" fill="url(#bgGrad)"/>
+
+  <!-- Ambient bloom, behind the gem -->
+  <circle cx="256" cy="250" r="150" fill="url(#outerBloom)" filter="url(#blurGlow)"/>
+
+  <!-- The diamond — four facets: crown (top), pavilion-left, pavilion-right, culet (bottom) -->
+  <g filter="url(#dropShadow)">
+    <polygon points="256,91 115.75,256 396.25,256"              fill="url(#crownGrad)"/>
+    <polygon points="115.75,256 256,256 256,384.7 225.15,384.7" fill="url(#leftGrad)"/>
+    <polygon points="256,256 396.25,256 286.85,384.7 256,384.7" fill="url(#rightGrad)"/>
+    <polygon points="225.15,384.7 256,421 286.85,384.7"         fill="url(#bottomGrad)"/>
+  </g>
+
+  <!-- Inner glow, contained within the gem -->
+  <g clip-path="url(#diamondClip)" style="mix-blend-mode:screen">
+    <ellipse cx="256" cy="230" rx="150" ry="150" fill="url(#innerGlow)"/>
+  </g>
+
+  <!-- Specular highlight on the crown, like light catching polished metal -->
+  <g clip-path="url(#crownClip)" style="mix-blend-mode:screen">
+    <ellipse cx="205" cy="150" rx="70" ry="34" fill="url(#specGrad)" opacity="0.85"
+             transform="rotate(-28 205 150)"/>
+  </g>
+
+  <!-- Proper 3D lighting: thin bright edge top-left, subtle dark edge bottom-right -->
+  <path d="M256,91 L115.75,256" fill="none" stroke="#fff8d0" stroke-width="3.5"
+        stroke-linecap="round" opacity="0.85"/>
+  <path d="M115.75,256 L225.15,384.7" fill="none" stroke="#fff8d0" stroke-width="2.5"
+        stroke-linecap="round" opacity="0.6"/>
+  <path d="M256,91 L396.25,256" fill="none" stroke="#000000" stroke-width="2"
+        stroke-linecap="round" opacity="0.30"/>
+  <path d="M396.25,256 L286.85,384.7" fill="none" stroke="#000000" stroke-width="2.5"
+        stroke-linecap="round" opacity="0.40"/>
+  <path d="M286.85,384.7 L256,421 L225.15,384.7" fill="none" stroke="#000000" stroke-width="1.5"
+        stroke-linecap="round" opacity="0.35"/>
+</svg>

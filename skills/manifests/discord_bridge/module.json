@@ -1,0 +1,9 @@
+{
+  "name": "discord_bridge",
+  "version": "1.0",
+  "description": "Consulta de autorización del puente de Discord",
+  "dependencies": ["discord.py>=2.0"],
+  "permissions": ["network", "memory_read"],
+  "entry_point": "discord_bridge.py",
+  "auto_start": true
+}

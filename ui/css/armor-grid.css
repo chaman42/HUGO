@@ -1,0 +1,429 @@
+/* armor-grid.css — Main menu edge readouts and the armor bay grid/card/detail page start. */
+/* ═══════════════════════════════════════════════════════════════════════════
+   EDGE-ANCHORED TECHNICAL READOUTS — corners of #section-home, which fills
+   the whole app viewport, so these corners read as "screen edges". Every
+   value is real bound data (see markup comment for the id → label mapping);
+   minimum 20px from any edge per spec. Hidden entirely under 500px (spec:
+   "technical readouts hidden" on mobile).
+═══════════════════════════════════════════════════════════════════════════ */
+.mm-edge-readouts {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.mm-edge-readout {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--mm-font-mono);
+}
+.mm-edge-readout.tl { top: 20px;    left: 20px;  align-items: flex-start; }
+.mm-edge-readout.bl { bottom: 20px; left: 20px;  align-items: flex-start; }
+.mm-edge-readout.tr { top: 20px;    right: 20px; align-items: flex-end;   }
+.mm-edge-readout.br { bottom: 20px; right: 20px; align-items: flex-end;   }
+.mm-edge-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(63,169,245,0.3);
+}
+.mm-edge-val {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: rgba(63,169,245,0.3);
+  transition: color var(--tt);
+}
+/* Kept in the DOM (JS still writes real values into these) but not part of
+   this pass's visual corner layout — MODE is already shown live in the
+   status strip below (#mmSysMode), so surfacing it a second time up here
+   would be redundant. */
+#mmHudMode { display: none; }
+/* Radar arcs — pure decoration, no data. Both sit in the TOP corners per
+   spec ("two decorative arc elements in top corners"); same accent chrome
+   color as the rest of the HUD shell (never var(--p-color) — this is
+   system chrome, not a LIRA-owned element). */
+.mm-radar-arc {
+  /* stroke color/opacity are set directly on the <circle>'s own attributes
+     in the markup (SVG presentation attributes win over an inherited CSS
+     value here), not via this class. */
+  position: absolute;
+  top: 15px;
+  width: 42px; height: 42px;
+}
+.mm-radar-arc.corner-tl { left: 96px; }
+.mm-radar-arc.corner-tr { right: 96px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SLIDING TRAYS — .mm-actions and .mm-sys-strip each wrapped in one of
+   these. Retracting leaves only the 1px .mm-tray-hinge line visible (the
+   "system tray" affordance from spec) — toggled by _wireMMTrays() in the
+   script (near _wireMMActions), which just flips .mm-tray-retracted.
+═══════════════════════════════════════════════════════════════════════════ */
+.mm-tray {
+  flex: 0 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.mm-tray-body {
+  width: calc(100% - 40px);
+  margin: 0 20px;
+  border: 1px solid var(--mm-border);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  background: var(--mm-tray-bg);
+  backdrop-filter: blur(16px);
+  overflow: hidden;
+  /* Fast start, sharp decelerate — exactly 260ms per spec. max-height (not
+     height) so it can animate without knowing the content's real height
+     in advance. */
+  max-height: 120px;
+  transition: max-height 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              opacity 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.mm-tray .mm-actions,
+.mm-tray .mm-sys-strip {
+  /* undo the standalone-element side-margins now that .mm-tray-body owns
+     the panel edge (margin/border/clip-path all live there instead) */
+  width: 100%;
+  margin: 0;
+  padding: 12px 16px;
+}
+.mm-tray-retracted .mm-tray-body {
+  max-height: 0;
+  opacity: 0;
+}
+/* The hinge — a thin always-visible accent line hinting the tray's presence
+   even fully retracted, plus a small clickable handle centered on it. */
+.mm-tray-handle {
+  align-self: center;
+  width: 100%;
+  height: 16px;
+  min-width: 44px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+}
+.mm-tray-hinge {
+  width: 40px; height: 1px;
+  background: rgba(63, 169, 245, 0.3);
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.mm-tray-handle:hover .mm-tray-hinge,
+.mm-tray-handle:focus-visible .mm-tray-hinge {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-dim);
+}
+
+/* ── Responsive tiers — spec's exact 3 buckets: <500px mobile / 500-900px
+     tablet / 900px+ desktop. Orb size is already continuously handled by
+     .mm-orb-slot's clamp() above; particle COUNT is decided once at spawn
+     time in JS (_mmVisualLoop() reads matchMedia, see script), not toggled
+     here via CSS — there's nothing left to hide post-spawn. ── */
+@media (max-width: 500px) {
+  /* Mobile: hide the edge technical readouts entirely, per spec */
+  .mm-edge-readouts { display: none; }
+  /* 5 buttons no longer fit in one row at this width — wrap into two
+     instead of squeezing further, so the angular treatment stays legible.
+     Tray needs a taller cap to fit the wrapped second row. */
+  .mm-actions { flex-wrap: wrap; }
+  .mm-action-btn { flex: 1 1 30%; min-width: 80px; }
+  #mmActionsTray .mm-tray-body { max-height: 210px; }
+}
+@media (min-width: 501px) and (max-width: 900px) {
+  /* Tablet: abbreviated readouts — keep UPTIME/TIME, drop the two bottom
+     ones (mirrors the old "least-important corner readouts go first" call,
+     retargeted at the new label set). */
+  .mm-edge-readout.bl, .mm-edge-readout.br { display: none; }
+}
+@media (max-height: 700px) {
+  /* Short viewports (landscape phones, small windowed sizes) — same idea
+     as before, retuned to the new clamp()'d orb/type-scale values. */
+  .mm-orb-slot { width: 90px; height: 90px; }
+  .mm-time     { font-size: 28px; }
+  .mm-name     { font-size: 18px; }
+  .mm-header   { padding: 12px 0 4px; }
+  .mm-orb-area { gap: 8px; padding: 6px 0 8px; }
+}
+/* On tall/desktop viewports (Mac fullscreen/windowed — 1440/900 in the
+   spec's own reference sizes) natural flow alone lands the orb close to the
+   top; nudge it down toward the spec's 38%-from-top optical center with
+   extra header breathing room, scaled to viewport height so it never
+   overshoots on anything shorter. Untouched below 760px tall, where
+   vertical space is already tight (phones, short windowed sizes). */
+@media (min-height: 760px) {
+  .mm-header { padding-top: max(18px, 5.2vh); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ARMOR BAY — MAIN CONTAINER
+═══════════════════════════════════════════════════════════════════════════ */
+#armorSection {
+  display: none;
+  position: relative;   /* containing block for #armorDetailView's absolute overlay */
+  flex: 1 1 0;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+}
+#armorSection.active { display: flex; }
+
+/* Sub-tabs: Primarios | Paralelos | Conceptuales — Armor Bay premium pass:
+   same thin-top-border-only pattern as .nav-item/.nav-item.active in the
+   bottom nav (no dot/pill, JetBrains Mono, 0.15em, 120ms), not the old
+   underline+animated-scan-sweep treatment. Border moved from bottom to top
+   to match that reference exactly. */
+.armor-subtabs {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 0;
+  border-bottom: 0.5px solid rgba(63,169,245,0.15);
+  margin-bottom: 10px;
+  transition: border-color var(--tt);
+}
+.armor-subtab {
+  background: none; border: none;
+  border-top: 1px solid transparent;
+  color: rgba(255,255,255,0.35);
+  font-family: var(--mm-font-mono);
+  font-size: 10px; letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 5px 10px 6px; cursor: pointer; outline: none;
+  transition: color 120ms, border-color 120ms;
+  white-space: nowrap;
+}
+.armor-subtab:hover { color: rgba(255,255,255,0.6); }
+.armor-subtab.active {
+  color: rgba(63,169,245,0.9);
+  border-top-color: #3fa9f5;
+}
+
+/* Scrollable card area — thin 2px accent scrollbar (Armor Bay premium
+   pass), no border-radius on the thumb (sharp, per the section-wide rule). */
+.armor-grid-wrap {
+  flex: 1 1 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(63,169,245,0.5) rgba(63,169,245,0.2);
+  padding-bottom: 12px;
+}
+.armor-grid-wrap::-webkit-scrollbar { width: 2px; }
+.armor-grid-wrap::-webkit-scrollbar-track { background: rgba(63,169,245,0.2); }
+.armor-grid-wrap::-webkit-scrollbar-thumb { background: rgba(63,169,245,0.5); border-radius: 0; }
+
+/* Responsive card grid */
+.armor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  padding: 2px 0;
+}
+
+/* Individual card — Armor Bay premium pass: glass panel (rgba(0,4,10,0.85)
+   + blur(16px)), angular clip-path corners instead of border-radius, exact
+   spec hover values. transform's return-from-:active leg now uses a spring
+   curve (matches the diamond/toolbar passes' overshoot bezier) so the
+   existing .armor-card:active { scale(0.98) } (see the shared :active rule
+   below) settles with a spring-back rather than a flat ease. */
+.armor-card {
+  border: 0.5px solid rgba(63,169,245,0.15);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  background: rgba(0,4,10,0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 8px 8px;
+  gap: 5px;
+  transition: border-color 150ms, box-shadow 150ms, background 150ms,
+              transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.armor-card:hover {
+  border-color: rgba(63,169,245,0.4);
+  box-shadow: inset 0 0 24px rgba(63,169,245,0.03);
+  background: rgba(0,4,10,0.85);
+}
+
+/* Blueprint-style humanoid SVG. Wrapped in .armor-sil-wrap so a scan-line
+   sweep (see .armor-scan-line) can be layered on top without touching the
+   SVG's own sizing. */
+.armor-sil-wrap {
+  position: relative;
+  width: 52px; height: 78px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+/* Armor Bay premium pass: stroke color already comes from currentColor +
+   color:var(--accent) (#3fa9f5, matches spec exactly, no change needed) —
+   added a subtle glow filter, per spec. drop-shadow (not an SVG <filter>)
+   so this one CSS rule covers all 4 diagram variants (_suitSVG + the 3
+   bespoke model SVGs) uniformly, rather than editing each generator. */
+.armor-silhouette {
+  width: 100%; height: 100%;
+  color: var(--accent);
+  opacity: 0.40;
+  filter: drop-shadow(0 0 3px rgba(63,169,245,0.35));
+  transition: opacity 0.2s, color var(--tt);
+}
+.armor-card:hover .armor-silhouette { opacity: 0.72; }
+
+/* Slow scan-line sweep down the silhouette — subtle, always running, cheap
+   (one gradient div per card, animated via `top` at a very low frequency). */
+.armor-scan-line {
+  position: absolute;
+  left: 0; right: 0; top: -16px;
+  height: 16px;
+  background: linear-gradient(to bottom, transparent, var(--accent-a02), transparent);
+  animation: armor-scan 4.5s linear infinite;
+  pointer-events: none;
+}
+@keyframes armor-scan {
+  0%   { top: -16px; }
+  100% { top: 78px; }
+}
+
+/* Hidden detail hint — revealed only on hover, gives a taste of the full
+   detail page (opened on click) without needing extra interaction. */
+.armor-card-hint {
+  font-size: 0.52rem;
+  color: rgba(232,232,232,0.45);
+  text-align: center;
+  line-height: 1.4;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+.armor-card:hover .armor-card-hint {
+  max-height: 60px;
+  opacity: 1;
+}
+
+.armor-card-name {
+  font-size: 0.62rem; letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--white); text-align: center; line-height: 1.2;
+}
+.armor-card-hours {
+  font-size: 0.55rem; color: rgba(232,232,232,0.32);
+  letter-spacing: 0.06em;
+}
+
+/* Status badges — Armor Bay premium pass: exact spec colors, angular
+   clip-path instead of border-radius. badge-no-completado (an extra state
+   beyond the spec's 3 named ones — see _badgeClass() in the script) gets
+   the same "negative" red as badge-no-construido since it's the closest
+   semantic match and the spec doesn't define a 4th color. */
+.armor-badge {
+  font-family: var(--mm-font-mono);
+  font-size: 0.48rem; letter-spacing: 0.10em;
+  text-transform: uppercase;
+  padding: 1px 5px; border: 1px solid;
+  clip-path: polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px);
+  white-space: nowrap;
+}
+.badge-completado    { color: rgba(0,255,128,0.8); border-color: rgba(0,255,128,0.40); background: rgba(0,255,128,0.07); }
+.badge-no-completado { color: rgba(255,68,68,0.7); border-color: rgba(255,68,68,0.40); background: rgba(255,68,68,0.07); }
+.badge-construccion  { color: rgba(240,192,64,0.8); border-color: rgba(240,192,64,0.40); background: rgba(240,192,64,0.07); }
+.badge-no-construido { color: rgba(255,68,68,0.7); border-color: rgba(255,68,68,0.30); background: rgba(255,68,68,0.05); }
+/* New with the editable-status picker — EN REPARACIÓN gets its own amber/
+   orange (distinct from EN CONSTRUCCIÓN's yellow: "actively being fixed"
+   reads differently from "being built"); DESTRUIDO gets grey rather than
+   another shade of red — "gone" isn't the same idea as "incomplete", so it
+   doesn't belong in the same red family as no-completado/no-construido. */
+.badge-reparacion { color: rgba(255,140,20,0.85); border-color: rgba(255,140,20,0.45); background: rgba(255,140,20,0.07); }
+.badge-destruido  { color: rgba(160,160,160,0.75); border-color: rgba(160,160,160,0.40); background: rgba(160,160,160,0.06); }
+
+/* Status picker — click .armor-badge in the detail view to reveal, reuses
+   .core-persona-tier-btn/-buttons wholesale (armor-mindmap-detail.css,
+   built for Núcleo LIRA's Personas tab) rather than a third editing-widget
+   style; only the show/hide toggle itself is new here.
+   Bug fix: armor-mindmap-detail.css loads AFTER this file (see index.html's
+   <link> order) and its own .core-persona-tier-buttons rule sets
+   `display: flex` unconditionally — at equal specificity (both single-
+   class selectors), the LATER stylesheet wins, so a plain
+   `.armor-status-picker { display: none }` here was silently overridden
+   and the picker showed permanently instead of only after a badge click.
+   The #armorStatusPicker id selector has higher specificity than any
+   class selector, so it wins regardless of stylesheet order. */
+#armorStatusPicker {
+  display: none;
+  margin-top: 6px;
+}
+#armorStatusPicker.open { display: flex; flex-wrap: wrap; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ARMOR DETAIL VIEW — full-page replacement (not a side panel or modal) for
+   the grid/concept view when an armor card is clicked. An opaque,
+   absolutely-positioned layer inside #armorSection (which needs
+   position:relative for this — see below), so opening/closing is a pure
+   opacity crossfade; the grid/subtabs underneath are simply covered, never
+   hidden or re-rendered — see _openDetail()/_closeDetailView() in the script.
+═══════════════════════════════════════════════════════════════════════════ */
+#armorDetailView {
+  position: absolute; /* full-page overlay over the grid/subtabs — unchanged;
+                          also already the containing block the ::before
+                          grid overlay below needs, no extra rule required */
+  inset: 0;
+  background: #0a0a0a;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  overflow: hidden;
+}
+#armorDetailView.active { opacity: 1; pointer-events: auto; }
+/* Armor Bay premium pass: same 40px grid overlay technique as
+   #section-home::after (main menu) — rgba(63,169,245,0.04) lines, this
+   section's own exact spec values, deliberately not sharing the main
+   menu's literal layer since scope/opacity differ slightly. */
+#armorDetailView::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg,  rgba(63,169,245,0.04) 0px, rgba(63,169,245,0.04) 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(90deg, rgba(63,169,245,0.04) 0px, rgba(63,169,245,0.04) 1px, transparent 1px, transparent 40px);
+  pointer-events: none;
+  z-index: 0;
+}
+.detail-back-btn, .armor-detail-page { position: relative; z-index: 1; }
+
+/* Angular, JetBrains Mono, 1px border, hover brightens — Armor Bay
+   premium pass, replacing the old plain-text look. */
+.detail-back-btn {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  background: none;
+  border: 1px solid rgba(63,169,245,0.2);
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  color: rgba(255,255,255,0.5);
+  font-family: var(--mm-font-mono);
+  font-size: 0.68rem; letter-spacing: 0.1em;
+  cursor: pointer; padding: 8px 14px; margin: 10px 2px; outline: none;
+  transition: color 120ms, border-color 120ms;
+}
+.detail-back-btn:hover { color: var(--accent); border-color: rgba(63,169,245,0.5); }
+
+/* Thin 2px accent scrollbar (Armor Bay premium pass) */
+.armor-detail-page {
+  flex: 1 1 0;
+  display: flex;
+  gap: 24px;
+  overflow-y: auto;
+  padding: 4px 2px 30px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(63,169,245,0.5) rgba(63,169,245,0.2);
+}
+.armor-detail-page::-webkit-scrollbar { width: 2px; }
+.armor-detail-page::-webkit-scrollbar-track { background: rgba(63,169,245,0.2); }
+.armor-detail-page::-webkit-scrollbar-thumb { background: rgba(63,169,245,0.5); border-radius: 0; }
+
