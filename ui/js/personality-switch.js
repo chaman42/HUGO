@@ -1,4 +1,4 @@
-// personality-switch.js — LIRA is now the only personality (JARVIS/FRIDAY
+// personality-switch.js — HUGO is now the only personality (JARVIS/FRIDAY
 // removed, along with every switcher UI). This file keeps its name/existence
 // since applyPersonality() is still a real function called from 3 places
 // (initial boot in clock-boot-splash-wiring.js, a personality_change socket
@@ -10,11 +10,11 @@
 // .orb-shape/.mm-orb-shape's own base rules), so this file no longer needs
 // to set clip-path/border-radius via JS at all.
 
-// LIRA's own quote pool — direct, slightly sardonic, warm underneath. Also
+// HUGO's own quote pool — direct, slightly sardonic, warm underneath. Also
 // the sequential rotation pool for _rotateMMQuote() (45s cycle) below; kept
 // in this exact spec order rather than randomized so "cycling" reads as
 // intentional, not repetitive-random.
-const _LIRA_QUOTES = [
+const _HUGO_QUOTES = [
   'Sin novedades. Por ahora.',
   'Sistemas en orden. Tú decides qué hacemos.',
   'Aquí. Como siempre.',
@@ -25,7 +25,7 @@ const _LIRA_QUOTES = [
   'Operative. Aunque nadie lo pidió.',
 ]
 
-const LIRA_ACCENT = '#f0c040'
+const HUGO_ACCENT = '#409cf0'
 
 function _hexToRgba(hex, alpha) {
   const r = parseInt(hex.slice(1, 3), 16)
@@ -42,7 +42,7 @@ function applyPersonality(name, displayName) {
   // isn't looked up against anything.
 
   // 1. Update PERSONALITY CSS vars — shell vars (--accent and family) stay fixed.
-  const a = LIRA_ACCENT
+  const a = HUGO_ACCENT
   document.documentElement.style.setProperty('--p-color',  a)
   document.documentElement.style.setProperty('--p-mid',    _hexToRgba(a, 0.35))
   document.documentElement.style.setProperty('--p-dim',    _hexToRgba(a, 0.12))
@@ -61,7 +61,7 @@ function applyPersonality(name, displayName) {
   // var(--p-color) too, but two DIFFERENT elements... actually no — they
   // already used var(--p-color) directly in CSS, so this was always
   // redundant even before the merge; removed along with those elements
-  // now that #liraDiamond (diamond-toggles.css/diamond-core.css) is the
+  // now that #hugoDiamond (diamond-toggles.css/diamond-core.css) is the
   // only diamond and was never repainted this way to begin with (she's
   // long been "always gold" by design, independent of --p-color).
   const micDotEl         = document.getElementById('micDot')
@@ -95,14 +95,14 @@ function applyPersonality(name, displayName) {
     _pIndDot.style.background = a
     _pIndDot.style.boxShadow  = `0 0 6px ${_hexToRgba(a, 0.55)}`
   }
-  if (_pIndName) _pIndName.textContent = 'L I R A'
+  if (_pIndName) _pIndName.textContent = 'H U G O'
 
-  // 5. Update Main Menu name label (the orb itself is #liraDiamond now —
+  // 5. Update Main Menu name label (the orb itself is #hugoDiamond now —
   // see step 2's own comment — nothing left to repaint here for it).
   const mmName  = document.getElementById('mmName')
 
   if (mmName) {
-    mmName.textContent   = 'L I R A'
+    mmName.textContent   = 'H U G O'
     mmName.style.color       = a
     mmName.style.textShadow  = `0 0 22px ${_hexToRgba(a, 0.55)}`
   }
@@ -114,8 +114,8 @@ function applyPersonality(name, displayName) {
   // one anymore).
   const quoteEl = document.getElementById('mmQuote')
   if (quoteEl && !_mmLastQuotedPersonality) {
-    _mmLastQuotedPersonality = 'lira'
-    const nextQuote = _LIRA_QUOTES[(_mmLiraQuoteIdx = 0)]
+    _mmLastQuotedPersonality = 'hugo'
+    const nextQuote = _HUGO_QUOTES[(_mmHugoQuoteIdx = 0)]
     if (quoteEl.textContent !== nextQuote) {
       quoteEl.classList.add('fading')
       setTimeout(() => {
@@ -127,7 +127,7 @@ function applyPersonality(name, displayName) {
 
   // 7. Update quick stats personality name
   const mmStatPersonality = document.getElementById('mmStatPersonality')
-  if (mmStatPersonality) mmStatPersonality.textContent = 'L I R A'
+  if (mmStatPersonality) mmStatPersonality.textContent = 'H U G O'
 
   // 8. Refresh system status strip
   _updateMMSysStrip()

@@ -77,7 +77,7 @@ def api_mute_state():
 
 @app.route("/api/tts_mute", methods=["POST"])
 def api_tts_mute():
-    """Mute LIRA's spoken output only — the mic and command processing keep
+    """Mute HUGO's spoken output only — the mic and command processing keep
     running as normal, replies just stop being spoken (see core.voice's
     is_tts_muted() check in the actual playback functions)."""
     import core.voice as voice
@@ -98,33 +98,6 @@ def api_tts_unmute():
 def api_tts_mute_state():
     import core.voice as voice
     return jsonify({"muted": voice.is_tts_muted()})
-
-@app.route("/api/tts_engine", methods=["GET"])
-def api_tts_engine_get():
-    """Current TTS engine ('kokoro', 'xtts', or 'say') — backs the 'MOTOR
-    DE VOZ' toggle's initial render in Ajustes (see ui/js/chat-render.js)."""
-    import core.voice as voice
-    return jsonify({"engine": voice.get_tts_engine()})
-
-
-@app.route("/api/set_tts_engine", methods=["POST"])
-def api_set_tts_engine():
-    """Switch the live TTS engine. Body: {"engine": "xtts" | "kokoro" | "say"}.
-    Applies immediately (core.voice.get_tts_engine() is read fresh on
-    every core.commands._say_for() call, not cached) — no restart needed —
-    and persists to .env so the choice survives one too. Broadcasts the
-    new state over SocketIO so every connected HUD tab's toggle stays in
-    sync, same pattern as tts_mute_state/feature_flags_state above."""
-    import core.voice as voice
-    data   = request.get_json(force=True, silent=True) or {}
-    engine = (data.get("engine") or "").strip().lower()
-    try:
-        engine = voice.set_tts_engine(engine)
-    except ValueError as e:
-        return jsonify({"ok": False, "error": str(e)}), 400
-    socketio.emit("tts_engine_state", {"engine": engine})
-    return jsonify({"ok": True, "engine": engine})
-
 
 @app.route("/api/feature_flags", methods=["GET"])
 def api_feature_flags_get():
@@ -182,9 +155,9 @@ def api_modules_disable(name):
 @app.route("/api/modules/catalog", methods=["GET"])
 def api_modules_catalog_get():
     """Full capability catalog (data/modules_catalog.json) — every
-    capability LIRA has, is building, or has planned, independent of the
-    runtime registry above — PLUS a synthetic 'CREADO POR LIRA' entry for
-    every module Joan asked LIRA to build directly in conversation, which
+    capability HUGO has, is building, or has planned, independent of the
+    runtime registry above — PLUS a synthetic 'CREADO POR HUGO' entry for
+    every module Joan asked HUGO to build directly in conversation, which
     has no catalog entry by design. Backed by
     core.module_manager.manager.get_catalog_with_ad_hoc() — see that
     method's own docstring for how it tells those apart from the
@@ -392,7 +365,7 @@ def api_subagents_cancel(subagent_id):
 # down to an empty/false result until Joan adds a path there herself; see
 # core/code_engine/permissions.py). Completely separate from the skills/
 # module-generation endpoints above (POST /api/code-engine/create|update) —
-# those touch LIRA's own skills/, these touch whatever project path Joan
+# those touch HUGO's own skills/, these touch whatever project path Joan
 # points them at.
 # ---------------------------------------------------------------------------
 
@@ -667,13 +640,13 @@ def api_code_engine_review():
 @app.route("/api/code-engine/flagged", methods=["GET"])
 def api_code_engine_flagged():
     """Modules CodeEngine has created or modified (module_manager.
-    ModuleManager.get_lira_flagged_modules(), reading the lira_review_flag
+    ModuleManager.get_hugo_flagged_modules(), reading the hugo_review_flag
     every create_module()/create_ad_hoc_module()/update_module() stamps
-    onto its manifest — see core.code_engine._stamp_lira_review_flag) —
+    onto its manifest — see core.code_engine._stamp_hugo_review_flag) —
     a quick way to pull just the LLM-generated/-modified skills for a
     code-error review pass instead of every module in skills/."""
     import core.module_manager as module_manager_mod
-    return jsonify({"modules": module_manager_mod.manager.get_lira_flagged_modules()})
+    return jsonify({"modules": module_manager_mod.manager.get_hugo_flagged_modules()})
 
 
 @app.route("/api/code-engine/review/<plan_id>", methods=["GET"])
@@ -808,8 +781,8 @@ def api_code_engine_deployment_rollback(deploy_id):
     return jsonify({"ok": deployer.rollback_deploy(deploy_id)})
 
 
-@app.route("/api/code-engine/deploy/lira-module", methods=["POST"])
-def api_code_engine_deploy_lira_module():
+@app.route("/api/code-engine/deploy/hugo-module", methods=["POST"])
+def api_code_engine_deploy_hugo_module():
     """Body: {"module_path": str}. Fire-and-forget, same pattern as
     /api/code-engine/create|update|orchestrate above — the full safety
     gate (tests, review, sandbox health check) can take a while."""
@@ -824,12 +797,12 @@ def api_code_engine_deploy_lira_module():
 
     def _run():
         try:
-            deployer.deploy_lira_module(module_path)
+            deployer.deploy_hugo_module(module_path)
         except Exception:
             import core.code_engine as code_engine_mod
-            code_engine_mod.logger.error("deploy_lira_module(%r) raised unexpectedly", module_path, exc_info=True)
+            code_engine_mod.logger.error("deploy_hugo_module(%r) raised unexpectedly", module_path, exc_info=True)
 
-    threading.Thread(target=_run, daemon=True, name="code-engine-deploy-lira-module").start()
+    threading.Thread(target=_run, daemon=True, name="code-engine-deploy-hugo-module").start()
     return jsonify({"ok": True, "started": True})
 
 

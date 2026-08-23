@@ -2,10 +2,10 @@
 # SOCIAL REASONING — Phase 1 of the conversational intelligence system.
 #
 # Wake-word detection (core/wake_word.py) only answers "was the name heard?".
-# It says nothing about whether the speaker was actually addressing Lira
-# ("Lira, ¿puedes hacer esto?") vs. talking ABOUT her ("Lira puede hacer
-# esto.", "Creo que Lira debería aprender esto.") or the name being
-# incidental ("Le estaba enseñando Lira a un amigo."). This module answers
+# It says nothing about whether the speaker was actually addressing Hugo
+# ("Hugo, ¿puedes hacer esto?") vs. talking ABOUT her ("Hugo puede hacer
+# esto.", "Creo que Hugo debería aprender esto.") or the name being
+# incidental ("Le estaba enseñando Hugo a un amigo."). This module answers
 # that question — and, symmetrically, whether an utterance inside the
 # post-response context window (core/listener.py's _CONTEXT_WINDOW_SECS) is
 # a genuine continuation of the exchange or unrelated speech picked up
@@ -86,39 +86,39 @@ def _ollama_judge(system: str, prompt: str) -> bool | None:
         return None
 
 
-# ── Wake-word path: "is Lira actually being addressed?" ─────────────────────
+# ── Wake-word path: "is Hugo actually being addressed?" ─────────────────────
 
 _ADDRESSED_SYSTEM = (
     "Eres el módulo de razonamiento social de un asistente de voz llamado "
-    "Lira. Tu única tarea es decidir, para la frase que se te da, si "
+    "Hugo. Tu única tarea es decidir, para la frase que se te da, si "
     "quien habla se está dirigiendo DIRECTAMENTE al asistente — pidiéndole "
     "algo, saludándolo, invocándolo — o si en cambio está hablando SOBRE el "
     "asistente en tercera persona, mencionando su nombre de forma "
     "incidental, o dirigiéndose a otra persona. Responde con una sola "
     "palabra: SI si se dirige al asistente, NO si no.\n\n"
     "Ejemplos:\n"
-    "\"Lira, ¿puedes hacer esto?\" -> SI\n"
-    "\"¿Lira?\" -> SI\n"
-    "\"Lira...\" -> SI\n"
-    "\"Lira busca esto en internet\" -> SI\n"
-    "\"Lira puede hacer esto.\" -> NO\n"
-    "\"Creo que Lira debería aprender esto.\" -> NO\n"
-    "\"Le estaba enseñando Lira a un amigo.\" -> NO\n"
+    "\"Hugo, ¿puedes hacer esto?\" -> SI\n"
+    "\"¿Hugo?\" -> SI\n"
+    "\"Hugo...\" -> SI\n"
+    "\"Hugo busca esto en internet\" -> SI\n"
+    "\"Hugo puede hacer esto.\" -> NO\n"
+    "\"Creo que Hugo debería aprender esto.\" -> NO\n"
+    "\"Le estaba enseñando Hugo a un amigo.\" -> NO\n"
 )
 
 # Regex fallback (Ollama unreachable only): catch the clearest "talking
-# ABOUT Lira" shape — name followed by a third-person verb — so the most
+# ABOUT Hugo" shape — name followed by a third-person verb — so the most
 # obvious false triggers are still filtered without the LLM. Anything less
 # clear-cut passes through as addressed, per the spec's err-on-the-side-of-
 # responding rule.
 _ABOUT_RE = re.compile(
-    r"\blira\b\s+"
+    r"\bhugo\b\s+"
     r"(puede|podr[ií]a|deber[ií]a|debe|es|era|fue|tiene|sabe|aprende|aprender[ií]a)\b",
     re.IGNORECASE,
 )
 _THIRD_PARTY_RE = re.compile(
     r"\b(le\s+esta(ba)?|le\s+ense[ñn]|a\s+(un|una)\s+amig[oa])\b.{0,40}"
-    r"\blira\b",
+    r"\bhugo\b",
     re.IGNORECASE,
 )
 
@@ -147,7 +147,7 @@ def is_addressed(utterance: str) -> bool:
 
 _CONTINUATION_SYSTEM = (
     "Eres el módulo de razonamiento social de un asistente de voz llamado "
-    "Lira. Acabas de responder al usuario hace pocos segundos, y ahora se "
+    "Hugo. Acabas de responder al usuario hace pocos segundos, y ahora se "
     "detectó una frase nueva SIN que el usuario diga tu nombre. Decide si "
     "esa frase es una continuación natural de la conversación que sigue "
     "dirigida a ti (una respuesta, una instrucción de seguimiento, una "
@@ -182,7 +182,7 @@ def should_continue(utterance: str) -> bool:
 # right now?"
 #
 # Distinct from is_addressed/should_continue above (which only answer "was
-# Lira's name actually meant for her"). This is the broader judgment call
+# Hugo's name actually meant for her"). This is the broader judgment call
 # run right before ANY intervention happens — wake word, context-window
 # continuation, or core.background_loops' periodic proactive tick all funnel
 # through the same should_intervene() below. Same reasoning-over-rules
@@ -211,7 +211,7 @@ def should_continue(utterance: str) -> bool:
 _INTERVENE_TIMEOUT_SECS = 1.0
 
 _INTERVENE_SYSTEM = (
-    "Eres el módulo de razonamiento social de Lira, una asistente de voz. Antes de "
+    "Eres el módulo de razonamiento social de Hugo, una asistente de voz. Antes de "
     "intervenir te preguntas: ¿me han hablado realmente?, ¿estoy invitada a "
     "participar?, ¿tengo algo útil que aportar?, ¿mi intervención mejora la "
     "situación? Responde con una sola palabra: INTERVENIR o SILENCIO. Nada más, "

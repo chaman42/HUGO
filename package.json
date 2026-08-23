@@ -1,7 +1,7 @@
 {
   "name": "jarvislite",
   "version": "1.0.0",
-  "description": "Multi-personality voice assistant — local Vosk STT, Groq LLM, macOS TTS — with an Electron desktop app (LIRA).",
+  "description": "Multi-personality voice assistant — local Vosk STT, Groq LLM, macOS TTS — with an Electron desktop app (HUGO).",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

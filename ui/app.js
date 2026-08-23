@@ -70,9 +70,9 @@ const responseTimerEl  = document.getElementById('responseTimer')
 const BOOT_TIMEOUT_MS = 45000
 
 const STATUS_LABELS = { listening: 'Listening', processing: 'Processing', speaking: 'Speaking' }
-const PERSONALITY_LABEL = { jarvis: '🤖  jarvis', friday: '🤖  friday', lira: '🤖  lira' }
+const PERSONALITY_LABEL = { jarvis: '🤖  jarvis', friday: '🤖  friday', hugo: '🤖  hugo' }
 
-let currentPersonality  = 'lira'
+let currentPersonality  = 'hugo'
 let currentStatus       = 'listening'
 let lastMsgType         = null
 let _flashTimer         = null
@@ -159,7 +159,7 @@ function _showRejectionPage() {
     '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}' +
     'html,body{height:100%;overflow:hidden;background:#0a0a0a;' +
     'display:flex;align-items:center;justify-content:center}' +
-    'p{color:#f0c040;font-size:clamp(1.5rem,5vw,3rem);' +
+    'p{color:#409cf0;font-size:clamp(1.5rem,5vw,3rem);' +
     "font-family:'Courier New',Courier,monospace;text-align:center;user-select:none}" +
     '</style></head><body>' +
     '<p>Los cojones ves esto</p>' +
@@ -556,10 +556,10 @@ function _attemptConnect() {
   })
   jarvisSocket.on('mute_state', ({ muted }) => applyMuteState(muted))
   jarvisSocket.on('tts_mute_state', ({ muted }) => applyTtsMuteState(muted))
-  // LIRA CORE's Estado tab — additive listeners (existing ones above are
+  // HUGO CORE's Estado tab — additive listeners (existing ones above are
   // untouched) that just refresh Estado's own display if it's the
   // currently visible tab, on top of whatever each event already does.
-  // See _renderCoreEstado() / "LIRA CORE" section further down.
+  // See _renderCoreEstado() / "HUGO CORE" section further down.
   const _coreEstadoRefresh = () => {
     if (typeof _currentSection !== 'undefined' && _currentSection === 'core' &&
         typeof _currentCoreSub !== 'undefined' && _currentCoreSub === 'estado') {
@@ -587,8 +587,8 @@ function _attemptConnect() {
       _loadSleepInsights()
     }
   })
-  // LIRA CORE's Pensamiento tab — see _onLiraThinking() further down.
-  jarvisSocket.on('lira_thinking', (data) => { if (typeof _onLiraThinking === 'function') _onLiraThinking(data) })
+  // HUGO CORE's Pensamiento tab — see _onHugoThinking() further down.
+  jarvisSocket.on('hugo_thinking', (data) => { if (typeof _onHugoThinking === 'function') _onHugoThinking(data) })
   // Unified floating diamond — live partial transcript (what Joan is
   // saying, mid-recognition) shown above the diamond while she's actively
   // listening and still processing. Additional listener alongside the
@@ -817,17 +817,17 @@ muteBtn.addEventListener('click', async () => {
 
 // TTS (voice output) mute — mirrors the mic mute block above, but hits
 // /api/tts_mute /api/tts_unmute (core/server.py → core.voice.set_tts_muted).
-// The mic itself is never touched: LIRA keeps listening and replying in
+// The mic itself is never touched: HUGO keeps listening and replying in
 // chat, she just stops speaking.
 function applyTtsMuteState(muted) {
   _isTtsMuted = muted
   if (muted) {
     ttsMuteBtn.textContent = '🔈'
-    ttsMuteBtn.title       = "Unmute LIRA's voice"
+    ttsMuteBtn.title       = "Unmute HUGO's voice"
     ttsMuteBtn.classList.add('muted')
   } else {
     ttsMuteBtn.textContent = '🔊'
-    ttsMuteBtn.title       = "Mute LIRA's voice"
+    ttsMuteBtn.title       = "Mute HUGO's voice"
     ttsMuteBtn.classList.remove('muted')
   }
   // Keep the main-menu mirror button (#mmToggleTts) in sync — same pattern
@@ -983,7 +983,7 @@ function _clearResponseTimer() {
 // ════════════════════════════════════════════════════════════════════════════
 // USER ACTIVITY — reports what Joan is doing in the HUD (section
 // navigation, concept-form typing, opening an armor model, going idle)
-// over the existing jarvisSocket connection, so LIRA can act as a co-pilot
+// over the existing jarvisSocket connection, so HUGO can act as a co-pilot
 // noticing what's happening in the interface itself — see
 // core/server.py's 'user_activity' socket handler and core/commands.py's
 // on_user_activity() / ACTIVIDAD ACTUAL system-prompt block. Every call
@@ -1000,7 +1000,7 @@ function _emitUserActivity(section, action, context) {
 // is on screen right now, and which section of it), separate from USER
 // ACTIVITY above. USER ACTIVITY is a lightweight "what's happening" signal
 // for co-pilot commentary; HUD CONTEXT carries the full object (armor
-// specs/innovations/limitations, concept description) so LIRA can answer
+// specs/innovations/limitations, concept description) so HUGO can answer
 // specific questions about whatever's on screen without asking which one —
 // see core/server.py's 'hud_context' socket handler and
 // core/commands.py's PANTALLA ACTUAL system-prompt block. Fires on every
@@ -1012,7 +1012,7 @@ function _emitHudContext(payload) {
   jarvisSocket.emit('hud_context', payload)
 }
 
-// Internal nav-section id → the vocabulary LIRA's prompt actually uses.
+// Internal nav-section id → the vocabulary HUGO's prompt actually uses.
 const _ACTIVITY_SECTION_MAP = { home: 'main', chat: 'chat', maintenance: 'system', armor: 'armor', settings: 'settings' }
 
 // ── Idle detection — "hasn't touched the HUD in a while", independent of
@@ -1121,7 +1121,7 @@ function _performSwitchSection(name) {
   // _applyDiamondState's own comment). Not gated by the ambient cooldown —
   // a section change is one of the explicit recalculation triggers per
   // spec, same as a state change.
-  if (typeof _liraDiamondState !== 'undefined' && _liraDiamondState === 'idle' &&
+  if (typeof _hugoDiamondState !== 'undefined' && _hugoDiamondState === 'idle' &&
       typeof _glideDiamondTo === 'function') {
     const { top, left } = _bestIdlePosition()
     _glideDiamondTo(top, left)
@@ -1134,7 +1134,7 @@ function _performSwitchSection(name) {
     mmFloatingText.classList.remove('visible')
   }
 
-  // LIRA CORE — render whichever sub-tab is already active on entry (so
+  // HUGO CORE — render whichever sub-tab is already active on entry (so
   // switching back to CORE later shows fresh data, not a stale render from
   // last time), and only run Estado's polling fallback while CORE itself
   // is the visible section.
@@ -1228,7 +1228,7 @@ function _syncBodyClasses() {
 
 // ════════════════════════════════════════════════════════════════════════════
 // CONTEXTUAL PANELS — main-menu side panels that slide in beside the orb
-// while LIRA speaks about a specific topic (weather, time, ...). Backend
+// while HUGO speaks about a specific topic (weather, time, ...). Backend
 // trigger: core/commands.py's _maybe_emit_panel() emits a 'show_panel'
 // socket event (via core/server.py's emit_show_panel()) right after intent
 // detection, before the reply is generated. The frontend just arms
@@ -1324,7 +1324,7 @@ const MM_STATUS_LABELS = { listening: 'Escuchando', processing: 'Procesando', sp
 // instant textContent swap, plus a subtle idle "breath" (dim to 30%, back)
 // every 8-12s while parked on Escuchando with nothing changing. State kept
 // in module-level `let`s (declared here, before setStatus() below is ever
-// called) rather than data-* attributes, same reasoning as _mmLiraQuoteIdx
+// called) rather than data-* attributes, same reasoning as _mmHugoQuoteIdx
 // above — cheaper and this is the only place that reads them.
 let _mmStatusTypeTimer  = null
 let _mmStatusBreathTimer = null
@@ -1391,7 +1391,7 @@ function setStatus(status) {
   _typeMMStatus(MM_STATUS_LABELS[status] ?? status)
   if (status !== 'processing') setPartialTranscript('')
 
-  // Contextual panels — reveal in sync with LIRA actually starting to
+  // Contextual panels — reveal in sync with HUGO actually starting to
   // speak (not the moment 'show_panel' arrived, which is earlier, while
   // she's still processing), and hide the moment she stops. See
   // "CONTEXTUAL PANELS" section below.
@@ -1444,37 +1444,37 @@ function setPartialTranscript(text) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// UNIFIED FLOATING LIRA DIAMOND — replaces the old Siri-style overlay
+// UNIFIED FLOATING HUGO DIAMOND — replaces the old Siri-style overlay
 // entirely (was scoped to Armaduras/Sistema/Ajustes only; this one shows
-// on every section except Main/Chat, including LIRA CORE and CONTROL).
-// Autonomous — LIRA controls her own position, never draggable, no
+// on every section except Main/Chat, including HUGO CORE and CONTROL).
+// Autonomous — HUGO controls her own position, never draggable, no
 // localStorage. Driven entirely by the existing 'log'/'status'/
 // 'partial_transcript' socket events — no new backend events. See
-// #liraDiamond's own HTML comment for the full design rationale, and
+// #hugoDiamond's own HTML comment for the full design rationale, and
 // .mm-floating-text's HTML comment further down for Main's own (separate,
 // untouched) equivalent.
 // ════════════════════════════════════════════════════════════════════════════
-const liraDiamond       = document.getElementById('liraDiamond')
-const liraDiamondOrb    = document.getElementById('liraDiamondOrb')
-const liraDiamondText   = document.getElementById('liraDiamondText')
-const liraDiamondBubble = document.getElementById('liraDiamondBubble')
-const liraDiamondBubbleText = document.getElementById('liraDiamondBubbleText')
-const liraDiamondInput  = document.getElementById('liraDiamondInput')
+const hugoDiamond       = document.getElementById('hugoDiamond')
+const hugoDiamondOrb    = document.getElementById('hugoDiamondOrb')
+const hugoDiamondText   = document.getElementById('hugoDiamondText')
+const hugoDiamondBubble = document.getElementById('hugoDiamondBubble')
+const hugoDiamondBubbleText = document.getElementById('hugoDiamondBubbleText')
+const hugoDiamondInput  = document.getElementById('hugoDiamondInput')
 const mmFloatingText    = document.getElementById('mmFloatingText')
 const mmFloatingInput   = document.getElementById('mmFloatingInput')
 
 let _lastJarvisReply = ''   // tracked unconditionally in addMessage() below — the bubble's "last response" line
 
-const LIRA_DIAMOND_EXCLUDED_SECTIONS = new Set(['home', 'chat'])
-function _diamondEligible() { return !LIRA_DIAMOND_EXCLUDED_SECTIONS.has(_currentSection) }
+const HUGO_DIAMOND_EXCLUDED_SECTIONS = new Set(['home', 'chat'])
+function _diamondEligible() { return !HUGO_DIAMOND_EXCLUDED_SECTIONS.has(_currentSection) }
 
 function _updateDiamondVisibility() {
-  liraDiamond.classList.toggle('visible', _diamondEligible())
+  hugoDiamond.classList.toggle('visible', _diamondEligible())
   if (!_diamondEligible()) _closeDiamondBubble()   // never leave the bubble open behind on Main/Chat
 }
 
 // ── Autonomous positioning — dynamic density-scored grid ─────────────────
-// LIRA picks her own position by dividing the CURRENT viewport into a grid,
+// HUGO picks her own position by dividing the CURRENT viewport into a grid,
 // scoring every cell by how much UI content overlaps it (empty space scores
 // high, nav bars/panels/inputs/card grids score low), and choosing the
 // best-scoring cell — biased toward "far from where she already is" as a
@@ -1512,12 +1512,12 @@ const DIAMOND_REGIONS = {
 const DIAMOND_CORNER_REGIONS = ['top-left', 'top-right', 'bottom-left', 'bottom-right']
 
 function _diamondSize() {
-  // Fallback matches .lira-diamond-orb's premium-pass 32px (was 42px).
-  return { w: liraDiamond.offsetWidth || 32, h: liraDiamond.offsetHeight || 32 }
+  // Fallback matches .hugo-diamond-orb's premium-pass 32px (was 42px).
+  return { w: hugoDiamond.offsetWidth || 32, h: hugoDiamond.offsetHeight || 32 }
 }
 
 function _currentDiamondTopLeft() {
-  return { top: parseFloat(liraDiamond.style.top) || 0, left: parseFloat(liraDiamond.style.left) || 0 }
+  return { top: parseFloat(hugoDiamond.style.top) || 0, left: parseFloat(hugoDiamond.style.left) || 0 }
 }
 
 // The grid itself — cell CENTERS (cx, cy), plus each cell's own w/h for
@@ -1541,7 +1541,7 @@ function _diamondGridCells() {
   return { cells, cellW, cellH }
 }
 
-// Rects LIRA should never sit on top of: nav bars/toolbars (per spec),
+// Rects HUGO should never sit on top of: nav bars/toolbars (per spec),
 // whatever the CURRENT section's own visible interactive content is
 // (panels/text inputs/card grids — scoped selectors only, never '*', so
 // this stays cheap even on content-heavy sections), and whatever the user
@@ -1661,7 +1661,7 @@ function _bestRegionPosition(regionKey) {
 // bottom/right/auto-toggling version of this code silently SNAPPED
 // instead of gliding on whichever axis flipped which side was "active".
 // Anchoring everything to top+left in pixels makes every move a pure
-// length→length interpolation, which .lira-diamond's transition (500ms,
+// length→length interpolation, which .hugo-diamond's transition (500ms,
 // cubic-bezier(0.23, 1, 0.32, 1) — see its own CSS comment) can always
 // animate.
 let _diamondMoving        = false   // true while a move's CSS transition is in flight
@@ -1683,8 +1683,8 @@ function _onDiamondMoveSettled() {
   }
   _playDiamondArrivalBounce()
 }
-liraDiamond.addEventListener('transitionend', ev => {
-  if (ev.target === liraDiamond && (ev.propertyName === 'top' || ev.propertyName === 'left')) _onDiamondMoveSettled()
+hugoDiamond.addEventListener('transitionend', ev => {
+  if (ev.target === hugoDiamond && (ev.propertyName === 'top' || ev.propertyName === 'left')) _onDiamondMoveSettled()
 })
 
 function _setDiamondPosition(top, left) {
@@ -1698,15 +1698,15 @@ function _setDiamondPosition(top, left) {
   // therefore no transitionend) will fire; treat as a no-op instead of
   // flipping _diamondMoving to true and waiting forever for an event that
   // will never come.
-  const currentTop  = parseFloat(liraDiamond.style.top)  || 0
-  const currentLeft = parseFloat(liraDiamond.style.left) || 0
+  const currentTop  = parseFloat(hugoDiamond.style.top)  || 0
+  const currentLeft = parseFloat(hugoDiamond.style.left) || 0
   if (currentTop === top && currentLeft === left) return
 
   _diamondMoving      = true
   _diamondMoveSettled = false
   _diamondPositionSetAt = Date.now()
-  liraDiamond.style.top  = `${top}px`
-  liraDiamond.style.left = `${left}px`
+  hugoDiamond.style.top  = `${top}px`
+  hugoDiamond.style.left = `${left}px`
   // Fallback safety net — if transitionend never fires for some reason
   // (e.g. the element becomes momentarily unrenderable), this guarantees
   // _diamondMoving can never get stuck true forever, which would silently
@@ -1723,19 +1723,19 @@ function _setDiamondPosition(top, left) {
 // before settling exactly there at 100% — that spike IS the "spring".
 // Deliberately a temporary class + keyframe animation rather than a second
 // permanent transform owner: every element here already has its own
-// state-driven transform (.lira-diamond.wake, .lira-diamond-orb/-glow's
+// state-driven transform (.hugo-diamond.wake, .hugo-diamond-orb/-glow's
 // per-state scale rules) — once this animation ends (see the
-// 'animationend' listener below) and the class is removed, .lira-diamond's
+// 'animationend' listener below) and the class is removed, .hugo-diamond's
 // own EXISTING transform transition (same spring curve, already used for
 // the wake-state grow) smoothly glides back down to whatever the current
 // state's resting scale actually is, so this never fights or overrides it.
 function _playDiamondArrivalBounce() {
-  liraDiamond.classList.remove('arrived')
-  void liraDiamond.offsetWidth   // force reflow so re-adding immediately restarts the animation
-  liraDiamond.classList.add('arrived')
+  hugoDiamond.classList.remove('arrived')
+  void hugoDiamond.offsetWidth   // force reflow so re-adding immediately restarts the animation
+  hugoDiamond.classList.add('arrived')
 }
-liraDiamond.addEventListener('animationend', ev => {
-  if (ev.animationName === 'lira-diamond-arrival-bounce') liraDiamond.classList.remove('arrived')
+hugoDiamond.addEventListener('animationend', ev => {
+  if (ev.animationName === 'hugo-diamond-arrival-bounce') hugoDiamond.classList.remove('arrived')
 })
 
 // ── Arc glide — "never a straight line" for a far move ───────────────────
@@ -1768,7 +1768,7 @@ function _glideDiamondTo(top, left) {
 // triggered idle re-homes) ─────────────────────────────────────────────
 // State transitions (wake/processing/speaking/idle-after-speaking),
 // section changes, and user-commanded moves are NEVER gated by this —
-// per spec, the cooldown only applies to LIRA's own passive drifting, and
+// per spec, the cooldown only applies to HUGO's own passive drifting, and
 // explicitly does not apply "when triggered by state change". 8s alone
 // satisfies both stated rules ("never more than once every 8s" and "if
 // she's been somewhere less than 5s, don't move her again", since 8 > 5).
@@ -1782,7 +1782,7 @@ function _diamondUserIsTyping() {
 
 function _diamondAmbientMoveAllowed() {
   if (!_diamondEligible()) return false
-  if (_liraDiamondState !== 'idle') return false          // wake/processing/speaking own their own position already
+  if (_hugoDiamondState !== 'idle') return false          // wake/processing/speaking own their own position already
   if (Date.now() - _diamondPositionSetAt < DIAMOND_AMBIENT_COOLDOWN_MS) return false
   if (_diamondUserIsTyping()) return false                // "never move during active conversation"
   return true
@@ -1826,10 +1826,10 @@ const _diamondMutationObserver = new MutationObserver(() => {
 // spinning its perimeter arc wherever wake/idle already left it. State
 // transitions always move immediately, never gated by the ambient cooldown
 // above (per spec: "unless triggered by state change").
-let _liraDiamondState = 'idle'
+let _hugoDiamondState = 'idle'
 
 function _applyDiamondState(state) {
-  if (state === _liraDiamondState) {
+  if (state === _hugoDiamondState) {
     // Already in this state — 'idle' still re-homes to the CURRENT best
     // spot, since _currentSection (and the DOM around her) can change
     // while status stays 'listening' the whole time (see switchSection's
@@ -1837,9 +1837,9 @@ function _applyDiamondState(state) {
     if (state === 'idle') { const { top, left } = _bestIdlePosition(); _glideDiamondTo(top, left) }
     return
   }
-  _liraDiamondState = state
-  liraDiamond.classList.remove('idle', 'wake', 'processing', 'speaking')
-  liraDiamond.classList.add(state)
+  _hugoDiamondState = state
+  hugoDiamond.classList.remove('idle', 'wake', 'processing', 'speaking')
+  hugoDiamond.classList.add(state)
 
   if (state === 'idle') {
     const { top, left } = _bestIdlePosition()
@@ -1856,7 +1856,7 @@ function _applyDiamondState(state) {
 // position, _applyDiamondState('processing') is a no-op move) or, if
 // nothing followed within the hold window (false alarm / cooldown-ignored
 // trigger), quietly returns to 'idle' at its best corner.
-const LIRA_DIAMOND_WAKE_HOLD_MS = 3000
+const HUGO_DIAMOND_WAKE_HOLD_MS = 3000
 let _diamondWakeTimer = null
 
 function _triggerDiamondWake() {
@@ -1865,21 +1865,21 @@ function _triggerDiamondWake() {
   _applyDiamondState('wake')
   _diamondWakeTimer = setTimeout(() => {
     if (currentStatus !== 'processing' && currentStatus !== 'speaking') _applyDiamondState('idle')
-  }, LIRA_DIAMOND_WAKE_HOLD_MS)
+  }, HUGO_DIAMOND_WAKE_HOLD_MS)
 }
 
 // Initial position, before any status/section event has fired — instant
 // (no glide/arc/bounce needed before she's even visible for the first time).
 { const { top, left } = _bestIdlePosition(); _setDiamondPosition(top, left) }
 
-// ── Organic reveal/dissolve — see .lira-organic-word's own CSS comment for
+// ── Organic reveal/dissolve — see .hugo-organic-word's own CSS comment for
 // the full rationale and why this is separate from _typewriterReveal().
-// Shared by every LIRA-own response text surface (_showDiamondText below,
+// Shared by every HUGO-own response text surface (_showDiamondText below,
 // _showMMFloatingText, _openDiamondBubble). ──
 function _organicReveal(el, text) {
   el.innerHTML = ''
   // Bug fix: whitespace segments used to get wrapped in their OWN
-  // .lira-organic-word span (display:inline-block) same as real words —
+  // .hugo-organic-word span (display:inline-block) same as real words —
   // but a display:inline-block element whose entire content is a single
   // whitespace character has that whitespace collapsed to zero width by
   // the browser's normal text-layout rules (leading/trailing whitespace
@@ -1898,7 +1898,7 @@ function _organicReveal(el, text) {
       return
     }
     const span = document.createElement('span')
-    span.className = 'lira-organic-word'
+    span.className = 'hugo-organic-word'
     span.textContent = part
     span.style.animationDelay = `${wordIndex * 45}ms`
     el.appendChild(span)
@@ -1911,12 +1911,12 @@ function _organicReveal(el, text) {
 // genuinely finishes (via 'animationend', never a hardcoded setTimeout
 // that could drift out of sync with the CSS duration/stagger above).
 function _organicDissolve(el, onDone) {
-  const words = el.querySelectorAll('.lira-organic-word')
+  const words = el.querySelectorAll('.hugo-organic-word')
   if (!words.length) { if (onDone) onDone(); return }
   let remaining = words.length
   words.forEach((span, i) => {
     span.style.animationDelay = `${i * 20}ms`
-    span.classList.add('lira-dissolving')
+    span.classList.add('hugo-dissolving')
     span.addEventListener('animationend', () => {
       remaining--
       if (remaining <= 0 && onDone) onDone()
@@ -2003,26 +2003,26 @@ function _cycleChunks(el, chunks, onAllDone) {
 // paces itself via _cycleChunks() above and glides back the moment its own
 // last chunk finishes, without waiting on this fixed hold at all — each
 // chunk already got its own full reading time on the way there. ──
-const LIRA_DIAMOND_TEXT_HOLD_MS = 3000
+const HUGO_DIAMOND_TEXT_HOLD_MS = 3000
 let _diamondTextHideTimer  = null
-let _diamondChunkCancel    = null   // non-null while a multi-chunk cycle owns liraDiamondText's lifecycle
+let _diamondChunkCancel    = null   // non-null while a multi-chunk cycle owns hugoDiamondText's lifecycle
 
 function _showDiamondText(text) {
   clearTimeout(_diamondTextHideTimer)
   if (_diamondChunkCancel) { _diamondChunkCancel(); _diamondChunkCancel = null }
-  liraDiamondText.classList.remove('visible')
-  void liraDiamondText.offsetWidth   // force reflow so the fade-in replays even if already visible
-  liraDiamondText.classList.add('visible')
+  hugoDiamondText.classList.remove('visible')
+  void hugoDiamondText.offsetWidth   // force reflow so the fade-in replays even if already visible
+  hugoDiamondText.classList.add('visible')
 
   const chunks = _splitIntoChunks(text)
   if (chunks.length <= 1) {
-    _organicReveal(liraDiamondText, text)
+    _organicReveal(hugoDiamondText, text)
     return
   }
-  _diamondChunkCancel = _cycleChunks(liraDiamondText, chunks, () => {
+  _diamondChunkCancel = _cycleChunks(hugoDiamondText, chunks, () => {
     _diamondChunkCancel = null
-    liraDiamondText.classList.remove('visible')
-    liraDiamondText.innerHTML = ''
+    hugoDiamondText.classList.remove('visible')
+    hugoDiamondText.innerHTML = ''
     // Glide back to the corner now — unless a NEW turn already started
     // while this was still cycling (setStatus's own sync already moved
     // the diamond for it; don't yank it back mid-turn).
@@ -2033,83 +2033,83 @@ function _scheduleDiamondTextHide() {
   clearTimeout(_diamondTextHideTimer)
   if (_diamondChunkCancel) return   // a multi-chunk cycle owns the lifecycle now — let it finish at its own pace
   _diamondTextHideTimer = setTimeout(() => {
-    _organicDissolve(liraDiamondText, () => {
-      liraDiamondText.classList.remove('visible')
-      liraDiamondText.innerHTML = ''
+    _organicDissolve(hugoDiamondText, () => {
+      hugoDiamondText.classList.remove('visible')
+      hugoDiamondText.innerHTML = ''
     })
     // Glide back to the corner now — unless a NEW turn already started
     // during the hold (setStatus's own sync already moved the diamond to
     // 'processing'/'speaking' for it; don't yank it back mid-turn).
     if (currentStatus !== 'processing' && currentStatus !== 'speaking') _applyDiamondState('idle')
-  }, LIRA_DIAMOND_TEXT_HOLD_MS)
+  }, HUGO_DIAMOND_TEXT_HOLD_MS)
 }
 
 // ── Click-to-expand bubble ──────────────────────────────────────────────
-const LIRA_DIAMOND_BUBBLE_TIMEOUT_MS = 8000
+const HUGO_DIAMOND_BUBBLE_TIMEOUT_MS = 8000
 let _diamondBubbleTimer = null
 
 // Grows away from whichever screen edge the (autonomously positioned, so
 // varies by state/section) diamond is currently closest to, so the bubble
 // never opens off-screen.
 function _positionDiamondBubble() {
-  const rect     = liraDiamond.getBoundingClientRect()
+  const rect     = hugoDiamond.getBoundingClientRect()
   const growLeft = rect.left > window.innerWidth  / 2
   const growUp   = rect.top  > window.innerHeight / 2
-  liraDiamondBubble.style.right  = growLeft ? '0'    : 'auto'
-  liraDiamondBubble.style.left   = growLeft ? 'auto' : '0'
-  liraDiamondBubble.style.bottom = growUp   ? 'calc(100% + 14px)' : 'auto'
-  liraDiamondBubble.style.top    = growUp   ? 'auto' : 'calc(100% + 14px)'
+  hugoDiamondBubble.style.right  = growLeft ? '0'    : 'auto'
+  hugoDiamondBubble.style.left   = growLeft ? 'auto' : '0'
+  hugoDiamondBubble.style.bottom = growUp   ? 'calc(100% + 14px)' : 'auto'
+  hugoDiamondBubble.style.top    = growUp   ? 'auto' : 'calc(100% + 14px)'
 }
 
 function _resetDiamondBubbleTimer() {
   clearTimeout(_diamondBubbleTimer)
-  _diamondBubbleTimer = setTimeout(_closeDiamondBubble, LIRA_DIAMOND_BUBBLE_TIMEOUT_MS)
+  _diamondBubbleTimer = setTimeout(_closeDiamondBubble, HUGO_DIAMOND_BUBBLE_TIMEOUT_MS)
 }
 function _openDiamondBubble() {
   // _organicReveal('') on an empty _lastJarvisReply still ends up with
   // el genuinely empty (innerHTML cleared, no spans appended), so
-  // .lira-diamond-bubble-text:empty::before's placeholder still applies.
-  _organicReveal(liraDiamondBubbleText, _lastJarvisReply)
+  // .hugo-diamond-bubble-text:empty::before's placeholder still applies.
+  _organicReveal(hugoDiamondBubbleText, _lastJarvisReply)
   _positionDiamondBubble()
-  liraDiamond.classList.add('open')
+  hugoDiamond.classList.add('open')
   _resetDiamondBubbleTimer()
 }
 function _closeDiamondBubble() {
-  liraDiamond.classList.remove('open')
+  hugoDiamond.classList.remove('open')
   clearTimeout(_diamondBubbleTimer)
 }
 function _toggleDiamondBubble() {
-  if (liraDiamond.classList.contains('open')) _closeDiamondBubble()
+  if (hugoDiamond.classList.contains('open')) _closeDiamondBubble()
   else _openDiamondBubble()
 }
 
-liraDiamondInput.addEventListener('input', _resetDiamondBubbleTimer)
-liraDiamondInput.addEventListener('keydown', e => {
+hugoDiamondInput.addEventListener('input', _resetDiamondBubbleTimer)
+hugoDiamondInput.addEventListener('keydown', e => {
   _resetDiamondBubbleTimer()
-  if (e.key === 'Enter') sendTextCommand(liraDiamondInput)
+  if (e.key === 'Enter') sendTextCommand(hugoDiamondInput)
 })
 
 // Tap outside the bubble closes it (per spec) — capture phase so this
 // still sees the click even if something inside a section stops
 // propagation. Only closes the BUBBLE, not the diamond itself.
 document.addEventListener('click', (e) => {
-  if (!liraDiamond.classList.contains('open')) return
-  if (liraDiamond.contains(e.target)) return
+  if (!hugoDiamond.classList.contains('open')) return
+  if (hugoDiamond.contains(e.target)) return
   _closeDiamondBubble()
 }, { capture: true })
 
 // ── Click to open/close the bubble — not draggable (see the top of this
-// section: LIRA controls her own position autonomously). ─────────────────
-liraDiamondOrb.addEventListener('click', () => _toggleDiamondBubble())
+// section: HUGO controls her own position autonomously). ─────────────────
+hugoDiamondOrb.addEventListener('click', () => _toggleDiamondBubble())
 
 
 // ── Main menu floating text ──────────────────────────────────────────────
 // Hold duration for the user's own brief echo, and the fallback hold for a
-// single-chunk (short) reply from LIRA once she stops speaking (see
+// single-chunk (short) reply from HUGO once she stops speaking (see
 // setStatus's speaking→not-speaking transition below, which arms this
 // timer at that point — so a short reply stays up for the full time she's
 // actually speaking, not just a fixed few seconds from when the text first
-// arrived). A multi-chunk (long) reply from LIRA instead paces itself via
+// arrived). A multi-chunk (long) reply from HUGO instead paces itself via
 // _cycleChunks() — see _showMMFloatingText below — and never reaches this
 // timer at all, same split as the floating diamond's own text above.
 const MM_FLOATING_TEXT_HOLD_MS = 4000
@@ -2123,7 +2123,7 @@ function _showMMFloatingText(text, isUserEcho) {
   mmFloatingText.classList.remove('visible')
   void mmFloatingText.offsetWidth
   mmFloatingText.classList.add('visible')
-  // Organic word-by-word reveal (and chunk pacing) is specifically LIRA's
+  // Organic word-by-word reveal (and chunk pacing) is specifically HUGO's
   // own response text (per spec) — the user's own brief echo alongside it
   // stays a plain, instant set + the existing container-level opacity
   // fade, unchanged.
@@ -2163,7 +2163,7 @@ const APP_LAUNCHER_APPS = [
   {
     id:     'core',
     icon:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L20 12 L12 21 L4 12 Z"/><path d="M12 3 V21 M4 12 H20"/></svg>',
-    label:  'NÚCLEO LIRA',
+    label:  'NÚCLEO HUGO',
     action: () => switchSection('core'),
   },
   {
@@ -2229,7 +2229,7 @@ document.addEventListener('click', (e) => {
 }, { capture: true })
 
 // ════════════════════════════════════════════════════════════════════════════
-// LIRA CORE — Estado / Pensamiento / Memoria / Mapa. Reached only via the
+// HUGO CORE — Estado / Pensamiento / Memoria / Mapa. Reached only via the
 // app launcher (switchSection('core')). Own independent sub-tab state
 // (_currentCoreSub), separate from Armor Bay's _currentSub even though
 // both reuse .armor-subtabs/.armor-subtab's generic CSS.
@@ -2394,11 +2394,11 @@ function _stopCoreEstadoPoll() {
 }
 
 // ── Pensamiento ──────────────────────────────────────────────────────────
-let _coreThinkEntries = []   // newest first, capped at 10 — see _onLiraThinking()
+let _coreThinkEntries = []   // newest first, capped at 10 — see _onHugoThinking()
 
 // Reveals `text` progressively into `el` — a subtle typewriter effect, not
 // genuine token-by-token streaming (the backend emits the whole finished
-// block in one 'lira_thinking' event — see core.commands._groq_complete()).
+// block in one 'hugo_thinking' event — see core.commands._groq_complete()).
 // Reveals in small chunks rather than one character at a time so a long
 // block doesn't take unreasonably long to finish appearing.
 function _typewriterReveal(el, text) {
@@ -2446,7 +2446,7 @@ async function _loadThinkLog() {
   _renderCoreThinkList()
 }
 
-function _onLiraThinking(data) {
+function _onHugoThinking(data) {
   _coreThinkEntries.unshift({ ...data, _fresh: true })
   if (_coreThinkEntries.length > 10) _coreThinkEntries.length = 10
   if (_currentSection === 'core' && _currentCoreSub === 'pensamiento') _renderCoreThinkList()
@@ -2764,7 +2764,7 @@ async function _renderCoreMapa() {
   const episodes = data.episodes || []
   const concepts = data.concepts || []
 
-  // "Sin datos suficientes aún" specifically means LIRA hasn't had enough
+  // "Sin datos suficientes aún" specifically means HUGO hasn't had enough
   // conversations yet — facts and episodes are conversation-derived, while
   // armor/concepts are authored data that exists regardless, so only the
   // former two decide the empty state.
@@ -2881,15 +2881,15 @@ document.getElementById('coreMapaSvg').addEventListener('click', _closeMapaDetai
 // [CHANGE 15] _PERSONALITY_QUOTES moved here (before applyPersonality) to fix a
 // Temporal Dead Zone bug: applyPersonality() references this const, but it was
 // previously defined ~400 lines later.  The TDZ caused a ReferenceError on the
-// first applyPersonality('lira') call, which silently prevented the clock
+// first applyPersonality('hugo') call, which silently prevented the clock
 // setInterval from ever being registered — causing the "—:—:—" frozen display.
 // Guards the quote-on-personality-switch logic in applyPersonality() below
-// (only re-pick on a genuine switch) and tracks LIRA's own sequential
+// (only re-pick on a genuine switch) and tracks HUGO's own sequential
 // position for both that switch-in pick and _rotateMMQuote()'s 45s cycle —
 // declared before applyPersonality() for the same TDZ reason as
 // _PERSONALITY_QUOTES itself (see [CHANGE 15] above).
 let _mmLastQuotedPersonality = null
-let _mmLiraQuoteIdx = 0
+let _mmHugoQuoteIdx = 0
 
 const _PERSONALITY_QUOTES = {
   jarvis: [
@@ -2906,11 +2906,11 @@ const _PERSONALITY_QUOTES = {
     'Siempre un paso adelante.',
     'Sin amenazas detectadas en el perímetro.',
   ],
-  // LIRA's own pool — direct, slightly sardonic, warm underneath. Also the
+  // HUGO's own pool — direct, slightly sardonic, warm underneath. Also the
   // sequential rotation pool for _rotateMMQuote() (45s cycle) below; kept in
   // this exact spec order rather than randomized so "cycling" reads as
   // intentional, not repetitive-random.
-  lira: [
+  hugo: [
     'Sin novedades. Por ahora.',
     'Sistemas en orden. Tú decides qué hacemos.',
     'Aquí. Como siempre.',
@@ -2925,7 +2925,7 @@ const _PERSONALITY_QUOTES = {
 const themes = {
   jarvis: { accent: '#00d4ff', glow: 'rgba(0,212,255,0.3)',  shape: 'circle'  },
   friday: { accent: '#b44fff', glow: 'rgba(180,79,255,0.3)', shape: 'circle'  },
-  lira:   { accent: '#f0c040', glow: 'rgba(240,192,64,0.3)',  shape: 'diamond' },
+  hugo:   { accent: '#409cf0', glow: 'rgba(64,156,240,0.3)',  shape: 'diamond' },
 }
 
 function _hexToRgba(hex, alpha) {
@@ -2945,19 +2945,19 @@ let _personalityLiquifyTimer = null
 function _playPersonalityLiquify() {
   const orbWrap   = document.querySelector('.orb-wrap')
   const mmOrbWrap = document.getElementById('mmOrbWrap')
-  ;[orbWrap, mmOrbWrap, liraDiamond].forEach(el => { if (el) el.classList.add('personality-shift') })
+  ;[orbWrap, mmOrbWrap, hugoDiamond].forEach(el => { if (el) el.classList.add('personality-shift') })
   clearTimeout(_personalityLiquifyTimer)
   _personalityLiquifyTimer = setTimeout(() => {
-    ;[orbWrap, mmOrbWrap, liraDiamond].forEach(el => { if (el) el.classList.remove('personality-shift') })
+    ;[orbWrap, mmOrbWrap, hugoDiamond].forEach(el => { if (el) el.classList.remove('personality-shift') })
   }, 800)
 }
 
 function applyPersonality(name, displayName) {
   console.log('[Jarvis] applyPersonality:', name, displayName)
-  // LIRA is the default personality — an invalid/missing name must never
+  // HUGO is the default personality — an invalid/missing name must never
   // fall back to JARVIS. Correct `name` itself (not just the theme lookup)
   // so currentPersonality and every downstream label/lookup stay consistent.
-  if (!themes[name]) name = 'lira'
+  if (!themes[name]) name = 'hugo'
   const theme = themes[name]
   const _personalityChanged = currentPersonality !== name
   currentPersonality = name
@@ -3049,7 +3049,7 @@ function applyPersonality(name, displayName) {
       orbShapeEl.style.clipPath = 'none'
       if (orbRing) orbRing.style.borderRadius = '50%'
       if (orbCore) orbCore.style.borderRadius = '50%'
-      // Explicit 0.7, not '' — the CSS default is now 0 (LIRA is the default
+      // Explicit 0.7, not '' — the CSS default is now 0 (HUGO is the default
       // personality), so clearing the inline override would hide these
       // instead of restoring the circle-mode look.
       orbBrackets.forEach(el => { el.style.opacity = '0.7' })
@@ -3073,7 +3073,7 @@ function applyPersonality(name, displayName) {
   // 6. Update persistent bar personality indicator (dot color + name text).
   const _pIndDot  = document.querySelector('#personalityIndicator .p-indicator-dot')
   const _pIndName = document.querySelector('#personalityIndicator .p-indicator-name')
-  const _nameLabels = { jarvis: 'J A R V I S', friday: 'F R I D A Y', lira: 'L I R A' }
+  const _nameLabels = { jarvis: 'J A R V I S', friday: 'F R I D A Y', hugo: 'H U G O' }
   if (_pIndDot) {
     _pIndDot.style.background = a
     _pIndDot.style.boxShadow  = `0 0 6px ${_hexToRgba(a, 0.55)}`
@@ -3113,7 +3113,7 @@ function applyPersonality(name, displayName) {
     mmName.style.color       = a
     mmName.style.textShadow  = `0 0 22px ${_hexToRgba(a, 0.55)}`
   }
-  // Main menu orb shape — mirrors chat orb (diamond for lira, circle for others)
+  // Main menu orb shape — mirrors chat orb (diamond for hugo, circle for others)
   if (mmShape) {
     if (theme.shape === 'diamond') {
       mmShape.style.clipPath = 'polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%)'
@@ -3132,14 +3132,14 @@ function applyPersonality(name, displayName) {
   // personality SWITCH (_mmLastQuotedPersonality guard), not on every call.
   // applyPersonality() itself runs on every setStatus() (see 6584), which
   // used to re-roll a random quote on every listening/processing/speaking
-  // flip — far more often than the spec's dedicated 45s LIRA rotation
+  // flip — far more often than the spec's dedicated 45s HUGO rotation
   // (_rotateMMQuote(), near _wireMMActions) wants. JARVIS/FRIDAY still get
   // a random pick, same as before, just now gated to real switches only.
   const quoteEl = document.getElementById('mmQuote')
   if (quoteEl && _mmLastQuotedPersonality !== name) {
     _mmLastQuotedPersonality = name
-    const quotes = _PERSONALITY_QUOTES[name] ?? _PERSONALITY_QUOTES.lira
-    const nextQuote = name === 'lira' ? quotes[(_mmLiraQuoteIdx = 0)] : quotes[Math.floor(Math.random() * quotes.length)]
+    const quotes = _PERSONALITY_QUOTES[name] ?? _PERSONALITY_QUOTES.hugo
+    const nextQuote = name === 'hugo' ? quotes[(_mmHugoQuoteIdx = 0)] : quotes[Math.floor(Math.random() * quotes.length)]
     if (quoteEl.textContent !== nextQuote) {
       quoteEl.classList.add('fading')
       setTimeout(() => {
@@ -3166,9 +3166,9 @@ function showPersonalityFlash(name) {
 
 // Double-click title to manually test personality cycle (dev helper)
 titleEl.addEventListener('dblclick', () => {
-  const cycle   = { jarvis: 'friday', friday: 'lira', lira: 'jarvis' }
-  const nameMap = { jarvis: 'J A R V I S', friday: 'F R I D A Y', lira: 'L I R A' }
-  const next    = cycle[currentPersonality] ?? 'lira'
+  const cycle   = { jarvis: 'friday', friday: 'hugo', hugo: 'jarvis' }
+  const nameMap = { jarvis: 'J A R V I S', friday: 'F R I D A Y', hugo: 'H U G O' }
+  const next    = cycle[currentPersonality] ?? 'hugo'
   console.log('[Dev] manual personality toggle →', next)
   applyPersonality(next, nameMap[next])
 })
@@ -3183,7 +3183,7 @@ titleEl.addEventListener('dblclick', () => {
 const _PERSONALITY_CMDS = {
   jarvis: 'cambia a jarvis',
   friday: 'cambia a friday',
-  lira:   'cambia a lira',
+  hugo:   'cambia a hugo',
 }
 
 personalityBtns.forEach(btn => {
@@ -3253,7 +3253,7 @@ function addMessage(type, message) {
   // any DOM mutation, captures the PRE-append scroll state instead.
   const wasAtBottom = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 100
 
-  // ── Unified floating diamond — track every LIRA reply unconditionally
+  // ── Unified floating diamond — track every HUGO reply unconditionally
   // (the bubble's "last response" line needs this even when the diamond
   // isn't currently eligible to show, e.g. the reply arrived while still
   // on Main/Chat), but only fade the floating text in when it actually is
@@ -3264,15 +3264,15 @@ function addMessage(type, message) {
   if (type === 'jarvis') {
     _lastJarvisReply = message
     if (_diamondEligible()) {
-      liraDiamond.classList.add('visible')
+      hugoDiamond.classList.add('visible')
       _showDiamondText(message)
       if (currentStatus !== 'speaking') _scheduleDiamondTextHide()
     }
   }
 
-  // ── Main menu floating text — both the user's own brief echo and LIRA's
+  // ── Main menu floating text — both the user's own brief echo and HUGO's
   // reply show here while on Main. The user's echo always holds briefly;
-  // LIRA's reply's hold timer is armed by setStatus once she actually
+  // HUGO's reply's hold timer is armed by setStatus once she actually
   // stops speaking (see there) — but if she isn't speaking right now
   // (TTS muted, or this arrived after status already moved on), there's no
   // such transition to catch it, so arm the same fallback timer here too.
@@ -3283,13 +3283,13 @@ function addMessage(type, message) {
 
   const TYPES = {
     user:   { cls: 'msg-user',   label: '🎤  you' },
-    jarvis: { cls: `msg-${currentPersonality}`, label: PERSONALITY_LABEL[currentPersonality] ?? PERSONALITY_LABEL.lira },
+    jarvis: { cls: `msg-${currentPersonality}`, label: PERSONALITY_LABEL[currentPersonality] ?? PERSONALITY_LABEL.hugo },
     error:  { cls: 'msg-error',  label: '✕  err' },
   }
   const cfg = TYPES[type] ?? TYPES.error
   // Snapshot personality label at insertion time so it survives future switches
   const label = type === 'jarvis'
-    ? (PERSONALITY_LABEL[currentPersonality] ?? PERSONALITY_LABEL.lira)
+    ? (PERSONALITY_LABEL[currentPersonality] ?? PERSONALITY_LABEL.hugo)
     : cfg.label
 
   // Insert a visual divider before every user message (new turn separator)
@@ -3320,7 +3320,7 @@ function addMessage(type, message) {
   // Auto-scroll to the new bottom. Your own outgoing message (typed or
   // voice-transcribed) always scrolls into view regardless of prior
   // position — you just sent it, standard chat UX never leaves that
-  // hanging off-screen. LIRA's replies and error lines instead respect
+  // hanging off-screen. HUGO's replies and error lines instead respect
   // wasAtBottom: if the user has manually scrolled up to read older
   // messages, an incoming reply doesn't yank the view down — scrolling
   // resumes on its own the moment they're back near the bottom (e.g. after
@@ -3368,7 +3368,7 @@ function setInputEnabled(enabled) {
 }
 
 // sourceInput defaults to the Chat section's own #textInput, but accepts
-// any other input element (the unified floating diamond's #liraDiamondInput,
+// any other input element (the unified floating diamond's #hugoDiamondInput,
 // Main's #mmFloatingInput) so every "type a command" surface in the app
 // shares this exact same send path — literally the same code, not a re-
 // implementation, per the floating diamond / Main floating input requirements.
@@ -3539,16 +3539,16 @@ const testModeToggle = document.getElementById('testModeToggle')
 testModeToggle.addEventListener('click', () => _toggleFeatureFlag('modo_test', testModeToggle))
 
 // "Actualizar Sistema" — triggers scripts/rebuild_app.sh via launcher.py
-// (git pull -> rebuild -> reinstall /Applications/LIRA.app). A real update
+// (git pull -> rebuild -> reinstall /Applications/HUGO.app). A real update
 // takes a while (npm install + electron-builder), so this fetch is simply
 // awaited for as long as it takes; the button stays disabled the whole time.
 // Gated behind a HUD-styled confirmation (#updateConfirmModal) — never a
 // browser confirm() — since this restarts the whole app. During the
-// rebuild, updateLiraStatus reflects REAL progress via 'update_progress'
+// rebuild, updateHugoStatus reflects REAL progress via 'update_progress'
 // socket events from launcher.py's api_update() (see _applyUpdateProgress()
 // below), not a fixed sequence of timed messages.
-const updateLiraBtn            = document.getElementById('updateLiraBtn')
-const updateLiraStatus         = document.getElementById('updateLiraStatus')
+const updateHugoBtn            = document.getElementById('updateHugoBtn')
+const updateHugoStatus         = document.getElementById('updateHugoStatus')
 const updateConfirmModal       = document.getElementById('updateConfirmModal')
 const updateConfirmBtn         = document.getElementById('updateConfirmBtn')
 const updateCancelBtn          = document.getElementById('updateCancelBtn')
@@ -3574,27 +3574,27 @@ const UPDATE_PROGRESS_LABELS = {
 }
 function _applyUpdateProgress(data) {
   if (!data || !data.stage) return
-  updateLiraStatus.style.color = 'var(--accent)'
-  updateLiraStatus.textContent = data.label || UPDATE_PROGRESS_LABELS[data.stage] || data.stage
+  updateHugoStatus.style.color = 'var(--accent)'
+  updateHugoStatus.textContent = data.label || UPDATE_PROGRESS_LABELS[data.stage] || data.stage
 }
 
-updateLiraBtn.addEventListener('click', _showUpdateConfirm)
+updateHugoBtn.addEventListener('click', _showUpdateConfirm)
 updateCancelBtn.addEventListener('click', _hideUpdateConfirm)
 updateConfirmModal.addEventListener('click', e => { if (e.target === updateConfirmModal) _hideUpdateConfirm() })
 updateForceClaudeCancelBtn.addEventListener('click', () => {
   _hideUpdateForceClaudeConfirm()
-  updateLiraBtn.disabled = false   // allow retry
+  updateHugoBtn.disabled = false   // allow retry
 })
 updateForceClaudeModal.addEventListener('click', e => {
   if (e.target === updateForceClaudeModal) updateForceClaudeCancelBtn.click()
 })
 
 // skipClaudeGuard=true only on the explicit re-confirmed retry below — see
-// LIRA_SKIP_CLAUDE_GUARD in rebuild_app.sh for what this actually overrides.
+// HUGO_SKIP_CLAUDE_GUARD in rebuild_app.sh for what this actually overrides.
 async function _runUpdate(skipClaudeGuard) {
-  updateLiraBtn.disabled = true
-  updateLiraStatus.style.color = 'var(--accent)'
-  updateLiraStatus.textContent = UPDATE_PROGRESS_LABELS.downloading
+  updateHugoBtn.disabled = true
+  updateHugoStatus.style.color = 'var(--accent)'
+  updateHugoStatus.textContent = UPDATE_PROGRESS_LABELS.downloading
   try {
     const res  = await fetch(`${LAUNCHER_API}/api/update`, {
       method: 'POST',
@@ -3603,8 +3603,8 @@ async function _runUpdate(skipClaudeGuard) {
     })
     const data = await res.json()
     if (res.ok && data.ok) {
-      updateLiraStatus.style.color = 'var(--green)'
-      updateLiraStatus.textContent = UPDATE_PROGRESS_LABELS.restarting
+      updateHugoStatus.style.color = 'var(--green)'
+      updateHugoStatus.textContent = UPDATE_PROGRESS_LABELS.restarting
       // Left disabled: electron/main.js's health poll picks up pending_relaunch
       // within a few seconds and relaunches the app on its own — no manual
       // restart needed, so this reads as "in progress" rather than an
@@ -3622,14 +3622,14 @@ async function _runUpdate(skipClaudeGuard) {
     // server-side, so a repeat of this same error means something else is
     // wrong — show it as a normal failure instead of looping the modal.
     if (!skipClaudeGuard && /Claude Code session active/.test(e.message)) {
-      updateLiraStatus.style.color = 'var(--accent)'
-      updateLiraStatus.textContent = 'Omitido: sesión de Claude Code activa'
+      updateHugoStatus.style.color = 'var(--accent)'
+      updateHugoStatus.textContent = 'Omitido: sesión de Claude Code activa'
       _showUpdateForceClaudeConfirm()
       return
     }
-    updateLiraStatus.style.color = 'var(--red)'
-    updateLiraStatus.textContent = 'Error en actualización'
-    updateLiraBtn.disabled = false   // allow retry
+    updateHugoStatus.style.color = 'var(--red)'
+    updateHugoStatus.textContent = 'Error en actualización'
+    updateHugoBtn.disabled = false   // allow retry
   }
 }
 
@@ -3792,7 +3792,7 @@ function _applySleepStatus(status) {
   sleepStartBtn.textContent = 'Iniciar Sueño'
   if (sleepStopBtn) sleepStopBtn.style.display = 'none'
   if (wasPolling && cont.total_cycles_completed != null) {
-    const reasonLabel = { interaction: 'LIRA despertó', manual_stop: 'detenido manualmente', error: 'error' }[cont.stop_reason] || 'detenido'
+    const reasonLabel = { interaction: 'HUGO despertó', manual_stop: 'detenido manualmente', error: 'error' }[cont.stop_reason] || 'detenido'
     sleepStartStatus.style.color = 'var(--green)'
     sleepStartStatus.textContent =
       `Sueño finalizado (${reasonLabel}) — ${cont.total_cycles_completed} ciclo${cont.total_cycles_completed === 1 ? '' : 's'} completado${cont.total_cycles_completed === 1 ? '' : 's'}`
@@ -3888,7 +3888,7 @@ if (sleepStopBtn) {
 _updateMMClock()
 setInterval(_updateMMClock, 1000)
 
-applyPersonality('lira')  // set initial state immediately (default personality)
+applyPersonality('hugo')  // set initial state immediately (default personality)
 
 // Boot splash is purely decorative and must never risk taking down anything
 // after it — wrapped so a failure here can't halt the rest of this script's
@@ -3926,7 +3926,7 @@ function _updateMMClock() {
 // BOOT SPLASH — fixed ~3.5s cinematic intro, plays on every page load.
 // Purely decorative and self-timed; never reads or sets anything on
 // #bootOverlay (setBootState/setBootMsg keep driving that independently,
-// for exactly as long as the real backend takes). Always LIRA's gold
+// for exactly as long as the real backend takes). Always HUGO's gold
 // diamond regardless of the active personality — see the HTML comment
 // above #bootSplash for the full design rationale.
 // ════════════════════════════════════════════════════════════════════════════
@@ -3943,7 +3943,7 @@ function _playBootSplash() {
   if (!splash || !grid || !terminal || !track || !fill || !orb || !nameEl || !statusEl || !retryBtn) return
 
   const LINES = [
-    'SISTEMA LIRA v2.0',
+    'SISTEMA HUGO v2.0',
     'Inicializando núcleo de IA...',
     'Cargando modelos de voz...',
     'Estableciendo conexión...',
@@ -3976,7 +3976,7 @@ function _playBootSplash() {
     orb.classList.add('reveal')
   }, revealAt)
 
-  // Beat 5: "L I R A" fades in below the now-pulsing orb, then the splash
+  // Beat 5: "H U G O" fades in below the now-pulsing orb, then the splash
   // holds — it only releases once the real backend state resolves (see
   // _enterBootSplashWait below), not on a fixed timer.
   const nameAt = revealAt + 400
@@ -4014,7 +4014,7 @@ function _applyBootProgress(data) {
   if (label && data.label) label.textContent = data.label
 }
 
-// Drives the boot splash's hold phase: diamond + "L I R A" are showing, and
+// Drives the boot splash's hold phase: diamond + "H U G O" are showing, and
 // we're genuinely waiting on #bootOverlay's real state machine (setBootMsg/
 // setBootState, health polling, retries — all untouched, still driving
 // independently underneath). While waiting: a dash traces the diamond's
@@ -4173,18 +4173,18 @@ function _startSessionTimer() {
   }, 1000)
 }
 
-// LIRA's own quote pool cycles on a dedicated 45s timer, independent of the
+// HUGO's own quote pool cycles on a dedicated 45s timer, independent of the
 // applyPersonality()-driven switch-in pick above — sequential (not random),
-// so it reads as a deliberate rotation. Only advances while LIRA is the
+// so it reads as a deliberate rotation. Only advances while HUGO is the
 // active personality; a no-op tick while JARVIS/FRIDAY are active is
 // cheaper than tearing the interval down and recreating it on every switch.
 setInterval(() => {
-  if (currentPersonality !== 'lira') return
+  if (currentPersonality !== 'hugo') return
   const quoteEl = document.getElementById('mmQuote')
   if (!quoteEl) return
-  const quotes = _PERSONALITY_QUOTES.lira
-  _mmLiraQuoteIdx = (_mmLiraQuoteIdx + 1) % quotes.length
-  const nextQuote = quotes[_mmLiraQuoteIdx]
+  const quotes = _PERSONALITY_QUOTES.hugo
+  _mmHugoQuoteIdx = (_mmHugoQuoteIdx + 1) % quotes.length
+  const nextQuote = quotes[_mmHugoQuoteIdx]
   quoteEl.classList.add('fading')
   setTimeout(() => {
     quoteEl.textContent = nextQuote
@@ -4427,7 +4427,7 @@ const ARMOR_DATA = {
       descripcion:'Concepto avanzado. Coordinación de servos en efecto dominó, visión instrumental para HUD mejorado, reintroducción de luces en los ojos.',
       innovaciones:'Coordinación servo avanzada (efecto dominó). Comandos por voz. Posible visión instrumental. Reactor triangular. Reintroducción de luces en ojos.',
       limitaciones:'No construido — concepto en desarrollo.',
-      evolucion:'Modelo final de la serie actual. Posible integración con LIRA.',
+      evolucion:'Modelo final de la serie actual. Posible integración con HUGO.',
       specs:'Servos coordinados, sistema de voz, HUD avanzado. Colores: rojo, negro y dorado.' },
   ],
   paralelos: [
@@ -5029,7 +5029,7 @@ document.getElementById('detailHudBtn').addEventListener('click', () => {
 })
 
 // ── Sub-tab switching (Primarios | Paralelos | Conceptuales | Diseño) ───────
-// Bug fix: NÚCLEO LIRA's own sub-tabs (Estado/Pensamiento/Memoria/Mapa,
+// Bug fix: NÚCLEO HUGO's own sub-tabs (Estado/Pensamiento/Memoria/Mapa,
 // #section-core) share this exact same .armor-subtab CSS class — an
 // unscoped `.armor-subtab` selector here matched BOTH sets of tabs. That
 // meant every CORE tab silently got a SECOND click handler wired below
@@ -5144,7 +5144,7 @@ async function _fetchConcepts() {
 
 // Persist the full list. Updates the cache immediately (so the UI never waits
 // on the network) and mirrors to localStorage as an offline fallback copy,
-// then POSTs to the backend so data/concepts.json — and LIRA's live memory,
+// then POSTs to the backend so data/concepts.json — and HUGO's live memory,
 // via core/commands.reload_concepts() — stay in sync. Covers create, edit and
 // delete, since all three funnel through this function.
 async function _saveConcepts(arr) {

@@ -1,7 +1,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# ACTIVITY — the HUD co-pilot: LIRA noticing what Joan is doing in the
-# interface itself (navigating sections, typing a new concept, opening an
-# armor model, going idle on a screen), not just what he says out loud. Split
+# ACTIVITY — the HUD co-pilot: HUGO noticing what Joan is doing in the
+# interface itself (navigating sections, going idle on a screen), not just
+# what he says out loud. Split
 # out of core/commands.py (pure refactor, no behavior change).
 #
 # Two halves:
@@ -51,9 +51,6 @@ _ACTIVITY_OBSERVER_MIN_INTERVAL = 8.0   # seconds between LLM reasoning calls, w
 _ACTIVITY_SECTION_NAMES = {
     "main":         "la pantalla principal",
     "chat":         "el chat",
-    "armor":        "la Sala de Armaduras",
-    "armor_detail": "el detalle de una armadura",
-    "concepts":     "el formulario de conceptos",
     "system":       "el panel de sistema",
     "settings":     "ajustes",
 }
@@ -69,9 +66,6 @@ def _describe_activity(section: str, action: str, context: dict) -> str:
         field   = context.get("field", "un campo")
         partial = context.get("partial_text", "")
         return f"está escribiendo en {where}, campo '{field}': \"{partial}\""
-    if action == "opening" and section == "armor_detail":
-        name = context.get("name") or context.get("model") or "una armadura"
-        return f"acaba de abrir el detalle de {name}"
     if action == "idle":
         return f"lleva un rato sin interactuar en {where}"
     if action == "navigate":
@@ -82,42 +76,12 @@ def _describe_activity(section: str, action: str, context: dict) -> str:
 def _describe_hud_context(hud_ctx: dict) -> str:
     """Build PANTALLA ACTUAL's factual content from a
     core.server.get_hud_context() snapshot — see that function and its
-    'hud_context' handler for the event shapes (armor_detail/armor_section/
-    concept_detail/idle). Returns '' when there's nothing worth reporting
-    (nothing received yet, or an event missing the data it needs), which
-    core.personalities.base._build_system_prompt uses to skip the PANTALLA
-    ACTUAL block entirely rather than injecting an empty line."""
+    'hud_context' handler for the event shapes. Returns '' when there's
+    nothing worth reporting (nothing received yet, or an event missing the
+    data it needs), which core.personalities.base._build_system_prompt uses
+    to skip the PANTALLA ACTUAL block entirely rather than injecting an
+    empty line."""
     ctx_type = hud_ctx.get("type")
-
-    if ctx_type == "armor_detail":
-        model = hud_ctx.get("model") or ""
-        name  = hud_ctx.get("name") or ""
-        armor = hud_ctx.get("data") or {}
-        header = f"El usuario está viendo el Model {model}" if model else "El usuario está viendo una armadura"
-        if name:
-            header += f" ({name})"
-        header += "."
-        parts = [header]
-        if armor.get("specs"):
-            parts.append(f"Specs: {armor['specs']}")
-        if armor.get("innovaciones"):
-            parts.append(f"Innovaciones: {armor['innovaciones']}")
-        if armor.get("limitaciones"):
-            parts.append(f"Limitaciones: {armor['limitaciones']}")
-        if armor.get("descripcion"):
-            parts.append(f"Resumen: {armor['descripcion']}")
-        focused = hud_ctx.get("focused_section")
-        if focused:
-            parts.append(f"Ahora mismo tiene enfocada específicamente la sección de {focused}.")
-        return " ".join(parts)
-
-    if ctx_type == "concept_detail":
-        concept = hud_ctx.get("concept") or {}
-        name = concept.get("name") or ""
-        if not name:
-            return ""
-        desc = concept.get("desc") or ""
-        return f"El usuario está editando el concepto {name}" + (f": {desc}." if desc else ".")
 
     if ctx_type == "idle":
         section = hud_ctx.get("section") or ""
@@ -129,7 +93,7 @@ def _describe_hud_context(hud_ctx: dict) -> str:
 def on_user_activity(section: str, action: str, context: dict) -> None:
     """Called by core/server.py's 'user_activity' socket handler, already
     off the SocketIO thread. Decides — via a single fast LLM call, never a
-    hardcoded rule — whether LIRA should say something unprompted about
+    hardcoded rule — whether HUGO should say something unprompted about
     this. See module comment above for the full gating chain."""
     global _last_activity_signature, _last_activity_check_mono
     try:

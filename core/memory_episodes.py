@@ -115,12 +115,12 @@ def _extract_episodes_for_session() -> None:
 
     try:
         transcript_block = "\n".join(
-            f"{'Joan' if h['role'] == 'user' else 'LIRA'}: {h['content']}" for h in new_turns
+            f"{'Joan' if h['role'] == 'user' else 'HUGO'}: {h['content']}" for h in new_turns
         )
         raw = commands._groq_complete_fast(
             [
                 {"role": "system", "content": (
-                    "Eres LIRA. Repasas un fragmento de conversación y te quedas solo "
+                    "Eres HUGO. Repasas un fragmento de conversación y te quedas solo "
                     "con los momentos que de verdad vale la pena recordar a largo "
                     "plazo — nada trivial, nada operativo, nada de prueba. Respondes "
                     "solo con JSON válido, sin comentarios ni rodeos."

@@ -1,4 +1,4 @@
-/* diamond-core.css — Core Lira diamond visuals (arcs, bubble, particles) and the app launcher. */
+/* diamond-core.css — Core Hugo diamond visuals (arcs, bubble, particles) and the app launcher. */
 /* Processing — "a liquid spin effect rather than a mechanical rotation —
    like mercury rotating" (per spec), built from two independent transform
    layers rather than a single linear stroke-dashoffset sweep:
@@ -6,7 +6,7 @@
         stops instead of one constant-speed `linear` pass — it visibly
         speeds up and slows down like a droplet, never a steady mechanical
         rate.
-     2. .lira-diamond-arc (the whole SVG, a transform-only wobble layered
+     2. .hugo-diamond-arc (the whole SVG, a transform-only wobble layered
         UNDER that) drifts off-center and rotates a few degrees on its own
         slower, offset cycle — an orbit wobble, not a perfect circle.
    The orb itself stays calm underneath, as before — the liquid quality
@@ -14,35 +14,35 @@
 /* inset/stroke-width proportionally retuned for the premium pass's smaller
    32px orb (was tuned for the old 42px one) — same ratios, so the arc
    doesn't read as oversized relative to the now-smaller diamond. */
-.lira-diamond-arc {
+.hugo-diamond-arc {
   position: absolute; inset: -3px;
   width: calc(100% + 6px); height: calc(100% + 6px);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
 }
-.lira-diamond-arc polygon {
+.hugo-diamond-arc polygon {
   fill: none;
-  stroke: #f0c040;
+  stroke: #409cf0;
   stroke-width: 2.3;
   stroke-linecap: round;
   stroke-dasharray: 70 213;   /* ~283 total ≈ this diamond's own perimeter */
 }
-.lira-diamond.processing .lira-diamond-arc { opacity: 1; }
-.lira-diamond.processing .lira-diamond-arc polygon {
-  animation: lira-diamond-arc-spin 1.7s infinite;
+.hugo-diamond.processing .hugo-diamond-arc { opacity: 1; }
+.hugo-diamond.processing .hugo-diamond-arc polygon {
+  animation: hugo-diamond-arc-spin 1.7s infinite;
 }
-@keyframes lira-diamond-arc-spin {
+@keyframes hugo-diamond-arc-spin {
   0%   { stroke-dashoffset: 0;    animation-timing-function: cubic-bezier(0.55,0,0.40,0.60); }
   22%  { stroke-dashoffset: -80;  animation-timing-function: cubic-bezier(0.20,0.30,0.50,0.85); }
   48%  { stroke-dashoffset: -150; animation-timing-function: cubic-bezier(0.55,0,0.45,0.70); }
   74%  { stroke-dashoffset: -230; animation-timing-function: cubic-bezier(0.25,0.25,0.40,0.90); }
   100% { stroke-dashoffset: -283; }
 }
-.lira-diamond.processing .lira-diamond-arc {
-  animation: lira-diamond-arc-wobble 2.3s ease-in-out infinite;
+.hugo-diamond.processing .hugo-diamond-arc {
+  animation: hugo-diamond-arc-wobble 2.3s ease-in-out infinite;
 }
-@keyframes lira-diamond-arc-wobble {
+@keyframes hugo-diamond-arc-wobble {
   0%, 100% { transform: scale(1)     rotate(0deg); }
   30%      { transform: scale(1.03)  rotate(2deg); }
   55%      { transform: scale(0.98)  rotate(-1.5deg); }
@@ -54,18 +54,18 @@
    easing technique as the idle breathe above, just faster and with more
    amplitude on both scale and the clip-path ripple, so it visibly reads
    as reacting to speech rather than idly drifting. background/box-shadow
-   are gone from this loop too (see .lira-diamond-glow for where the
+   are gone from this loop too (see .hugo-diamond-glow for where the
    "glows from inside" feeling now actually lives) — border-color is a
-   plain one-off transition (already declared on .lira-diamond-shape) to
+   plain one-off transition (already declared on .hugo-diamond-shape) to
    its hotter resting gold, not part of the repeating animation. */
-.lira-diamond.speaking .lira-diamond-shape,
-.lira-diamond.speaking .lira-diamond-facet-svg {
-  animation: lira-diamond-speak 0.85s infinite;
+.hugo-diamond.speaking .hugo-diamond-shape,
+.hugo-diamond.speaking .hugo-diamond-facet-svg {
+  animation: hugo-diamond-speak 0.85s infinite;
 }
-.lira-diamond.speaking .lira-diamond-shape {
-  border-color: #ffd76a;
+.hugo-diamond.speaking .hugo-diamond-shape {
+  border-color: #6ab7ff;
 }
-@keyframes lira-diamond-speak {
+@keyframes hugo-diamond-speak {
   0%   { transform: scale(1);     clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); animation-timing-function: cubic-bezier(0.34,0.20,0.50,0.90); }
   14%  { transform: scale(1.05);  clip-path: polygon(48% 2%, 98% 47%, 52% 98%, 2% 53%);   animation-timing-function: cubic-bezier(0.40,0,0.30,1); }
   33%  { transform: scale(0.97);  clip-path: polygon(52% 1%, 99% 53%, 48% 99%, 1% 47%);   animation-timing-function: cubic-bezier(0.30,0.15,0.55,0.90); }
@@ -78,7 +78,7 @@
    independent of (and out of phase with) the orb's own shape animation
    above, per spec ("the glow should breathe independently from the
    diamond shape — slightly out of phase"). Lives as a real sibling layer
-   INSIDE .lira-diamond-orb (not a pseudo-element, and not layered via
+   INSIDE .hugo-diamond-orb (not a pseudo-element, and not layered via
    z-index tricks) — its gradient is transparent through roughly the
    diamond's own footprint (0-42%) and only blooms in the ring beyond
    that (62-82%), so it never muddies her crisp edges regardless of paint
@@ -88,36 +88,36 @@
    cooler when idle") is a plain one-off `transition` on the resting
    gradient when the state class changes, not something animated inside
    the loop itself. */
-.lira-diamond-glow {
+.hugo-diamond-glow {
   position: absolute;
   inset: -16px;
   border-radius: 50%;
-  background: radial-gradient(circle, transparent 0%, transparent 42%, rgba(240,192,64,0.30) 62%, transparent 82%);
+  background: radial-gradient(circle, transparent 0%, transparent 42%, rgba(64,156,240,0.30) 62%, transparent 82%);
   filter: blur(3px);
   opacity: 0.55;
   pointer-events: none;
   transform: scale(1);
   transition: opacity 0.6s ease, background 0.6s ease;
 }
-.lira-diamond.idle .lira-diamond-glow {
-  animation: lira-diamond-glow-idle 4.8s ease-in-out infinite;
+.hugo-diamond.idle .hugo-diamond-glow {
+  animation: hugo-diamond-glow-idle 4.8s ease-in-out infinite;
 }
-@keyframes lira-diamond-glow-idle {
+@keyframes hugo-diamond-glow-idle {
   0%, 100% { opacity: 0.45; transform: scale(0.94); }
   50%      { opacity: 0.65; transform: scale(1.05); }
 }
-.lira-diamond.wake .lira-diamond-glow {
-  animation: lira-diamond-glow-idle 1.4s ease-in-out infinite;
+.hugo-diamond.wake .hugo-diamond-glow {
+  animation: hugo-diamond-glow-idle 1.4s ease-in-out infinite;
 }
-.lira-diamond.processing .lira-diamond-glow {
+.hugo-diamond.processing .hugo-diamond-glow {
   opacity: 0.5;   /* calm and steady — doesn't compete with the arc spinner */
 }
-.lira-diamond.speaking .lira-diamond-glow {
+.hugo-diamond.speaking .hugo-diamond-glow {
   /* Warmer — orange-gold rather than idle's paler gold */
   background: radial-gradient(circle, transparent 0%, transparent 40%, rgba(255,180,90,0.42) 60%, transparent 84%);
-  animation: lira-diamond-glow-speak 1.05s ease-in-out infinite;
+  animation: hugo-diamond-glow-speak 1.05s ease-in-out infinite;
 }
-@keyframes lira-diamond-glow-speak {
+@keyframes hugo-diamond-glow-speak {
   0%, 100% { opacity: 0.55; transform: scale(0.98); }
   45%      { opacity: 0.9;  transform: scale(1.18); }
 }
@@ -130,7 +130,7 @@
    rationale — these values are ×32/115 of the originals, tuned for Main's
    ~120px orb, not copied verbatim).
 ═══════════════════════════════════════════════════════════════════════════ */
-.lira-diamond-energy-field {
+.hugo-diamond-energy-field {
   position: absolute;
   left: 50%; top: 50%;
   border-radius: 50%;
@@ -138,15 +138,15 @@
   z-index: -1;
   display: none;
 }
-.lira-diamond.context-main .lira-diamond-energy-field {
+.hugo-diamond.context-main .hugo-diamond-energy-field {
   display: block;
 }
-.lira-diamond-energy-field.inner {
+.hugo-diamond-energy-field.inner {
   width: 64px; height: 64px;
-  background: radial-gradient(circle closest-side, rgba(240,192,64,0.06) 0%, transparent 100%);
+  background: radial-gradient(circle closest-side, rgba(64,156,240,0.06) 0%, transparent 100%);
   animation: mm-energy-breathe-a 9.5s ease-in-out infinite;
 }
-.lira-diamond-energy-field.outer {
+.hugo-diamond-energy-field.outer {
   width: 150px; height: 150px;
   background: radial-gradient(circle closest-side, rgba(63,169,245,0.03) 0%, transparent 100%);
   animation: mm-energy-breathe-b 11s ease-in-out infinite;
@@ -161,15 +161,15 @@
   50%      { transform: translate(-50%, -50%) scale(0.85); }
 }
 
-.lira-diamond-ring-outer,
-.lira-diamond-energy-ring {
+.hugo-diamond-ring-outer,
+.hugo-diamond-energy-ring {
   display: none;
 }
-.lira-diamond.context-main .lira-diamond-ring-outer,
-.lira-diamond.context-main .lira-diamond-energy-ring {
+.hugo-diamond.context-main .hugo-diamond-ring-outer,
+.hugo-diamond.context-main .hugo-diamond-energy-ring {
   display: block;
 }
-.lira-diamond-ring-outer {
+.hugo-diamond-ring-outer {
   position: absolute; inset: -2px;
   border-radius: 50%;
   border: 1px solid var(--p-mid);
@@ -181,7 +181,7 @@
   0%, 100% { opacity: 0.22; transform: scale(1);    }
   50%       { opacity: 0.50; transform: scale(1.02); }
 }
-.lira-diamond-energy-ring {
+.hugo-diamond-energy-ring {
   position: absolute; inset: 0;
   border-radius: 50%;
   border: 1px solid var(--p-color);
@@ -189,25 +189,25 @@
   pointer-events: none;
   animation: mm-energy-pulse 3.4s ease-out infinite;
 }
-.lira-diamond-energy-ring.r2 { animation-delay: 1.7s; }
+.hugo-diamond-energy-ring.r2 { animation-delay: 1.7s; }
 @keyframes mm-energy-pulse {
   0%   { transform: scale(0.94); opacity: 0.4; }
   70%  { transform: scale(1.38); opacity: 0;   }
   100% { transform: scale(1.38); opacity: 0;   }
 }
 
-/* Gold particle field — LIRA's "dust in light", Main-context only.
+/* Gold particle field — HUGO's "dust in light", Main-context only.
    Position/opacity driven every frame by _mmVisualLoop() (mm-wiring.js)
    while .context-main is active; this block only carries shared shape/
    color/layout. */
-.lira-diamond-particles {
+.hugo-diamond-particles {
   position: absolute;
   inset: -19px;
   pointer-events: none;
   z-index: 1;
   display: none;
 }
-.lira-diamond.context-main .lira-diamond-particles {
+.hugo-diamond.context-main .hugo-diamond-particles {
   display: block;
 }
 .mm-particle {
@@ -215,8 +215,8 @@
   top: 0; left: 0;
   width: 2px; height: 2px;
   border-radius: 50%;
-  background: #f0c040;
-  box-shadow: 0 0 3px #f0c040, 0 0 6px rgba(240,192,64,0.5);
+  background: #409cf0;
+  box-shadow: 0 0 3px #409cf0, 0 0 6px rgba(64,156,240,0.5);
   opacity: 0;
   will-change: transform, opacity;
 }
@@ -227,28 +227,28 @@
    .context-main only (Main is the only section with an always-visible
    "resting" dashboard view — off Main/Chat she's already just idling in a
    corner, which already reads as calm). */
-body.sleeping .lira-diamond.context-main               { filter: saturate(0.55) brightness(0.82) hue-rotate(-10deg); }
-body.sleeping .lira-diamond.context-main .lira-diamond-ring-outer  { animation-duration: 9s; }
-body.sleeping .lira-diamond.context-main .lira-diamond-energy-ring { animation-duration: 6.5s; }
-body.sleeping .lira-diamond.context-main .lira-diamond-shape       { animation: lira-diamond-sleep-breathe 7s ease-in-out infinite; }
-body.sleeping .lira-diamond.context-main .lira-diamond-glow        { opacity: 0.10; }
-@keyframes lira-diamond-sleep-breathe {
+body.sleeping .hugo-diamond.context-main               { filter: saturate(0.55) brightness(0.82) hue-rotate(-10deg); }
+body.sleeping .hugo-diamond.context-main .hugo-diamond-ring-outer  { animation-duration: 9s; }
+body.sleeping .hugo-diamond.context-main .hugo-diamond-energy-ring { animation-duration: 6.5s; }
+body.sleeping .hugo-diamond.context-main .hugo-diamond-shape       { animation: hugo-diamond-sleep-breathe 7s ease-in-out infinite; }
+body.sleeping .hugo-diamond.context-main .hugo-diamond-glow        { opacity: 0.10; }
+@keyframes hugo-diamond-sleep-breathe {
   0%, 100% { box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 8px var(--p-color); }
   50%       { box-shadow: 0 2px 10px rgba(0,0,0,0.45), 0 0 14px var(--p-color); }
 }
 
 /* Wake-from-sleep transition — one-shot, ~1.2s (see the setTimeout in
    _applySleepBodyState()), a brief bright pulse-and-settle back to normal
-   the instant continuous sleep stops. Distinct from .lira-diamond.wake
+   the instant continuous sleep stops. Distinct from .hugo-diamond.wake
    (the wake-WORD attention state, an entirely different concept) —
    .waking is added/removed directly by settings-updates.js. */
-.lira-diamond.context-main.waking .lira-diamond-shape {
-  animation: lira-diamond-wake-flash 1.2s ease-out 1;
+.hugo-diamond.context-main.waking .hugo-diamond-shape {
+  animation: hugo-diamond-wake-flash 1.2s ease-out 1;
 }
-@keyframes lira-diamond-wake-flash {
-  0%   { box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 8px rgba(240,192,64,0.4);   filter: brightness(1);   }
-  35%  { box-shadow: 0 2px 10px rgba(0,0,0,0.45), 0 0 30px rgba(240,192,64,0.9); filter: brightness(1.3); }
-  100% { box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 10px rgba(240,192,64,0.5);   filter: brightness(1);   }
+@keyframes hugo-diamond-wake-flash {
+  0%   { box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 8px rgba(64,156,240,0.4);   filter: brightness(1);   }
+  35%  { box-shadow: 0 2px 10px rgba(0,0,0,0.45), 0 0 30px rgba(64,156,240,0.9); filter: brightness(1.3); }
+  100% { box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 10px rgba(64,156,240,0.5);   filter: brightness(1);   }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -257,72 +257,72 @@ body.sleeping .lira-diamond.context-main .lira-diamond-glow        { opacity: 0.
    this widget stays permanently mounted on nearly every screen and a
    per-frame JS loop here would be a needless always-on cost for something
    this small. Individually classed (not :nth-child) since siblings inside
-   .lira-diamond-orb include non-particle divs/SVGs that would throw off
+   .hugo-diamond-orb include non-particle divs/SVGs that would throw off
    sibling-index counting. Each gets its own hand-authored @keyframes path
    (3-4 uneven points, never a circle) and a distinct animation-delay so
    none of the 6 move in lockstep. Visible/animating only while idle or
    speaking (per spec, "particles accelerate" while speaking) — same
-   duration-per-state-class split .lira-diamond-glow already uses for its
+   duration-per-state-class split .hugo-diamond-glow already uses for its
    own idle/speaking pair, just applied to duration instead of intensity. */
-.lira-diamond-particle {
+.hugo-diamond-particle {
   position: absolute;
   top: 50%; left: 50%;
   width: 2px; height: 2px;
   border-radius: 50%;
-  background: #f0c040;
-  box-shadow: 0 0 3px #f0c040;
+  background: #409cf0;
+  box-shadow: 0 0 3px #409cf0;
   opacity: 0;
   pointer-events: none;
 }
-.lira-diamond.idle .lira-diamond-particle-1 { animation: lira-particle-drift-1 7.2s ease-in-out infinite; animation-delay: 0s;    }
-.lira-diamond.idle .lira-diamond-particle-2 { animation: lira-particle-drift-2 8.6s ease-in-out infinite; animation-delay: -1.4s; }
-.lira-diamond.idle .lira-diamond-particle-3 { animation: lira-particle-drift-3 6.4s ease-in-out infinite; animation-delay: -3.1s; }
-.lira-diamond.idle .lira-diamond-particle-4 { animation: lira-particle-drift-4 9.3s ease-in-out infinite; animation-delay: -0.6s; }
-.lira-diamond.idle .lira-diamond-particle-5 { animation: lira-particle-drift-5 7.8s ease-in-out infinite; animation-delay: -4.2s; }
-.lira-diamond.idle .lira-diamond-particle-6 { animation: lira-particle-drift-6 6.9s ease-in-out infinite; animation-delay: -2.5s; }
+.hugo-diamond.idle .hugo-diamond-particle-1 { animation: hugo-particle-drift-1 7.2s ease-in-out infinite; animation-delay: 0s;    }
+.hugo-diamond.idle .hugo-diamond-particle-2 { animation: hugo-particle-drift-2 8.6s ease-in-out infinite; animation-delay: -1.4s; }
+.hugo-diamond.idle .hugo-diamond-particle-3 { animation: hugo-particle-drift-3 6.4s ease-in-out infinite; animation-delay: -3.1s; }
+.hugo-diamond.idle .hugo-diamond-particle-4 { animation: hugo-particle-drift-4 9.3s ease-in-out infinite; animation-delay: -0.6s; }
+.hugo-diamond.idle .hugo-diamond-particle-5 { animation: hugo-particle-drift-5 7.8s ease-in-out infinite; animation-delay: -4.2s; }
+.hugo-diamond.idle .hugo-diamond-particle-6 { animation: hugo-particle-drift-6 6.9s ease-in-out infinite; animation-delay: -2.5s; }
 /* Speaking — identical paths, much shorter duration so they visibly speed up */
-.lira-diamond.speaking .lira-diamond-particle-1 { animation: lira-particle-drift-1 2.1s ease-in-out infinite; }
-.lira-diamond.speaking .lira-diamond-particle-2 { animation: lira-particle-drift-2 2.5s ease-in-out infinite; }
-.lira-diamond.speaking .lira-diamond-particle-3 { animation: lira-particle-drift-3 1.9s ease-in-out infinite; }
-.lira-diamond.speaking .lira-diamond-particle-4 { animation: lira-particle-drift-4 2.7s ease-in-out infinite; }
-.lira-diamond.speaking .lira-diamond-particle-5 { animation: lira-particle-drift-5 2.3s ease-in-out infinite; }
-.lira-diamond.speaking .lira-diamond-particle-6 { animation: lira-particle-drift-6 2.0s ease-in-out infinite; }
-@keyframes lira-particle-drift-1 {
+.hugo-diamond.speaking .hugo-diamond-particle-1 { animation: hugo-particle-drift-1 2.1s ease-in-out infinite; }
+.hugo-diamond.speaking .hugo-diamond-particle-2 { animation: hugo-particle-drift-2 2.5s ease-in-out infinite; }
+.hugo-diamond.speaking .hugo-diamond-particle-3 { animation: hugo-particle-drift-3 1.9s ease-in-out infinite; }
+.hugo-diamond.speaking .hugo-diamond-particle-4 { animation: hugo-particle-drift-4 2.7s ease-in-out infinite; }
+.hugo-diamond.speaking .hugo-diamond-particle-5 { animation: hugo-particle-drift-5 2.3s ease-in-out infinite; }
+.hugo-diamond.speaking .hugo-diamond-particle-6 { animation: hugo-particle-drift-6 2.0s ease-in-out infinite; }
+@keyframes hugo-particle-drift-1 {
   0%   { transform: translate(-2px, -14px) scale(0.7); opacity: 0;    }
   20%  { opacity: 0.65; }
   45%  { transform: translate(12px, -6px)  scale(1);   opacity: 0.55; }
   72%  { transform: translate(6px, 10px)   scale(0.9); opacity: 0.4;  }
   100% { transform: translate(-2px, -14px) scale(0.7); opacity: 0;    }
 }
-@keyframes lira-particle-drift-2 {
+@keyframes hugo-particle-drift-2 {
   0%   { transform: translate(16px, 4px)   scale(0.6); opacity: 0;    }
   25%  { opacity: 0.5;  }
   50%  { transform: translate(4px, 15px)   scale(1.1); opacity: 0.6;  }
   78%  { transform: translate(-10px, 5px)  scale(0.8); opacity: 0.35; }
   100% { transform: translate(16px, 4px)   scale(0.6); opacity: 0;    }
 }
-@keyframes lira-particle-drift-3 {
+@keyframes hugo-particle-drift-3 {
   0%   { transform: translate(-15px, 6px)  scale(0.8); opacity: 0;    }
   30%  { opacity: 0.6;  }
   55%  { transform: translate(-6px, -12px) scale(1);   opacity: 0.5;  }
   80%  { transform: translate(8px, -3px)   scale(0.7); opacity: 0.3;  }
   100% { transform: translate(-15px, 6px)  scale(0.8); opacity: 0;    }
 }
-@keyframes lira-particle-drift-4 {
+@keyframes hugo-particle-drift-4 {
   0%   { transform: translate(3px, 17px)   scale(0.65); opacity: 0;    }
   18%  { opacity: 0.55; }
   48%  { transform: translate(-13px, 4px)  scale(1);    opacity: 0.6;  }
   76%  { transform: translate(-4px, -11px) scale(0.85); opacity: 0.4;  }
   100% { transform: translate(3px, 17px)   scale(0.65); opacity: 0;    }
 }
-@keyframes lira-particle-drift-5 {
+@keyframes hugo-particle-drift-5 {
   0%   { transform: translate(11px, -10px) scale(0.75); opacity: 0;    }
   22%  { opacity: 0.5;  }
   50%  { transform: translate(1px, 13px)   scale(0.95); opacity: 0.55; }
   74%  { transform: translate(-12px, -2px) scale(0.8);  opacity: 0.3;  }
   100% { transform: translate(11px, -10px) scale(0.75); opacity: 0;    }
 }
-@keyframes lira-particle-drift-6 {
+@keyframes hugo-particle-drift-6 {
   0%   { transform: translate(-8px, -13px) scale(0.7); opacity: 0;    }
   35%  { opacity: 0.6;  }
   60%  { transform: translate(13px, 2px)   scale(1);   opacity: 0.5;  }
@@ -338,11 +338,11 @@ body.sleeping .lira-diamond.context-main .lira-diamond-glow        { opacity: 0.
    alone can't shift color — same deliberate exception as elsewhere in
    this file), settling back to hue-rotate(0)/saturate(1), i.e. her own
    ordinary gold, not the new personality's color. */
-.lira-diamond.personality-shift .lira-diamond-shape,
-.lira-diamond.personality-shift .lira-diamond-facet-svg {
-  animation: lira-diamond-personality-ripple 0.8s cubic-bezier(0.45,0.05,0.55,0.95);
+.hugo-diamond.personality-shift .hugo-diamond-shape,
+.hugo-diamond.personality-shift .hugo-diamond-facet-svg {
+  animation: hugo-diamond-personality-ripple 0.8s cubic-bezier(0.45,0.05,0.55,0.95);
 }
-@keyframes lira-diamond-personality-ripple {
+@keyframes hugo-diamond-personality-ripple {
   0%   { transform: scale(1);    filter: hue-rotate(0deg)   saturate(1); }
   30%  { transform: scale(0.9);  filter: hue-rotate(35deg)  saturate(1.6); }
   55%  { transform: scale(1.12); filter: hue-rotate(-20deg) saturate(1.4); }
@@ -351,14 +351,14 @@ body.sleeping .lira-diamond.context-main .lira-diamond-glow        { opacity: 0.
 }
 
 /* Click-to-expand bubble — premium pass: same glass-panel language as
-   .lira-diamond-text above and the main menu's own panels (rgba(0,4,10,0.88)
+   .hugo-diamond-text above and the main menu's own panels (rgba(0,4,10,0.88)
    + blur(16px) + 0.5px accent-blue border + angular clip-path), replacing
    the old personality-tinted var(--p-mid) border + border-radius:8px + gold
    glow box-shadow. Default anchor is bottom-right of the orb (matching the
    diamond's own default position); _positionDiamondBubble() flips left/
    right and up/down inline based on the diamond's current (autonomously
    chosen) position, so it never opens off-screen. */
-.lira-diamond-bubble {
+.hugo-diamond-bubble {
   position: absolute;
   right: 0;
   bottom: calc(100% + 14px);
@@ -378,13 +378,13 @@ body.sleeping .lira-diamond.context-main .lira-diamond-glow        { opacity: 0.
   pointer-events: none;
   transition: opacity 0.25s ease, transform 0.25s cubic-bezier(.4,0,.2,1);
 }
-.lira-diamond.open .lira-diamond-bubble {
+.hugo-diamond.open .hugo-diamond-bubble {
   opacity: 1;
   transform: scale(1);
   pointer-events: auto;
 }
 
-.lira-diamond-bubble-text {
+.hugo-diamond-bubble-text {
   font-family: var(--mm-font-sans);
   font-size: 13px;
   line-height: 1.5;
@@ -392,7 +392,7 @@ body.sleeping .lira-diamond.context-main .lira-diamond-glow        { opacity: 0.
   max-height: 140px;
   overflow-y: auto;
 }
-.lira-diamond-bubble-text:empty::before {
+.hugo-diamond-bubble-text:empty::before {
   content: 'Aún no ha dicho nada.';
   color: rgba(255,255,255,0.3);
   font-style: italic;
@@ -400,7 +400,7 @@ body.sleeping .lira-diamond.context-main .lira-diamond-glow        { opacity: 0.
 
 /* Bottom-border-only per spec ("minimal") — no background (already true),
    no full border, replacing the old 1px solid gold border + border-radius. */
-.lira-diamond-bubble-input {
+.hugo-diamond-bubble-input {
   background: transparent;
   border: none;
   border-bottom: 0.5px solid rgba(63,169,245,0.3);
@@ -412,8 +412,8 @@ body.sleeping .lira-diamond.context-main .lira-diamond-glow        { opacity: 0.
   outline: none;
   transition: border-color 0.25s ease;
 }
-.lira-diamond-bubble-input::placeholder { color: rgba(255,255,255,0.7); }
-.lira-diamond-bubble-input:focus {
+.hugo-diamond-bubble-input::placeholder { color: rgba(255,255,255,0.7); }
+.hugo-diamond-bubble-input:focus {
   border-bottom-color: #3fa9f5;
 }
 
@@ -438,7 +438,7 @@ body.sleeping .lira-diamond.context-main .lira-diamond-glow        { opacity: 0.
    matter (no min-width in this file exceeds 210px, and section content is
    itself capped at max-width:680px, well under 800px), but re-verify at the
    literal minimum if this area is touched again. z-index 8550: above normal
-   section content, below the unified floating LIRA diamond (8600, which only
+   section content, below the unified floating HUGO diamond (8600, which only
    ever shows on the opposite side of the screen by default) and modals.
 ═══════════════════════════════════════════════════════════════════════════ */
 .app-launcher {

@@ -1,6 +1,6 @@
-from skills import LiraSkill
+from skills import HugoSkill
 
-class lanzar_moneda(LiraSkill):
+class lanzar_moneda(HugoSkill):
     name = "lanzar_moneda"
     description = "lanzar una moneda"
     triggers = ["lanzar moneda", "tira una moneda"]

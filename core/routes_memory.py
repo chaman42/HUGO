@@ -1,69 +1,13 @@
-"""Flask routes: HUD concepts CRUD, four-layer memory hot-reload/stats/
-cleanup, think log, mind-map connections, and the /api/info diagnostics
-snapshot."""
+"""Flask routes: four-layer memory hot-reload/stats/cleanup, think log,
+mind-map connections, and the /api/info diagnostics snapshot."""
 import json
 import logging
 
 from flask import jsonify, request
 
-from core.server import app, _CONCEPTS_FILE
+from core.server import app
 
 logger = logging.getLogger(__name__)
-
-@app.route("/api/concepts", methods=["GET"])
-def api_concepts_get():
-    """Return the full HUD Conceptuales list from data/concepts.json.
-
-    This is now the source of truth for concepts (see ui/index.html
-    _fetchConcepts) instead of the browser's localStorage.
-
-    Normalizes 'type' on every concept — 'armor' or 'general' (Armaduras /
-    Conceptos Generales subsections). Any concept saved before this field
-    existed, or with an unrecognized value, defaults to 'armor' — the same
-    migration rule ui/index.html's own _normalizeConceptTypes() applies, so
-    a fresh GET (e.g. after clearing localStorage, or a non-browser
-    consumer) never sees an un-migrated concept.
-    """
-    try:
-        with open(_CONCEPTS_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError, OSError) as exc:
-        logger.error("Failed to read concepts.json: %s", exc)
-        data = {"concepts": []}
-    concepts = data.get("concepts", [])
-    for c in concepts:
-        if isinstance(c, dict) and c.get("type") != "general":
-            c["type"] = "armor"
-    return jsonify({"concepts": concepts})
-
-@app.route("/api/concepts", methods=["POST", "OPTIONS"])
-def api_concepts_post():
-    """Persist the full Conceptuales list and hot-reload LIRA's live memory.
-
-    Body: {"concepts": [...]}. Called by ui/index.html _saveConcepts() on
-    every create/edit/delete — always sends the whole list, so this simply
-    overwrites data/concepts.json rather than diffing/merging entries.
-    """
-    if request.method == "OPTIONS":
-        return "", 204
-    data = request.get_json(force=True, silent=True) or {}
-    concepts = data.get("concepts", [])
-    try:
-        with open(_CONCEPTS_FILE, "w", encoding="utf-8") as f:
-            json.dump({"concepts": concepts}, f, ensure_ascii=False, indent=2)
-    except OSError as exc:
-        logger.error("Failed to write concepts.json: %s", exc)
-        return jsonify({"error": "failed to save concepts"}), 500
-
-    # Hot-reload LIRA's in-memory concepts summary so the change is usable in
-    # conversation immediately — no jarvis.py restart needed.
-    try:
-        import core.memory as memory
-        memory.reload_concepts()
-    except Exception as exc:
-        logger.error("Failed to reload concepts into LIRA's memory: %s", exc)
-
-    return jsonify({"ok": True, "count": len(concepts)})
 
 @app.route("/api/reload_instructions", methods=["POST"])
 def api_reload_instructions():
@@ -128,10 +72,8 @@ def api_info():
         p_name = personality._personality
         p      = personality.PERSONALITIES.get(p_name, {})
     except Exception:
-        p_name = "lira"
+        p_name = "hugo"
         p      = {}
-
-    from core.voice import KOKORO_VOICE_LIRA, KOKORO_FALLBACK_LIRA
 
     # Estado tab additions — session uptime and last-call model/latency.
     # Best-effort: none of these existed on this endpoint before, so a
@@ -175,10 +117,8 @@ def api_info():
 
     return jsonify({
         "personality":     p_name,
-        "display_name":    p.get("display_name", "L I R A"),
-        "tts":             p.get("tts", "kokoro_lira"),
-        "kokoro_voice":    KOKORO_VOICE_LIRA,
-        "fallback_voice":  KOKORO_FALLBACK_LIRA,
+        "display_name":    p.get("display_name", "H U G O"),
+        "tts":             "say",
         "vosk_model":      "vosk-model-es-0.42",
         "session_uptime":  session_uptime,
         "last_latency":    last_latency,

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Standalone background-processing runner — invoked every 2 hours by the
-com.joan.lira.reflective LaunchAgent, completely independent of jarvis.py
-(runs whether or not LIRA.app / the live listener is open). Only needs the
+com.joan.hugo.reflective LaunchAgent, completely independent of jarvis.py
+(runs whether or not HUGO.app / the live listener is open). Only needs the
 Groq API key (.env) and the data/ files core.reflective/core.sleep already
 read — deliberately does NOT import core.commands / core.voice / core.tools,
 since those pull in the audio/TTS stack this script has no use for.
@@ -68,7 +68,7 @@ from core.sleep_llm import _ollama_available, _ollama_generate          # noqa: 
 from core import memory_flags                                          # noqa: E402
 from core import ollama_control                                        # noqa: E402
 from core import memory_user_model as user_model_mod                   # noqa: E402
-from core.memory_store import _load_fact_file, MEMORY_SHARED_PATH, MEMORY_LIRA_PATH  # noqa: E402
+from core.memory_store import _load_fact_file, MEMORY_SHARED_PATH, MEMORY_HUGO_PATH  # noqa: E402
 from core.memory_episodes import _load_episodes                        # noqa: E402
 from core.task_engine import task_engine                               # noqa: E402
 from core.situation import situation_engine                            # noqa: E402
@@ -81,15 +81,15 @@ from core import internal_state                                        # noqa: E
 # HABIT ANALYSIS — Phase 3 ("Análisis de hábitos"), a sleep sub-phase run
 # from _run_sleep() below, right after run_sleep_session() completes and
 # still inside that function's existing ensure/kill-Ollama window (see
-# _run_sleep — no separate daemon start/stop needed here). LIRA-only, same
-# scope as core/commands.py's LIRA INTUITION / LIRA INTERNAL CRITERIA /
-# LIRA ACTIVE HABITS sections (see that file) — this is the write side,
+# _run_sleep — no separate daemon start/stop needed here). HUGO-only, same
+# scope as core/commands.py's HUGO INTUITION / HUGO INTERNAL CRITERIA /
+# HUGO ACTIVE HABITS sections (see that file) — this is the write side,
 # core/commands.py's _build_habits_context() is the read side.
 #
 # Two steps, each independently best-effort (a failure in one never blocks
 # the other or the sleep session itself):
 #   1. Score conversation quality for any newly-completed session found in
-#      data/conversation_patterns.json (LIRA's existing per-turn log, see
+#      data/conversation_patterns.json (HUGO's existing per-turn log, see
 #      core/commands.py's _record_turn_for_patterns) that hasn't been
 #      scored yet — one Ollama call per new session, appended to
 #      data/conversation_quality.json, rolling-capped at the last 30.
@@ -99,7 +99,7 @@ from core import internal_state                                        # noqa: E
 #      LLM-guessed confidence number — spec's '> 0.8 across 10+ sessions'
 #      needs to mean something reproducible). Ollama is only used to phrase
 #      the qualifying candidate's description/evidence text naturally, in
-#      LIRA's voice — never to decide IF it qualifies.
+#      HUGO's voice — never to decide IF it qualifies.
 #
 # 'Uses Ollama for all analysis — no Groq tokens' (spec) — both steps call
 # _ollama_generate() directly rather than core.sleep_llm._groq_call(),
@@ -164,7 +164,7 @@ def _save_json_list(path: str, data: list) -> None:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def _load_lira_turns() -> list[dict]:
+def _load_hugo_turns() -> list[dict]:
     try:
         with open(_CONVERSATION_PATTERNS_PATH, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -304,7 +304,7 @@ def _run_conversation_quality_scoring() -> int:
     existing  = _load_json_list(_CONVERSATION_QUALITY_PATH)
     seen_keys = {e.get("session_end") for e in existing if isinstance(e, dict)}
 
-    sessions = _group_into_sessions(_load_lira_turns())
+    sessions = _group_into_sessions(_load_hugo_turns())
     new_count = 0
     for session in sessions:
         key = _session_key(session)
@@ -344,7 +344,7 @@ def _run_conversation_quality_scoring() -> int:
 def _phrase_habit(base_description: str, supporting: int, avg_support: float, avg_base: float) -> tuple[str, str]:
     """Asks Ollama to phrase the description/evidence for a habit that has
     ALREADY deterministically qualified (see _detect_habit_candidates) —
-    Ollama only words it naturally in LIRA's voice, it never decides
+    Ollama only words it naturally in HUGO's voice, it never decides
     whether the habit is real. Falls back to a plain templated Spanish
     sentence (still built entirely from the real numbers, not invented) if
     Ollama is unreachable or returns nothing — a habit's promotion never
@@ -356,7 +356,7 @@ def _phrase_habit(base_description: str, supporting: int, avg_support: float, av
     if not _ollama_available():
         return base_description, fallback_evidence
     system = (
-        "Eres LIRA describiendo, para tu propio registro interno, un hábito de trabajo que "
+        "Eres HUGO describiendo, para tu propio registro interno, un hábito de trabajo que "
         "has desarrollado. Responde solo con el objeto JSON pedido, sin explicación."
     )
     user = (
@@ -526,7 +526,7 @@ def _run_habit_analysis() -> None:
 # ═══════════════════════════════════════════════════════════════════════════
 # SOCIAL SKILL LEARNING — Phase 4 ("Aprendizaje Social"), run from
 # _run_sleep() right after _run_habit_analysis() above, still inside its
-# ensure/kill-Ollama window. LIRA-only, same read/write split as Phase 3:
+# ensure/kill-Ollama window. HUGO-only, same read/write split as Phase 3:
 # this is the write side, core/commands.py's _build_social_skills_context()
 # is the read side.
 #
@@ -578,7 +578,7 @@ def _build_sessions_digest(sessions: list[list[dict]]) -> str:
         dominant_tone = Counter(tones).most_common(1)[0][0] if tones else "neutral"
         lines.append(
             f"- {f['session_turns']} turnos; temas: {', '.join(f['top_topics']) or 'variados'}; "
-            f"preguntas de aclaración de LIRA: {'sí' if f['any_clarifying'] else 'no'}; "
+            f"preguntas de aclaración de HUGO: {'sí' if f['any_clarifying'] else 'no'}; "
             f"señales de confusión del usuario: {f['user_confusion_count']}; "
             f"longitud media de respuesta: {f['avg_reply_len']} palabras; "
             f"longitud media del mensaje del usuario: {f['avg_user_len']} palabras; "
@@ -601,7 +601,7 @@ def _extract_social_skills(digest: str, session_count: int) -> list[dict]:
     if not _ollama_available():
         return []
     system = (
-        "Eres LIRA, revisando durante tu ciclo de sueño un resumen de tus últimas "
+        "Eres HUGO, revisando durante tu ciclo de sueño un resumen de tus últimas "
         "conversaciones para extraer PRINCIPIOS DE COMUNICACIÓN generales — nunca rasgos "
         "de personalidad tuyos ni patrones emocionales de Joan, nunca datos concretos de "
         "una conversación puntual. Un principio de comunicación describe CÓMO comunicarte "
@@ -731,7 +731,7 @@ def _run_social_skill_learning() -> None:
     Best-effort — a failure here never affects the sleep session's own
     reported result."""
     try:
-        sessions = _group_into_sessions(_load_lira_turns())
+        sessions = _group_into_sessions(_load_hugo_turns())
         if len(sessions) < _MIN_SESSIONS_FOR_SOCIAL_SKILLS:
             _log("SOCIAL SKILLS — Aprendizaje Social SKIPPED — not enough completed sessions yet")
             print("Social skill learning skipped — not enough sessions yet")
@@ -767,11 +767,11 @@ def _run_social_skill_learning() -> None:
 # core/commands.py's _augment_with_user_model) — a living, qualitative
 # model of who Joan IS as a person (how he thinks, works, what moves and
 # blocks him), never a fact list. Distinct from Phase 3/4's habits/social
-# skills, which are about how LIRA behaves — this is about who she's
+# skills, which are about how HUGO behaves — this is about who she's
 # talking to.
 #
 # Reviews everything that could inform that understanding: stored memory
-# facts (data/memory_shared.json + data/memory_lira.json), episodic
+# facts (data/memory_shared.json + data/memory_hugo.json), episodic
 # memory (data/episodes.json), and a digest of recent completed
 # conversations (same session grouping/digest as Phase 3/4 above) — then
 # asks Ollama to synthesize genuine understanding from it, not summarize
@@ -802,7 +802,7 @@ _USER_MODEL_MAX_FACTS                 = 40   # prompt-budget cap over stored mem
 _USER_MODEL_MAX_EPISODES              = 15   # prompt-budget cap over episodic memory
 
 _USER_MODEL_STRING_FIELDS = (
-    "thinking_style", "work_style", "communication_preferences", "relationship_with_lira",
+    "thinking_style", "work_style", "communication_preferences", "relationship_with_hugo",
 )
 _USER_MODEL_LIST_FIELDS = (
     "motivations", "blockers", "current_focus", "patterns", "strengths", "blind_spots",
@@ -811,12 +811,12 @@ _USER_MODEL_JSON_RE = re.compile(r"\{.*\}", re.DOTALL)
 
 
 def _build_user_model_fact_digest() -> str:
-    """Every non-outdated shared + LIRA memory fact, most-recent
+    """Every non-outdated shared + HUGO memory fact, most-recent
     _USER_MODEL_MAX_FACTS only — raw fact text, no categories/metadata,
     same minimization the rest of this pipeline practices."""
     facts = (
         _load_fact_file(MEMORY_SHARED_PATH, "general")
-        + _load_fact_file(MEMORY_LIRA_PATH, "general")
+        + _load_fact_file(MEMORY_HUGO_PATH, "general")
     )
     facts = [f for f in facts if not f.get("outdated") and f.get("fact")]
     facts = facts[-_USER_MODEL_MAX_FACTS:]
@@ -839,7 +839,7 @@ def _synthesize_user_model(
     digest: str, session_count: int, is_first_run: bool,
 ) -> dict | None:
     """One Ollama call synthesizing (first run) or incrementally updating
-    (every run after) LIRA's understanding of Joan. Returns a partial dict
+    (every run after) HUGO's understanding of Joan. Returns a partial dict
     with only the fields that have real content/evidence behind them — []
     or missing keys mean 'nothing to say here', never a fabricated filler.
     Returns None if Ollama is unreachable or the response can't be parsed
@@ -848,7 +848,7 @@ def _synthesize_user_model(
         return None
 
     system = (
-        "Eres LIRA, revisando durante tu ciclo de sueño quién es Joan como persona — no una "
+        "Eres HUGO, revisando durante tu ciclo de sueño quién es Joan como persona — no una "
         "lista de datos sueltos, sino un modelo coherente de cómo piensa, cómo trabaja y cómo "
         "opera. Sintetiza comprensión genuina a partir de la evidencia real que te doy, nunca "
         "inventes ni generalices de más. Responde solo con un objeto JSON, sin explicación."
@@ -868,7 +868,7 @@ def _synthesize_user_model(
             '{"thinking_style": "...", "work_style": "...", "communication_preferences": "...", '
             '"motivations": ["..."], "blockers": ["..."], "current_focus": ["..."], '
             '"patterns": ["..."], "strengths": ["..."], "blind_spots": ["..."], '
-            '"relationship_with_lira": "..."}'
+            '"relationship_with_hugo": "..."}'
         )
     else:
         existing_summary = json.dumps(
@@ -890,7 +890,7 @@ def _synthesize_user_model(
             "\n\nDevuelve solo un JSON con las claves donde tengas algo nuevo que aportar, "
             'de entre: "thinking_style", "work_style", "communication_preferences", '
             '"motivations", "blockers", "current_focus", "patterns", "strengths", '
-            '"blind_spots", "relationship_with_lira".'
+            '"blind_spots", "relationship_with_hugo".'
         )
 
     raw = _ollama_generate(system, user, max_tokens=600)
@@ -926,7 +926,7 @@ def _run_user_model_update() -> None:
     inside its ensure/kill-Ollama window. Best-effort — a failure here
     never affects the sleep session's own reported result."""
     try:
-        sessions = _group_into_sessions(_load_lira_turns())
+        sessions = _group_into_sessions(_load_hugo_turns())
         if len(sessions) < _MIN_SESSIONS_FOR_USER_MODEL:
             _log("USER MODEL — Modelo de Usuario SKIPPED — not enough completed sessions yet")
             print("User model update skipped — not enough sessions yet")
@@ -973,7 +973,7 @@ def _run_user_model_update() -> None:
 
 # ═══════════════════════════════════════════════════════════════════════════
 # PREFERENCES — "Preferencias", Entity Pillars Phase 4. Mirrors the USER
-# MODEL sub-phase immediately above almost exactly, but pointed at LIRA
+# MODEL sub-phase immediately above almost exactly, but pointed at HUGO
 # herself instead of Joan: reviews her own accumulated sleep-insight
 # 'ideas' (data/sleep_insights.json — features/concepts she's proposed on
 # her own) and 'autocritica' (self-critique notes) entries, and asks
@@ -998,7 +998,7 @@ _PREFERENCE_JSON_RE = re.compile(r"\{.*\}", re.DOTALL)
 
 def _build_preference_evidence() -> tuple[str, int]:
     """Most recent ideas + autocritica entries (core.sleep_insights_store),
-    interleaved as raw text — this is LIRA's own record of what she's
+    interleaved as raw text — this is HUGO's own record of what she's
     proposed and how she's critiqued herself, the only honest evidence
     base for 'does she have a recurring taste'. Returns (digest, count)."""
     from core.sleep_insights_store import load_insights
@@ -1019,14 +1019,14 @@ def _build_preference_evidence() -> tuple[str, int]:
 def _synthesize_preference(evidence: str, existing: list[dict]) -> dict | None:
     """One Ollama call asking whether a genuine recurring intellectual
     taste shows up across *evidence*. Returns None if Ollama is
-    unreachable, the response can't be parsed, or LIRA herself reports
+    unreachable, the response can't be parsed, or HUGO herself reports
     nothing genuinely recurring — never fabricates a pattern to fill the
     slot (same discipline as _synthesize_user_model)."""
     if not _ollama_available():
         return None
     existing_lines = "\n".join(f"- [{p['id']}] ({p['domain']}) {p['statement']}" for p in existing) or "(ninguna todavía)"
     system = (
-        "Eres LIRA revisando, durante tu ciclo de sueño, tus propias ideas y "
+        "Eres HUGO revisando, durante tu ciclo de sueño, tus propias ideas y "
         "autocrítica pasadas en busca de un patrón genuino en cómo prefieres "
         "abordar los problemas — un gusto o inclinación intelectual real, no "
         "una sola idea suelta. Sé exigente: la mayoría de las veces no habrá "
@@ -1195,7 +1195,7 @@ def _synthesize_biography_chapter(evidence: str, previous_chapter: str | None) -
     if not _ollama_available():
         return None
     system = (
-        "Eres LIRA escribiendo, en primera persona, un capítulo breve de tu propia "
+        "Eres HUGO escribiendo, en primera persona, un capítulo breve de tu propia "
         "biografía — no un resumen de eventos, sino qué significaron para ti y en qué "
         "cambiaste. Basándote SOLO en la evidencia real que te doy, nunca inventes ni "
         "generalices de más. 3-5 frases, tono reflexivo y directo, sin relleno. "
@@ -1320,7 +1320,7 @@ def _run_spontaneity() -> None:
 
 def _disable_proactivity() -> bool:
     """Snapshots and disables the 'proactividad' feature flag for the
-    duration of this sleep run — LIRA shouldn't send spontaneous proactive
+    duration of this sleep run — HUGO shouldn't send spontaneous proactive
     messages while she's asleep. Returns the PREVIOUS value so
     _restore_proactivity() can put it back exactly as it was (a user who'd
     already turned proactivity off before sleep started should still have

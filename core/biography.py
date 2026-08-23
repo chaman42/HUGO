@@ -1,6 +1,6 @@
 # ═══════════════════════════════════════════════════════════════════════════
 # BIOGRAPHY — Entity Pillars Phase 6 (capstone): "Everything above should
-# eventually become a biography — an evolving narrative of how Lira was,
+# eventually become a biography — an evolving narrative of how Hugo was,
 # what she learned, what changed, what she discovered, and why she
 # currently thinks the way she does."
 #

@@ -1,8 +1,8 @@
 {
-  "name": "lira",
-  "productName": "LIRA",
-  "version": "1.0.124",
-  "description": "LIRA — JarvisLite voice assistant desktop app",
+  "name": "hugo",
+  "productName": "HUGO",
+  "version": "1.0.0",
+  "description": "HUGO — JarvisLite voice assistant desktop app",
   "main": "main.js",
   "private": true,
   "scripts": {
@@ -11,8 +11,8 @@
     "release": "electron-builder --mac --universal --publish always"
   },
   "build": {
-    "appId": "com.chaman42.lira",
-    "productName": "LIRA",
+    "appId": "com.chaman42.hugo",
+    "productName": "HUGO",
     "directories": {
       "buildResources": "assets",
       "output": "dist"
@@ -50,7 +50,7 @@
       ]
     },
     "dmg": {
-      "title": "LIRA",
+      "title": "HUGO",
       "contents": [
         {
           "x": 130,
@@ -68,7 +68,7 @@
       {
         "provider": "github",
         "owner": "chaman42",
-        "repo": "JarvisLite"
+        "repo": "HUGO"
       }
     ]
   },

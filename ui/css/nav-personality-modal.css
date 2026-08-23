@@ -1,6 +1,6 @@
 /* nav-personality-modal.css — Maintenance section, persistent bar (incl. the
    personality indicator), and bottom nav items. The personality switch
-   modal this file used to also style is gone — LIRA is the only
+   modal this file used to also style is gone — HUGO is the only
    personality now, nothing left to switch to (kept the filename to avoid
    a churn-only rename across index.html's <link> and any doc references). */
 /* ── Maintenance section — full-width, no inner wrapper ── */
@@ -50,7 +50,7 @@
   transition: border-color var(--tt);
 }
 
-/* Personality indicator — static now (LIRA is the only personality, no
+/* Personality indicator — static now (HUGO is the only personality, no
    switcher modal to open on click — see this file's own header comment).
    Angular clip-path corners instead of border-radius, matching this pass's
    "no border-radius anywhere" rule. */
@@ -83,7 +83,7 @@
   50%      { opacity: 0.55; }
 }
 /* Rajdhani (toolbar premium pass) — same identity face as .mm-name/
-   .mm-status-label in the main menu, so LIRA's own name reads consistently
+   .mm-status-label in the main menu, so HUGO's own name reads consistently
    wherever it appears. */
 .p-indicator-name {
   font-family: var(--mm-font-display);
@@ -128,7 +128,7 @@ body.test-mode-active .test-mode-bar-indicator { display: block; }
 
 /* SLEEP — always-visible persistent-bar indicator, same subtle/never-
    hidden-behind-a-menu philosophy as the test-mode dot above (Joan should
-   always be able to tell LIRA is mid-maintenance without opening Ajustes),
+   always be able to tell HUGO is mid-maintenance without opening Ajustes),
    but a small monospace "ZZZ" glyph instead of a plain dot — reads more
    like "sleeping" at a glance than an undifferentiated colored square
    would, and stays consistent with the mechanical/JetBrains-Mono chrome

@@ -36,7 +36,7 @@ function _updateMMClock() {
 // arrives, whenever that happens to be relative to the reveal. Never reads
 // or sets anything on #bootOverlay (setBootState/setBootMsg keep driving
 // that independently, for exactly as long as the real backend takes).
-// Always LIRA's gold diamond regardless of the active personality — see
+// Always HUGO's gold diamond regardless of the active personality — see
 // the HTML comment above #bootSplash for the full design rationale.
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -47,7 +47,6 @@ const BOOT_STAGES = [
   { stage: 'launcher_responded',  percent: 25,  label: 'Launcher activo' },
   { stage: 'jarvis_starting',     percent: 40,  label: 'Iniciando núcleo de IA' },
   { stage: 'vosk_loading',        percent: 55,  label: 'Cargando modelos de voz' },
-  { stage: 'kokoro_prewarm',      percent: 70,  label: 'Precalentando síntesis de voz' },
   { stage: 'socket_connected',    percent: 85,  label: 'Sincronizando' },
   { stage: 'jarvis_ready',        percent: 100, label: 'Sistemas en línea' },
 ]
@@ -104,7 +103,7 @@ function _playBootSplash() {
     orb.classList.add('reveal')
   }, revealAt)
 
-  // Beat 5: "L I R A" fades in below the now-pulsing orb, then the splash
+  // Beat 5: "H U G O" fades in below the now-pulsing orb, then the splash
   // holds — it only releases once the real backend state resolves (see
   // _enterBootSplashWait below), not on a fixed timer.
   //
@@ -156,7 +155,7 @@ function _refreshActiveLine() {
 _updateMMClock()
 setInterval(_updateMMClock, 1000)
 
-applyPersonality('lira')  // set initial state immediately (default personality)
+applyPersonality('hugo')  // set initial state immediately (default personality)
 
 // Boot splash is purely decorative and must never risk taking down anything
 // after it — wrapped so a failure here can't halt the rest of this script's
@@ -232,7 +231,7 @@ function _applyBootProgress(data) {
   }
 }
 
-// Drives the boot splash's hold phase: diamond + "L I R A" are showing, and
+// Drives the boot splash's hold phase: diamond + "H U G O" are showing, and
 // we're genuinely waiting on #bootOverlay's real state machine (setBootMsg/
 // setBootState, health polling, retries — all untouched, still driving
 // independently underneath). While waiting: a dash traces the diamond's
@@ -413,15 +412,15 @@ function _startSessionTimer() {
   }, 1000)
 }
 
-// LIRA's own quote pool cycles on a dedicated 45s timer, independent of the
+// HUGO's own quote pool cycles on a dedicated 45s timer, independent of the
 // applyPersonality()-driven switch-in pick above — sequential (not random),
 // so it reads as a deliberate rotation.
 setInterval(() => {
   const quoteEl = document.getElementById('mmQuote')
   if (!quoteEl) return
-  const quotes = _LIRA_QUOTES
-  _mmLiraQuoteIdx = (_mmLiraQuoteIdx + 1) % quotes.length
-  const nextQuote = quotes[_mmLiraQuoteIdx]
+  const quotes = _HUGO_QUOTES
+  _mmHugoQuoteIdx = (_mmHugoQuoteIdx + 1) % quotes.length
+  const nextQuote = quotes[_mmHugoQuoteIdx]
   quoteEl.classList.add('fading')
   setTimeout(() => {
     quoteEl.textContent = nextQuote
@@ -433,9 +432,6 @@ setInterval(() => {
 ;(function _wireMMActions() {
   const goChat = document.getElementById('mmGoChat')
   if (goChat) goChat.addEventListener('click', () => switchSection('chat'))
-
-  const goArmor = document.getElementById('mmGoArmor')
-  if (goArmor) goArmor.addEventListener('click', () => switchSection('armor'))
 
   const toggleMute = document.getElementById('mmToggleMute')
   if (toggleMute) toggleMute.addEventListener('click', () => {

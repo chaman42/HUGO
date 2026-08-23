@@ -73,7 +73,6 @@ _signal.signal(_signal.SIGTERM, _handle_sigterm)
 import core.listener as listener_mod
 import core.speaker as speaker_mod
 import core.commands as commands_mod
-import core.voice as voice_mod
 import core.server as server_mod
 # Import-time side effect: starts its own pre-warm background thread (see
 # core/embeddings.py's own module comment) — imported here, not left to
@@ -292,9 +291,9 @@ if __name__ == "__main__":
         # Still mark ready so the frontend can connect and show the mic error
         server_mod.set_ready(True)
         server_mod.emit_force_reload()
-        # Boot progress, stage 7/7 — no Vosk/mic/Kokoro to wait on in this
+        # Boot progress, stage 7/7 — no Vosk/mic to wait on in this
         # path, so jump straight to ready. See _signal_ready() below for the
-        # normal (mic-available) path's stages 4-5-7.
+        # normal (mic-available) path's stages 4-7.
         try:
             server_mod.socketio.emit("boot_progress", {"stage": "jarvis_ready", "percent": 100, "label": "Sistemas en línea."})
         except Exception:
@@ -351,22 +350,10 @@ if __name__ == "__main__":
                     )
                     return
 
-            # ── Step 3: Kokoro TTS primary voice ─────────────────────────────
-            # kokoro_ready is set in voice._prewarm_kokoro() after the first voice
-            # (JARVIS/em_santa) warms up. Non-fatal if it times out — TTS still works,
-            # the first utterance will just be slower.
-            # Boot progress, stage 5/7.
-            try:
-                server_mod.socketio.emit("boot_progress", {"stage": "kokoro_prewarm", "percent": 70, "label": "Precalentando síntesis de voz..."})
-            except Exception:
-                pass
-            if not voice_mod.kokoro_ready.wait(timeout=30):
-                logger.warning(
-                    "STARTUP WARNING: Kokoro TTS did not finish pre-warming within 30s. "
-                    "First voice response may be slow (Kokoro still loading in background)."
-                )
-
             # All required subsystems confirmed ready — safe to mark Jarvis as ready.
+            # (Step 3 used to wait on Kokoro's TTS pre-warm here — removed along
+            # with Kokoro/XTTS; macOS `say`, the only engine left, has no model
+            # to warm up, so there's nothing to wait on.)
             server_mod.set_ready(True)
             server_mod.emit_force_reload()
             # Boot progress, stage 7/7 — the real 'jarvis_ready' milestone.

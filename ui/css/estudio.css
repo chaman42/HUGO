@@ -14,7 +14,7 @@
 
 /* ── Panel switching — same on/off pattern as .core-panel, kept as its
       own class so ESTUDIO stays self-contained (not coupled to NÚCLEO
-      LIRA's own panel styling). ── */
+      HUGO's own panel styling). ── */
 .estudio-panel {
   display: none;
   flex: 1 1 0;

@@ -1,7 +1,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# SKILLS — loadable capabilities layer, kept separate from lira_core's
+# SKILLS — loadable capabilities layer, kept separate from hugo_core's
 # always-on internals (voice, memory, intent, server). Every skill is a
-# LiraSkill subclass instantiated by the loader below and gated by its own
+# HugoSkill subclass instantiated by the loader below and gated by its own
 # `skill_*` entry in data/feature_flags.json (via core.memory_flags —
 # core.memory re-exports the same is_feature_enabled/reload_feature_flags
 # every other flag-gated feature in this codebase already uses, so toggling
@@ -23,7 +23,7 @@ from core.memory_flags import is_feature_enabled, set_feature_flag
 logger = logging.getLogger(__name__)
 
 
-class LiraSkill:
+class HugoSkill:
     """Base interface every skill module implements via one concrete
     subclass. `flag` is the data/feature_flags.json key gating this skill;
     left blank it defaults to f"skill_{name}" (see _flag_for)."""
@@ -38,15 +38,15 @@ class LiraSkill:
 
 
 _lock = threading.Lock()
-_skills: dict[str, LiraSkill] = {}
+_skills: dict[str, HugoSkill] = {}
 
 
-def _flag_for(skill: LiraSkill) -> str:
+def _flag_for(skill: HugoSkill) -> str:
     return skill.flag or f"skill_{skill.name}"
 
 
-def _discover() -> dict[str, LiraSkill]:
-    found: dict[str, LiraSkill] = {}
+def _discover() -> dict[str, HugoSkill]:
+    found: dict[str, HugoSkill] = {}
     for modinfo in pkgutil.iter_modules(__path__):
         if modinfo.name.startswith("_"):
             continue
@@ -58,7 +58,7 @@ def _discover() -> dict[str, LiraSkill]:
             logger.warning("skills: failed to load %s", modinfo.name, exc_info=True)
             continue
         for _, obj in inspect.getmembers(module, inspect.isclass):
-            if issubclass(obj, LiraSkill) and obj is not LiraSkill and obj.__module__ == qualified:
+            if issubclass(obj, HugoSkill) and obj is not HugoSkill and obj.__module__ == qualified:
                 if not obj.name:
                     logger.warning("skills: %s.%s has no `name` set, skipping", modinfo.name, obj.__name__)
                     continue
@@ -78,7 +78,7 @@ def reload_skills() -> None:
         _skills = _discover()
 
 
-def get_skill(name: str) -> LiraSkill | None:
+def get_skill(name: str) -> HugoSkill | None:
     """The named skill if it exists AND its feature flag is currently on;
     None otherwise (unknown name or disabled)."""
     with _lock:
@@ -89,7 +89,7 @@ def get_skill(name: str) -> LiraSkill | None:
     return skill if skill.enabled else None
 
 
-def list_skills(enabled_only: bool = True) -> list[LiraSkill]:
+def list_skills(enabled_only: bool = True) -> list[HugoSkill]:
     """Every loaded skill, or just the currently-enabled ones (default) —
     what the conversation engine should offer for this turn."""
     with _lock:

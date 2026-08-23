@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Calendar + Apple Health awareness — volatile, session-scoped context
-# blocks refreshed every 30 minutes in the background so LIRA has Joan's
+# blocks refreshed every 30 minutes in the background so HUGO has Joan's
 # agenda and health data present without ever blocking dispatch on a slow
 # AppleScript/Shortcuts call. Mirrors core.tools_environment's location/
 # weather cache-plus-background-refresh pattern; kept here rather than a
@@ -130,7 +130,7 @@ def get_calendar_context_string() -> str:
 # control already use (_run_applescript, imported from core.tools_system
 # above — no new dependency). Fails silently (empty context string, one-
 # time log note) if the Shortcut doesn't exist yet or Health access hasn't
-# been granted — LIRA just works without health awareness in that case.
+# been granted — HUGO just works without health awareness in that case.
 #
 # ONE-TIME SETUP required in the macOS Shortcuts app (cannot be done from
 # Python — Shortcuts must be authored by hand): create a shortcut named
@@ -151,7 +151,7 @@ def get_calendar_context_string() -> str:
 # account as the iPhone/Watch that actually records the Health data.
 # ---------------------------------------------------------------------------
 
-HEALTH_SHORTCUT_NAME = "LIRA Salud"
+HEALTH_SHORTCUT_NAME = "HUGO Salud"
 HEALTH_TIMEOUT        = 15   # seconds — a Health-samples Shortcut run is quick once synced
 
 _health_cache: dict = {"data": None, "timestamp": 0.0}
@@ -173,7 +173,7 @@ def _fetch_health_data() -> dict | None:
                 "Apple Health data unavailable — create a Shortcut named '%s' in the "
                 "macOS Shortcuts app to enable it (steps/sleep/active calories/heart "
                 "rate/workouts; see core/tools.py's HEALTH_SHORTCUT_NAME comment block "
-                "for the exact output format expected). LIRA works normally without it.",
+                "for the exact output format expected). HUGO works normally without it.",
                 HEALTH_SHORTCUT_NAME,
             )
         return None

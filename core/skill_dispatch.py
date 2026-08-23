@@ -12,7 +12,7 @@
 #   volume_control is never shadowed by an accidental trigger overlap).
 #
 #   IMPLICIT — for an open-ended request with no explicit trigger match,
-#   LIRA herself may decide a loaded skill fits. She's told what's
+#   HUGO herself may decide a loaded skill fits. She's told what's
 #   available via a "CONTEXTO OPCIONAL" block (same pattern as
 #   core.commands._build_social_skills_context et al.) appended to
 #   user_content, and signals her decision back with a `[USAR_SKILL:
@@ -42,7 +42,7 @@ def detect_explicit_skill_request(transcript: str) -> str | None:
 def build_skills_awareness_context() -> str | None:
     """None if no skill is currently loaded+enabled; otherwise a
     'CONTEXTO OPCIONAL' block listing each one's name/description, so
-    LIRA can autonomously pick one for an open-ended request without the
+    HUGO can autonomously pick one for an open-ended request without the
     user naming it. She replies with a bare `[USAR_SKILL: nombre]` line
     when she wants to invoke one — see extract_skill_directive."""
     loaded = skills.list_skills(enabled_only=True)
@@ -58,7 +58,7 @@ def build_skills_awareness_context() -> str | None:
 
 
 def extract_skill_directive(reply: str) -> str | None:
-    """The skill name LIRA's own reply asked to invoke, if any — only
+    """The skill name HUGO's own reply asked to invoke, if any — only
     honored if that skill is still loaded+enabled right now (flags can
     flip between the context being built and the reply coming back)."""
     if not reply:

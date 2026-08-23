@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Periodic safety net — invoked every 10 minutes by the
-com.joan.lira.ollama-guard LaunchAgent. Independent of jarvis.py and
+com.joan.hugo.ollama-guard LaunchAgent. Independent of jarvis.py and
 scripts/reflective_mode.py's own cleanup (core/ollama_control.py's
 kill_llama_server() calls in both of those); this exists specifically to
 catch the case those miss: a crash, SIGKILL, force-quit, or any other exit
@@ -15,7 +15,7 @@ of that fix — this script is the belt to that suspenders, catching drift
 between jarvis.py launches rather than only at the next one).
 
 Recurrence of that same incident (2026-08-19): core/sleep_control.py's
-sweep only runs once, at jarvis.py's own startup — while LIRA stays
+sweep only runs once, at jarvis.py's own startup — while HUGO stays
 closed, nothing ever re-triggers it, so orphans from the last session just
 sit there. This script's own _any_sleep_process_alive() check couldn't
 tell those apart from a genuine session, so it kept leaving llama-server

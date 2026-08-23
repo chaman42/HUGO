@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 # conversation (see _upsert_fact) instead of being stored as a duplicate.
 # ---------------------------------------------------------------------------
 
-MEMORY_LIRA_PATH         = "data/memory_lira.json"
+MEMORY_HUGO_PATH         = "data/memory_hugo.json"
 MEMORY_SHARED_PATH       = "data/memory_shared.json"
 # MEMORY_INSTRUCTIONS_PATH (Layer 3) lives in core/memory_setup.py, next to
 # the instructions-loading code that actually uses it.
@@ -125,8 +125,8 @@ _MEMORY_HEALTH_WARN_THRESHOLD = 100
 # related proper nouns that the LLM might confuse with the user's name.
 _MEMORY_BLACKLIST: frozenset[str] = frozenset({
     # Primary assistant names
-    "jarvis", "friday", "lira",
-    # LIRA / lyra variants
+    "jarvis", "friday", "hugo",
+    # HUGO / lyra variants
     "lyra", "leera", "liera", "liira", "lirra",
     # Jarvis variants
     "jarbi", "yarvis", "harviz", "jarvi", "jarbs", "jarbis", "harvey",
@@ -167,7 +167,7 @@ _memory_lock = threading.Lock()
 
 def _get_personality_memory_path(personality: str) -> str:
     return {
-        "lira": MEMORY_LIRA_PATH,
+        "hugo": MEMORY_HUGO_PATH,
     }.get(personality, MEMORY_SHARED_PATH)
 
 
@@ -326,7 +326,7 @@ def _normalize_fact(item, default_category: str) -> dict | None:
 
     'epistemic' ('stated' | 'inferred', see core/epistemics.py) is a
     different axis than 'source': 'source' says which pipeline wrote the
-    fact, 'epistemic' says whether Joan actually said it or LIRA concluded
+    fact, 'epistemic' says whether Joan actually said it or HUGO concluded
     it from a pattern. Missing/unrecognized defaults off 'source' —
     'reflective' facts are pattern-derived (⇒ 'inferred'), everything else
     is Joan's own words (⇒ 'stated') — so every fact written before this

@@ -86,7 +86,7 @@ def _compress_oldest_history() -> None:
             existing_summary = _history_summary
 
         transcript_block = "\n".join(
-            f"{'Usuario' if h['role'] == 'user' else 'LIRA'}: {h['content']}" for h in oldest
+            f"{'Usuario' if h['role'] == 'user' else 'HUGO'}: {h['content']}" for h in oldest
         )
         prompt = (
             (f"Resumen previo:\n{existing_summary}\n\n" if existing_summary else "")
@@ -134,7 +134,7 @@ def _save_session_end_state() -> None:
         import core.commands as commands   # last-interaction timestamp lives on the dispatch loop
         history = _get_history_snapshot()
         last_messages = [
-            f"{'Usuario' if h['role'] == 'user' else 'LIRA'}: {h['content']}"
+            f"{'Usuario' if h['role'] == 'user' else 'HUGO'}: {h['content']}"
             for h in history[-3:]
         ]
 
@@ -206,7 +206,7 @@ def _get_messages_with_history(
 
 def _maybe_emit_panel(intent: str, transcript: str) -> None:
     """Best-effort: emit a 'show_panel' event for weather/time queries so
-    the frontend can animate in a contextual panel while LIRA speaks. Never
+    the frontend can animate in a contextual panel while HUGO speaks. Never
     raises, never affects the actual reply (see module comment above).
     Called right after intent detection, before the reply is generated —
     see core.commands._dispatch_command_impl."""
@@ -230,7 +230,7 @@ def _maybe_emit_panel(intent: str, transcript: str) -> None:
             loc = tools.get_location()
             if not (loc.get("lat") and loc.get("lon")):
                 return
-            # Debug log (LIRA weather self-awareness fix) — see the matching
+            # Debug log (HUGO weather self-awareness fix) — see the matching
             # log in core.personalities.base._build_system_prompt. Confirms
             # weather was detected and actually fetched for this turn's
             # panel, independent of what the model ends up saying out loud.

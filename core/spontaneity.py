@@ -624,7 +624,7 @@ def run_spontaneity_cycle(*, context_label: str = "") -> dict:
         "description": candidate.description,
         "source":      "spontaneity",       # candidate.description is still a raw fact, not a
                                              # spoken line — core.initiative._phrase_entry rephrases
-                                             # every queue entry through LIRA's voice regardless of source
+                                             # every queue entry through HUGO's voice regardless of source
         "candidate_type": candidate.type,
         "created_at":  _now_iso(),
         "expires_at":  None,
@@ -635,7 +635,7 @@ def run_spontaneity_cycle(*, context_label: str = "") -> dict:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# REACTION CAPTURE — "LIRA infers Joan's reaction from: explicit phrases,
+# REACTION CAPTURE — "HUGO infers Joan's reaction from: explicit phrases,
 # implicit continued engagement vs topic change vs silence, emotional
 # tone." Hooked from core.commands.dispatch_command: when
 # core.initiative._deliver_pending_initiative() delivers an entry with

@@ -1,11 +1,11 @@
-"""Calculator skill — thin LiraSkill wrapper over core.tools.evaluate_math
+"""Calculator skill — thin HugoSkill wrapper over core.tools.evaluate_math
 (safe local expression evaluation, no LLM call; see core/tools_search.py).
 No arithmetic logic lives here."""
-from skills import LiraSkill
+from skills import HugoSkill
 from core import tools
 
 
-class CalculatorSkill(LiraSkill):
+class CalculatorSkill(HugoSkill):
     name = "calculator"
     description = "Evalúa expresiones aritméticas localmente, sin llamar al LLM."
     triggers = ["cuánto es", "calcula", "suma", "resta", "multiplica", "divide"]

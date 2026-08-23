@@ -18,16 +18,16 @@
   --scanline:    rgba(63, 169, 245, 0.010);
 
   /* ── PERSONALITY color: orb, name label, messages — updated by applyPersonality().
-        Default = LIRA (#f0c040); JARVIS = #00d4ff; FRIDAY = #b44fff. ─────────────── */
-  --p-color:  #f0c040;
-  --p-mid:    rgba(240, 192, 64, 0.35);
-  --p-dim:    rgba(240, 192, 64, 0.12);
-  --p-glow:   rgba(240, 192, 64, 0.55);
-  --p-a02:    rgba(240, 192, 64, 0.20);
-  --p-a04:    rgba(240, 192, 64, 0.40);
-  --p-a015:   rgba(240, 192, 64, 0.15);
-  --p-a035:   rgba(240, 192, 64, 0.35);
-  --p-a018:   rgba(240, 192, 64, 0.18);
+        Default = HUGO (#409cf0); JARVIS = #00d4ff; FRIDAY = #b44fff. ─────────────── */
+  --p-color:  #409cf0;
+  --p-mid:    rgba(64, 156, 240, 0.35);
+  --p-dim:    rgba(64, 156, 240, 0.12);
+  --p-glow:   rgba(64, 156, 240, 0.55);
+  --p-a02:    rgba(64, 156, 240, 0.20);
+  --p-a04:    rgba(64, 156, 240, 0.40);
+  --p-a015:   rgba(64, 156, 240, 0.15);
+  --p-a035:   rgba(64, 156, 240, 0.35);
+  --p-a018:   rgba(64, 156, 240, 0.18);
 
   /* Fixed colors */
   --bg:     #0a0a0a;
@@ -46,7 +46,7 @@
         same source of truth the spec defines. ──────────────────────────── */
   --mm-font-sans: 'Inter', -apple-system, sans-serif;
   --mm-font-mono: 'JetBrains Mono', var(--font);
-  /* Reserved for .mm-name/.mm-status-label only — LIRA's own identity mark,
+  /* Reserved for .mm-name/.mm-status-label only — HUGO's own identity mark,
      distinct from the system-chrome Inter/JetBrains Mono pairing above. */
   --mm-font-display: 'Rajdhani', var(--mm-font-sans);
   --mm-surface-1:      rgba(255,255,255,0.03);
@@ -183,10 +183,10 @@ body::after {
   gap: 28px;
 }
 
-/* Diamond power button — LIRA's diamond orb (same clip-path/motif as the
+/* Diamond power button — HUGO's diamond orb (same clip-path/motif as the
    main-menu orb, see .mm-orb-shape below), not a circular power-icon
    button with a diamond frame drawn around it. Fixed gold regardless of
-   personality, matching #bootSplash's own "always LIRA's diamond" brand
+   personality, matching #bootSplash's own "always HUGO's diamond" brand
    intro rule — the overlay is the same boot animation continuing, not a
    different, older one underneath. */
 /* Sized ~46% larger than the original 130px — more prominent/cinematic on
@@ -204,7 +204,7 @@ body::after {
 .boot-diamond-glow {
   position: absolute; inset: -35px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(240,192,64,0.35) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(64,156,240,0.35) 0%, transparent 70%);
   opacity: 0.7;
   pointer-events: none;
 }
@@ -214,8 +214,8 @@ body::after {
 .boot-diamond-ring {
   position: absolute; inset: 0;
   clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
-  border: 1.5px solid #f0c040;
-  box-shadow: 0 0 18px #f0c040, inset 0 0 18px rgba(240,192,64,0.3);
+  border: 1.5px solid #409cf0;
+  box-shadow: 0 0 18px #409cf0, inset 0 0 18px rgba(64,156,240,0.3);
   animation: boot-diamond-breathe 2.8s ease-in-out infinite;
   pointer-events: none;
 }
@@ -228,7 +228,7 @@ body::after {
 .boot-diamond-core {
   position: absolute; inset: 50px;
   clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
-  background: radial-gradient(circle, rgba(240,192,64,0.5) 0%, transparent 75%);
+  background: radial-gradient(circle, rgba(64,156,240,0.5) 0%, transparent 75%);
   pointer-events: none;
 }
 
@@ -238,8 +238,8 @@ body::after {
   animation: boot-diamond-pulse-fast 0.9s ease-in-out infinite;
 }
 @keyframes boot-diamond-pulse-fast {
-  0%, 100% { opacity: 0.6; box-shadow: 0 0 18px #f0c040, inset 0 0 18px rgba(240,192,64,0.3); }
-  50%       { opacity: 1;   box-shadow: 0 0 30px #f0c040, inset 0 0 26px rgba(240,192,64,0.5); }
+  0%, 100% { opacity: 0.6; box-shadow: 0 0 18px #409cf0, inset 0 0 18px rgba(64,156,240,0.3); }
+  50%       { opacity: 1;   box-shadow: 0 0 30px #409cf0, inset 0 0 26px rgba(64,156,240,0.5); }
 }
 
 /* Loading indicator — identical technique to #bootSplash's own border
@@ -257,11 +257,11 @@ body::after {
 }
 .boot-diamond-trace polygon {
   fill: none;
-  stroke: #f0c040;
+  stroke: #409cf0;
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-dasharray: 60 194;
-  filter: drop-shadow(0 0 4px #f0c040);
+  filter: drop-shadow(0 0 4px #409cf0);
   animation: boot-trace-loop 1.6s linear infinite;
 }
 
@@ -275,14 +275,14 @@ body::after {
   position: absolute; inset: 0;
   clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
   border: none;
-  background: radial-gradient(circle, rgba(240,192,64,0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(64,156,240,0.15) 0%, transparent 70%);
   cursor: pointer;
   padding: 0;
   outline: none;
   transition: background 0.3s ease, opacity 0.3s ease;
 }
 .power-btn:hover {
-  background: radial-gradient(circle, rgba(240,192,64,0.32) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(64,156,240,0.32) 0%, transparent 70%);
 }
 .power-btn:disabled {
   opacity: 0.35;
@@ -299,9 +299,9 @@ body::after {
 .boot-diamond-gem {
   position: absolute;
   width: 13px; height: 13px;
-  background: #f0c040;
-  border: 1px solid #f0c040;
-  box-shadow: 0 0 4px #f0c040, 0 0 8px rgba(240,192,64,0.55);
+  background: #409cf0;
+  border: 1px solid #409cf0;
+  box-shadow: 0 0 4px #409cf0, 0 0 8px rgba(64,156,240,0.55);
   pointer-events: none;
   animation: boot-gem-sparkle 2.6s ease-in-out infinite;
 }
@@ -310,16 +310,16 @@ body::after {
 .boot-diamond-gem.bottom { bottom: -7px; left: 50%;   transform: translateX(-50%) rotate(45deg); }
 .boot-diamond-gem.left   { top: 50%;     left: -7px;  transform: translateY(-50%) rotate(45deg); }
 @keyframes boot-gem-sparkle {
-  0%, 100% { box-shadow: 0 0 4px #f0c040, 0 0 8px rgba(240,192,64,0.55); }
-  50%       { box-shadow: 0 0 8px #f0c040, 0 0 16px rgba(240,192,64,0.55); }
+  0%, 100% { box-shadow: 0 0 4px #409cf0, 0 0 8px rgba(64,156,240,0.55); }
+  50%       { box-shadow: 0 0 8px #409cf0, 0 0 16px rgba(64,156,240,0.55); }
 }
 
 .boot-label {
   font-size: 1.0rem;
   letter-spacing: 0.55em;
   text-transform: uppercase;
-  color: #f0c040;
-  text-shadow: 0 0 12px rgba(240,192,64,0.55);
+  color: #409cf0;
+  text-shadow: 0 0 12px rgba(64,156,240,0.55);
 }
 
 #bootMsg {
@@ -351,8 +351,8 @@ body::after {
 .boot-splash-grid {
   position: absolute; inset: -60px;
   background-image:
-    repeating-linear-gradient(0deg,  rgba(240,192,64,0.05) 0px, rgba(240,192,64,0.05) 1px, transparent 1px, transparent 32px),
-    repeating-linear-gradient(90deg, rgba(240,192,64,0.05) 0px, rgba(240,192,64,0.05) 1px, transparent 1px, transparent 32px);
+    repeating-linear-gradient(0deg,  rgba(64,156,240,0.05) 0px, rgba(64,156,240,0.05) 1px, transparent 1px, transparent 32px),
+    repeating-linear-gradient(90deg, rgba(64,156,240,0.05) 0px, rgba(64,156,240,0.05) 1px, transparent 1px, transparent 32px);
   opacity: 0;
   transition: opacity 1s ease;
 }
@@ -374,7 +374,7 @@ body::after {
   font-family: var(--font);
   font-size: 0.72rem;
   letter-spacing: 0.04em;
-  color: #f0c040;
+  color: #409cf0;
   transition: opacity 0.4s ease;
 }
 .boot-terminal-line {
@@ -396,19 +396,19 @@ body::after {
 /* Beat 3: progress bar fills underneath the lines as they print */
 .boot-progress-track {
   width: 100%; height: 2px;
-  background: rgba(240,192,64,0.12);
+  background: rgba(64,156,240,0.12);
   overflow: hidden;
   transition: opacity 0.4s ease;
 }
 .boot-progress-fill {
   width: 0%; height: 100%;
-  background: #f0c040;
-  box-shadow: 0 0 8px #f0c040;
+  background: #409cf0;
+  box-shadow: 0 0 8px #409cf0;
   transition: width 1.5s linear;
 }
 .boot-progress-track.fading { opacity: 0; }
 
-/* Beat 4: the LIRA diamond orb reveal — scale up from small with a glow
+/* Beat 4: the HUGO diamond orb reveal — scale up from small with a glow
    burst, not just a fade. Terminal + progress bar fade out as this plays. */
 .boot-splash-orb {
   position: absolute;
@@ -423,7 +423,7 @@ body::after {
 .boot-splash-orb-glow {
   position: absolute; inset: -30px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(240,192,64,0.65) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(64,156,240,0.65) 0%, transparent 70%);
   opacity: 0;
 }
 .boot-splash-orb.reveal .boot-splash-orb-glow {
@@ -437,8 +437,8 @@ body::after {
 .boot-splash-orb-ring {
   position: absolute; inset: 0;
   clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
-  border: 1.5px solid #f0c040;
-  box-shadow: 0 0 16px #f0c040, inset 0 0 16px rgba(240,192,64,0.3);
+  border: 1.5px solid #409cf0;
+  box-shadow: 0 0 16px #409cf0, inset 0 0 16px rgba(64,156,240,0.3);
 }
 /* Gentle continuous pulse once revealed — separate from the one-time burst
    above, and on box-shadow rather than transform so it never fights the
@@ -449,13 +449,13 @@ body::after {
   animation: boot-orb-idle-pulse 2.4s ease-in-out infinite;
 }
 @keyframes boot-orb-idle-pulse {
-  0%, 100% { box-shadow: 0 0 16px #f0c040, inset 0 0 16px rgba(240,192,64,0.3); }
-  50%       { box-shadow: 0 0 26px #f0c040, inset 0 0 22px rgba(240,192,64,0.45); }
+  0%, 100% { box-shadow: 0 0 16px #409cf0, inset 0 0 16px rgba(64,156,240,0.3); }
+  50%       { box-shadow: 0 0 26px #409cf0, inset 0 0 22px rgba(64,156,240,0.45); }
 }
 .boot-splash-orb-core {
   position: absolute; inset: 24px;
   clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
-  background: radial-gradient(circle, rgba(240,192,64,0.5) 0%, transparent 75%);
+  background: radial-gradient(circle, rgba(64,156,240,0.5) 0%, transparent 75%);
 }
 
 /* Loading indicator — a short dash traveling around the diamond's own
@@ -472,11 +472,11 @@ body::after {
 }
 .boot-splash-trace polygon {
   fill: none;
-  stroke: #f0c040;
+  stroke: #409cf0;
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-dasharray: 60 194;   /* ~254 total ≈ the diamond's own perimeter */
-  filter: drop-shadow(0 0 4px #f0c040);
+  filter: drop-shadow(0 0 4px #409cf0);
 }
 .boot-splash-orb.tracing .boot-splash-trace { opacity: 1; }
 .boot-splash-orb.tracing .boot-splash-trace polygon {
@@ -486,7 +486,7 @@ body::after {
   to { stroke-dashoffset: -254; }
 }
 
-/* Beat 5: "L I R A" fades in below the orb once it's revealed, and stays
+/* Beat 5: "H U G O" fades in below the orb once it's revealed, and stays
    visible for as long as the orb does — i.e. for the entire real wait on
    jarvis_ready, not just the fixed intro. Keep it minimal: name only. */
 .boot-splash-name {
@@ -494,8 +494,8 @@ body::after {
   font-family: var(--font);
   font-size: 0.85rem;
   letter-spacing: 0.5em;
-  color: #f0c040;
-  text-shadow: 0 0 10px rgba(240,192,64,0.55);
+  color: #409cf0;
+  text-shadow: 0 0 10px rgba(64,156,240,0.55);
   text-align: center;
   white-space: nowrap;
   opacity: 0;
@@ -512,7 +512,7 @@ body::after {
   font-size: 0.6rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: rgba(240,192,64,0.6);
+  color: rgba(64,156,240,0.6);
   text-align: center;
   opacity: 0;
   transition: opacity 0.6s ease, color 0.3s ease;
@@ -548,14 +548,14 @@ body::after {
 .boot-real-progress.visible { opacity: 1; }
 .boot-real-progress-track {
   width: 100%; height: 2px;
-  background: rgba(240,192,64,0.12);
+  background: rgba(64,156,240,0.12);
   overflow: hidden;
   border-radius: 1px;
 }
 .boot-real-progress-fill {
   width: 0%; height: 100%;
-  background: #f0c040;
-  box-shadow: 0 0 6px rgba(240,192,64,0.6);
+  background: #409cf0;
+  box-shadow: 0 0 6px rgba(64,156,240,0.6);
   transition: width 0.5s ease;
 }
 .boot-real-progress-label {
@@ -563,7 +563,7 @@ body::after {
   font-size: 0.52rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(240,192,64,0.45);
+  color: rgba(64,156,240,0.45);
   text-align: center;
   min-height: 1em;
 }
@@ -654,7 +654,7 @@ body::after {
    height to make room — content is never covered or clipped by it, and
    nothing needs its own no-drag override just to remain reachable. The
    blanket `no-drag` rule below is still added, defensively, for any
-   interactive element that ever ends up here (e.g. the floating LIRA
+   interactive element that ever ends up here (e.g. the floating HUGO
    diamond's top-left/top-right safe zones sit at 80px, comfortably below
    this bar, but the rule costs nothing and covers every section, present
    and future). */
@@ -731,11 +731,11 @@ button, input, textarea, select, a[href], [role="button"] {
      (.orb-bracket, .orb-gem) are never affected by it. */
 }
 
-/* Holds glow/ring/spinner/core/wave — the parts the diamond clip-path (LIRA)
+/* Holds glow/ring/spinner/core/wave — the parts the diamond clip-path (HUGO)
    actually cuts to shape. Decorations (.orb-bracket, .orb-gem) deliberately
    live OUTSIDE this wrapper, as direct children of .orb-wrap, so a clip-path
    applied here never clips them too — see applyPersonality() in the script.
-   Defaults to LIRA's diamond clip-path since she's the default personality;
+   Defaults to HUGO's diamond clip-path since she's the default personality;
    applyPersonality() sets this to 'none' for JARVIS/FRIDAY at runtime. */
 .orb-shape {
   position: absolute;
@@ -757,15 +757,15 @@ button, input, textarea, select, a[href], [role="button"] {
    has ALREADY updated to the new personality's color by the time this
    plays, so the bloom doesn't need to know "from"/"to" — it's just
    glowing with wherever --p-color already points. Same treatment applied
-   to #liraDiamond too (see .lira-diamond.personality-shift, in her own
+   to #hugoDiamond too (see .hugo-diamond.personality-shift, in her own
    CSS section) — she never adopts the new color/shape (always gold,
    always diamond, by long-standing design), but still visibly reacts to
    the switch via a hue ripple that resolves back to her own form. */
 .orb-wrap.personality-shift .orb-shape,
 .mm-orb-wrap.personality-shift .mm-orb-shape {
-  animation: lira-personality-liquify-shape 0.8s cubic-bezier(0.45,0.05,0.55,0.95);
+  animation: hugo-personality-liquify-shape 0.8s cubic-bezier(0.45,0.05,0.55,0.95);
 }
-@keyframes lira-personality-liquify-shape {
+@keyframes hugo-personality-liquify-shape {
   0%   { transform: scale(1)    rotate(0deg); }
   22%  { transform: scale(0.90) rotate(-4deg); }
   48%  { transform: scale(1.10) rotate(5deg); }
@@ -782,9 +782,9 @@ button, input, textarea, select, a[href], [role="button"] {
   filter: blur(10px);
   opacity: 0;
   pointer-events: none;
-  animation: lira-personality-liquify-bleed 0.8s cubic-bezier(0.45,0.05,0.55,0.95);
+  animation: hugo-personality-liquify-bleed 0.8s cubic-bezier(0.45,0.05,0.55,0.95);
 }
-@keyframes lira-personality-liquify-bleed {
+@keyframes hugo-personality-liquify-bleed {
   0%   { opacity: 0;    transform: scale(0.6); }
   35%  { opacity: 0.85; transform: scale(1.15); }
   65%  { opacity: 0.5;  transform: scale(0.95); }
@@ -803,7 +803,7 @@ button, input, textarea, select, a[href], [role="button"] {
 /* personality-owned: orb ring uses active personality color */
 .orb-ring {
   position: absolute; inset: 0;
-  /* Default matches LIRA (diamond, border-radius 0) since she's the default
+  /* Default matches HUGO (diamond, border-radius 0) since she's the default
      personality — applyPersonality() still overrides this to 50% for
      JARVIS/FRIDAY at runtime. */
   border-radius: 0;
@@ -836,7 +836,7 @@ button, input, textarea, select, a[href], [role="button"] {
 
 .orb-core {
   position: absolute; inset: 28px;
-  /* Default matches LIRA (diamond, border-radius 0) — see .orb-ring above */
+  /* Default matches HUGO (diamond, border-radius 0) — see .orb-ring above */
   border-radius: 0;
   /* personality-owned: orb core uses active personality color */
   background: radial-gradient(circle, var(--p-dim) 0%, transparent 75%);
@@ -877,7 +877,7 @@ button, input, textarea, select, a[href], [role="button"] {
   /* personality-owned: corner brackets use active personality color */
   border-color: var(--p-mid);
   border-style: solid;
-  /* Hidden by default — LIRA (the default personality) uses .orb-gem instead;
+  /* Hidden by default — HUGO (the default personality) uses .orb-gem instead;
      applyPersonality() restores 0.7 for JARVIS/FRIDAY at runtime. */
   opacity: 0;
   transition: border-color var(--tt), opacity 0.3s ease;
@@ -887,12 +887,12 @@ button, input, textarea, select, a[href], [role="button"] {
 .orb-bracket.bl { bottom: -4px; left: -4px;  border-width: 0 0 2px 2px; }
 .orb-bracket.br { bottom: -4px; right: -4px; border-width: 0 2px 2px 0; }
 
-/* LIRA-only orb decoration — small glowing gem markers at the diamond's 4
+/* HUGO-only orb decoration — small glowing gem markers at the diamond's 4
    points, echoing the crown/heart/shoulder/wrist gem motif already used in
    her silhouette SVG. Equivalent role to .orb-bracket above (both sit just
    outside the ring, 4 accent elements, personality-colored), but shaped to
    fit diamond geometry instead of a circle. Visible by default (opacity 1)
-   since LIRA is the default personality; applyPersonality() hides these and
+   since HUGO is the default personality; applyPersonality() hides these and
    shows .orb-bracket for JARVIS/FRIDAY — see the "shape" branch in the script. */
 .orb-gem {
   position: absolute;
@@ -915,7 +915,7 @@ button, input, textarea, select, a[href], [role="button"] {
   50%       { box-shadow: 0 0 8px var(--p-color), 0 0 16px var(--p-glow); }
 }
 
-/* personality-owned: the name label ("L I R A", "J A R V I S" …) */
+/* personality-owned: the name label ("H U G O", "J A R V I S" …) */
 .title {
   font-size: 1.05rem;
   letter-spacing: 0.6em;
@@ -1061,7 +1061,7 @@ body.speaking .status-label { color: var(--accent); }
 /* Bubble panel treatment shared by every non-error message type — angular
    clip-path, per-type background/border set individually below since the
    colors differ per type but the shape/padding is identical. */
-.msg-user, .msg-jarvis, .msg-friday, .msg-lira {
+.msg-user, .msg-jarvis, .msg-friday, .msg-hugo {
   padding: 8px 12px;
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
 }
@@ -1116,7 +1116,7 @@ body.speaking .status-label { color: var(--accent); }
 }
 .msg-user .msg-text { color: rgba(255,255,255,0.9); }
 
-/* Chat premium pass — assistant bubbles (JARVIS/FRIDAY/LIRA): Rajdhani
+/* Chat premium pass — assistant bubbles (JARVIS/FRIDAY/HUGO): Rajdhani
    label in the personality's own color, flat Inter body text — replaces
    the old approach of tinting/glowing the body text itself per
    personality; now only the label carries that color, per spec. The old
@@ -1124,7 +1124,7 @@ body.speaking .status-label { color: var(--accent); }
    bubble has its own solid background/border. */
 .msg-jarvis .msg-label,
 .msg-friday .msg-label,
-.msg-lira   .msg-label {
+.msg-hugo   .msg-label {
   font-family: var(--mm-font-display);
   font-weight: 600;
   font-size: 11px;
@@ -1132,14 +1132,14 @@ body.speaking .status-label { color: var(--accent); }
 }
 .msg-jarvis .msg-text,
 .msg-friday .msg-text,
-.msg-lira   .msg-text { color: rgba(255,255,255,0.85); }
+.msg-hugo   .msg-text { color: rgba(255,255,255,0.85); }
 
 .msg-jarvis { background: rgba(63,169,245,0.05);  border: 0.5px solid rgba(63,169,245,0.2);  }
 .msg-jarvis .msg-label { color: #3fa9f5; }
 .msg-friday { background: rgba(180,79,255,0.05);  border: 0.5px solid rgba(180,79,255,0.2);  }
 .msg-friday .msg-label { color: #b44fff; }
-.msg-lira   { background: rgba(240,192,64,0.05);  border: 0.5px solid rgba(240,192,64,0.2);  }
-.msg-lira   .msg-label { color: #f0c040; }
+.msg-hugo   { background: rgba(64,156,240,0.05);  border: 0.5px solid rgba(64,156,240,0.2);  }
+.msg-hugo   .msg-label { color: #409cf0; }
 
 /* .msg-system is currently unreachable — addMessage() has no 'system' TYPES
    entry, system messages are routed to addMaintMessage() (Sistema panel)
@@ -1149,7 +1149,7 @@ body.speaking .status-label { color: var(--accent); }
 
 /* Chat premium pass — error: a flat single log-style line, NOT a bubble
    (deliberately excluded from the .msg-user/.msg-jarvis/.msg-friday/
-   .msg-lira bubble-panel selector above), matching the Sistema panel's own
+   .msg-hugo bubble-panel selector above), matching the Sistema panel's own
    error-entry treatment for consistency across the app. */
 .msg-error {
   border-left: 2px solid rgba(255,68,68,0.4);
@@ -1730,12 +1730,12 @@ body.jarvis-offline .personality-btn {
 .offline-banner.show { display: block; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   UNIFIED FLOATING LIRA DIAMOND — single persistent point of interaction
-   with LIRA whenever NOT on Main or Chat (both have their own equivalents
+   UNIFIED FLOATING HUGO DIAMOND — single persistent point of interaction
+   with HUGO whenever NOT on Main or Chat (both have their own equivalents
    — Main's floating text+input, Chat's full log+input). Replaces the old
    Siri-style overlay entirely (was scoped to only Armaduras/Sistema/
-   Ajustes; this shows on every other section, including LIRA CORE/
-   CONTROL). Autonomous — LIRA controls her own position, the user cannot
+   Ajustes; this shows on every other section, including HUGO CORE/
+   CONTROL). Autonomous — HUGO controls her own position, the user cannot
    drag her (see _applyDiamondState/_bestIdlePosition in the script); while
    idle she picks the lowest-density corner of a density-scored grid
    computed fresh from the current viewport + DOM (see
@@ -1745,7 +1745,7 @@ body.jarvis-offline .personality-btn {
    8600: above normal section content, below modals/flashes/boot overlay
    (9xxx).
 ═══════════════════════════════════════════════════════════════════════════ */
-.lira-diamond {
+.hugo-diamond {
   position: fixed;
   z-index: 8600;
   display: flex;
@@ -1758,7 +1758,7 @@ body.jarvis-offline .personality-btn {
      diamond never teleports. 600ms; premium pass swapped the curve from a
      spring/overshoot bezier to cubic-bezier(0.23, 1, 0.32, 1) — a smooth
      non-overshooting "arrival" per the new spec, deliberately no longer
-     passing 1 on the control points. See .lira-diamond.wake for the one
+     passing 1 on the control points. See .hugo-diamond.wake for the one
      state that also animates `transform` (a slight grow) — left on its own
      curve, not this one.
      Bug fix: this used to also transition bottom/right, with the script
@@ -1782,11 +1782,11 @@ body.jarvis-offline .personality-btn {
     transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   /* Resting position before the script's first _setDiamondPosition() call —
      an arbitrary top-left guess, never actually visible in practice since
-     .lira-diamond starts at opacity:0 anyway. */
+     .hugo-diamond starts at opacity:0 anyway. */
   top:  80px;
   left: 80px;
 }
-.lira-diamond.visible {
+.hugo-diamond.visible {
   opacity: 1;
   pointer-events: auto;
 }
@@ -1796,10 +1796,10 @@ body.jarvis-offline .personality-btn {
    glide genuinely settles (see that function's own JS comment for why the
    overshoot comes from this curve rather than the keyframe values, and why
    it's a temporary class rather than a permanent second transform owner). */
-.lira-diamond.arrived {
-  animation: lira-diamond-arrival-bounce 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 1;
+.hugo-diamond.arrived {
+  animation: hugo-diamond-arrival-bounce 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 1;
 }
-@keyframes lira-diamond-arrival-bounce {
+@keyframes hugo-diamond-arrival-bounce {
   0%   { transform: scale(1);     }
   100% { transform: scale(1.045); }
 }
@@ -1809,12 +1809,12 @@ body.jarvis-offline .personality-btn {
    language as the main menu's own panels: rgba(0,4,10,0.88) + blur(16px),
    0.5px accent-blue border, 6px-cut clip-path corners instead of
    border-radius. Text materializes organically, word by word, via
-   _showDiamondText() → _organicReveal() (see .lira-organic-word's own CSS
+   _showDiamondText() → _organicReveal() (see .hugo-organic-word's own CSS
    comment, untouched by this pass) — not a plain textContent swap, and
-   deliberately NOT the character-by-character _typewriterReveal() LIRA
-   CORE's Pensamiento tab uses (a system panel, out of scope for LIRA's-
+   deliberately NOT the character-by-character _typewriterReveal() HUGO
+   CORE's Pensamiento tab uses (a system panel, out of scope for HUGO's-
    own-animation changes). */
-.lira-diamond-text {
+.hugo-diamond-text {
   max-width: 280px;
   margin-bottom: 12px;
   padding: 9px 18px;
@@ -1832,14 +1832,14 @@ body.jarvis-offline .personality-btn {
   pointer-events: none;
   transition: opacity 0.4s ease;
 }
-.lira-diamond-text.visible { opacity: 1; }
-.lira-diamond-text:empty { display: none; }
+.hugo-diamond-text.visible { opacity: 1; }
+.hugo-diamond-text:empty { display: none; }
 
 /* ── Organic word-by-word text reveal/dissolve ────────────────────────────
-   Shared by every LIRA-own response text surface — .lira-diamond-text
-   (above), .mm-floating-text (Main Menu) and .lira-diamond-bubble-text
+   Shared by every HUGO-own response text surface — .hugo-diamond-text
+   (above), .mm-floating-text (Main Menu) and .hugo-diamond-bubble-text
    (the click-to-expand bubble) — via _organicReveal()/_organicDissolve()
-   in the script. Deliberately NOT used by _typewriterReveal() (LIRA CORE's
+   in the script. Deliberately NOT used by _typewriterReveal() (HUGO CORE's
    Pensamiento tab, a diagnostic system panel, out of scope here).
 
    Reveal: each word gets its own <span>, staggered by animation-delay, and
@@ -1853,35 +1853,35 @@ body.jarvis-offline .personality-btn {
    Dissolve: reads as "dissipating energy" rather than a flat fade — scales
    UP slightly while blurring and drifting further, rather than just
    fading to 0 in place. */
-.lira-organic-word {
+.hugo-organic-word {
   display: inline-block;
   opacity: 0;
   transform: translateY(6px);
   filter: blur(4px);
-  animation: lira-word-in 0.5s cubic-bezier(0.22,0.61,0.36,1) both;
+  animation: hugo-word-in 0.5s cubic-bezier(0.22,0.61,0.36,1) both;
 }
-@keyframes lira-word-in {
+@keyframes hugo-word-in {
   0%   { opacity: 0;    transform: translateY(6px);  filter: blur(4px); }
   60%  { opacity: 0.85; transform: translateY(-1px); filter: blur(1px); }
   100% { opacity: 1;    transform: translateY(0);     filter: blur(0); }
 }
-.lira-organic-word.lira-dissolving {
-  animation: lira-word-out 0.55s cubic-bezier(0.55,0,0.85,0.3) forwards;
+.hugo-organic-word.hugo-dissolving {
+  animation: hugo-word-out 0.55s cubic-bezier(0.55,0,0.85,0.3) forwards;
 }
-@keyframes lira-word-out {
+@keyframes hugo-word-out {
   0%   { opacity: 1; transform: translateY(0)     scale(1);    filter: blur(0); }
   100% { opacity: 0; transform: translateY(-10px) scale(1.15); filter: blur(5px); }
 }
 
 /* The diamond itself, fixed gold regardless of active personality — same
-   "always LIRA's diamond" rule the boot overlay follows. .lira-diamond-orb
+   "always HUGO's diamond" rule the boot overlay follows. .hugo-diamond-orb
    is an UNCLIPPED positioning/click-target wrapper only — the actual
-   geometry (clip-path, background, border) lives on the .lira-diamond-shape
+   geometry (clip-path, background, border) lives on the .hugo-diamond-shape
    child instead, same "wrapper vs. shape" split as .orb-wrap/.orb-shape
    elsewhere in this file. That split exists specifically so
-   .lira-diamond-glow (a sibling of .lira-diamond-shape, see its own CSS
+   .hugo-diamond-glow (a sibling of .hugo-diamond-shape, see its own CSS
    block) can bloom BEYOND the diamond's silhouette — if the clip-path were
-   on .lira-diamond-orb itself, it would clip the glow to the same diamond
+   on .hugo-diamond-orb itself, it would clip the glow to the same diamond
    outline too, and the halo would never actually be visible past her
    edges. Precise geometry: an exact 45°-rotated square (clip-path touches
    every edge at 0/50/100), not the old 5%-inset polygon, for sharper
@@ -1889,27 +1889,27 @@ body.jarvis-offline .personality-btn {
    toggled by _applyDiamondState() — see setStatus()'s own hook for when
    each fires. Not draggable — cursor: pointer, just a click target for the
    response bubble (see _toggleDiamondBubble).
-   Premium pass: 42px -> 32px idle (see .lira-diamond.speaking
-   .lira-diamond-orb below for the 40px speaking target — a state-level
-   scale on the orb wrapper, same pattern .lira-diamond.wake already uses
+   Premium pass: 42px -> 32px idle (see .hugo-diamond.speaking
+   .hugo-diamond-orb below for the 40px speaking target — a state-level
+   scale on the orb wrapper, same pattern .hugo-diamond.wake already uses
    on the whole widget, NOT a retuned keyframe peak; the existing speaking
    ripple keyframe is untouched and composes on top of it). The old flat
    radial-gradient fill +
-   ::before diagonal highlight are GONE — .lira-diamond-facet-svg (new,
+   ::before diagonal highlight are GONE — .hugo-diamond-facet-svg (new,
    below) is the same real 4-facet SVG used on the main-menu orb and is now
-   what's actually visible as the colored diamond body. .lira-diamond-shape
+   what's actually visible as the colored diamond body. .hugo-diamond-shape
    itself becomes background:transparent and keeps only its border/
    box-shadow — every existing state animation (idle breathe's clip-path
    wobble, wake/speaking's border-color pulse, personality-shift's hue
    ripple) still runs on it exactly as before, so it now reads as a
    reactive outline ring layered on top of the facets rather than a flat
    fill — the wobble/pulse effects are unchanged, just applied to a border
-   instead of a border+fill. .lira-diamond-facet-svg shares the SAME
+   instead of a border+fill. .hugo-diamond-facet-svg shares the SAME
    animation names (added via compound selectors throughout this block) so
    its clip-path/transform stay pixel-locked to the ring underneath it. */
-/* transform here (not on .lira-diamond-shape/-facet-svg) is the "diamond
-   scales up to 40px" state target — .lira-diamond.speaking sets scale(1.25)
-   below (40/32px), same pattern .lira-diamond.wake already uses on the
+/* transform here (not on .hugo-diamond-shape/-facet-svg) is the "diamond
+   scales up to 40px" state target — .hugo-diamond.speaking sets scale(1.25)
+   below (40/32px), same pattern .hugo-diamond.wake already uses on the
    whole widget, just scoped to the orb only so the text bubble/click
    popup don't grow too. The existing ripple keyframes on the children
    underneath are UNCHANGED and compose multiplicatively on top of this —
@@ -1919,33 +1919,33 @@ body.jarvis-offline .personality-btn {
    spring easing") — reuses the same overshoot bezier the diamond's own
    position moves used to use, so leaving 'speaking' settles back to 32px
    like a spring, not a snap. */
-.lira-diamond-orb {
+.hugo-diamond-orb {
   position: relative;
   width: 32px; height: 32px;
   cursor: pointer;
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.lira-diamond.speaking .lira-diamond-orb {
+.hugo-diamond.speaking .hugo-diamond-orb {
   transform: scale(1.25);
 }
 /* New facet layer — real 4-facet SVG (top/left/right/bottom fills +
    top-left specular stroke + inner radial glow), identical geometry to the
-   main-menu orb's own .mm-orb-facet-svg. Sibling of .lira-diamond-shape,
+   main-menu orb's own .mm-orb-facet-svg. Sibling of .hugo-diamond-shape,
    painted first (DOM order) so the border ring above stays on top of it. */
-.lira-diamond-facet-svg {
+.hugo-diamond-facet-svg {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   pointer-events: none;
 }
-.lira-diamond-shape {
+.hugo-diamond-shape {
   position: absolute; inset: 0;
   clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
   background: transparent;
-  border: 1px solid rgba(240,192,64,0.8);
+  border: 1px solid rgba(64,156,240,0.8);
   box-shadow: 0 2px 8px rgba(0,0,0,0.4);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
 }
-.lira-diamond-orb:hover .lira-diamond-shape { border-color: #f0c040; }
+.hugo-diamond-orb:hover .hugo-diamond-shape { border-color: #409cf0; }
 
 /* Idle — organic breathing, not a mechanical pulse: irregular keyframe
    spacing (0/17/41/63/88/100, not evenly-spaced quarters) with a DIFFERENT
@@ -1959,14 +1959,14 @@ body.jarvis-offline .personality-btn {
    property rather than transform/opacity, which is why it's used only
    here and nowhere else non-negotiable. Amplitude stays tiny (per-point
    drift ≤1% of the shape) — "present but not distracting," per spec.
-   Glow now lives entirely on the separate .lira-diamond-glow layer (see
+   Glow now lives entirely on the separate .hugo-diamond-glow layer (see
    its own CSS block) — border-color/box-shadow are no longer part of
    this loop at all. */
-.lira-diamond.idle .lira-diamond-shape,
-.lira-diamond.idle .lira-diamond-facet-svg {
-  animation: lira-diamond-breathe 5.4s infinite;
+.hugo-diamond.idle .hugo-diamond-shape,
+.hugo-diamond.idle .hugo-diamond-facet-svg {
+  animation: hugo-diamond-breathe 5.4s infinite;
 }
-@keyframes lira-diamond-breathe {
+@keyframes hugo-diamond-breathe {
   0%   { transform: scale(1);      clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); animation-timing-function: cubic-bezier(0.42,0,0.58,1); }
   17%  { transform: scale(1.012);  clip-path: polygon(51% 1%, 99% 49%, 50% 99%, 1% 51%);   animation-timing-function: cubic-bezier(0.30,0.10,0.60,0.90); }
   41%  { transform: scale(1.004);  clip-path: polygon(49% 0%, 100% 51%, 51% 100%, 0% 49%); animation-timing-function: cubic-bezier(0.50,0,0.40,1); }
@@ -1976,24 +1976,24 @@ body.jarvis-offline .personality-btn {
 }
 
 /* Wake word detected — transient attention state (see
-   LIRA_DIAMOND_WAKE_HOLD_MS): glides to bottom-center, grows slightly
+   HUGO_DIAMOND_WAKE_HOLD_MS): glides to bottom-center, grows slightly
    (whole-widget transform, not just the orb — the only state that scales
-   .lira-diamond itself), and pulses noticeably faster/brighter than idle's
+   .hugo-diamond itself), and pulses noticeably faster/brighter than idle's
    breathe to draw the eye. Settles into 'processing' if a real command
    follows, or back to 'idle' at its corner if it was a false alarm. */
-.lira-diamond.wake {
+.hugo-diamond.wake {
   transform: scale(1.15);
 }
-.lira-diamond.wake .lira-diamond-shape {
-  animation: lira-diamond-wake-pulse 0.6s ease-in-out infinite;
+.hugo-diamond.wake .hugo-diamond-shape {
+  animation: hugo-diamond-wake-pulse 0.6s ease-in-out infinite;
 }
-@keyframes lira-diamond-wake-pulse {
+@keyframes hugo-diamond-wake-pulse {
   0%, 100% {
-    border-color: rgba(240,192,64,0.85);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 8px rgba(240,192,64,0.5);
+    border-color: rgba(64,156,240,0.85);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 8px rgba(64,156,240,0.5);
   }
   50% {
-    border-color: #ffd76a;
+    border-color: #6ab7ff;
     box-shadow: 0 2px 10px rgba(0,0,0,0.45), 0 0 16px rgba(255,215,110,0.7);
   }
 }
@@ -2005,7 +2005,7 @@ body.jarvis-offline .personality-btn {
         stops instead of one constant-speed `linear` pass — it visibly
         speeds up and slows down like a droplet, never a steady mechanical
         rate.
-     2. .lira-diamond-arc (the whole SVG, a transform-only wobble layered
+     2. .hugo-diamond-arc (the whole SVG, a transform-only wobble layered
         UNDER that) drifts off-center and rotates a few degrees on its own
         slower, offset cycle — an orbit wobble, not a perfect circle.
    The orb itself stays calm underneath, as before — the liquid quality
@@ -2013,35 +2013,35 @@ body.jarvis-offline .personality-btn {
 /* inset/stroke-width proportionally retuned for the premium pass's smaller
    32px orb (was tuned for the old 42px one) — same ratios, so the arc
    doesn't read as oversized relative to the now-smaller diamond. */
-.lira-diamond-arc {
+.hugo-diamond-arc {
   position: absolute; inset: -3px;
   width: calc(100% + 6px); height: calc(100% + 6px);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
 }
-.lira-diamond-arc polygon {
+.hugo-diamond-arc polygon {
   fill: none;
-  stroke: #f0c040;
+  stroke: #409cf0;
   stroke-width: 2.3;
   stroke-linecap: round;
   stroke-dasharray: 70 213;   /* ~283 total ≈ this diamond's own perimeter */
 }
-.lira-diamond.processing .lira-diamond-arc { opacity: 1; }
-.lira-diamond.processing .lira-diamond-arc polygon {
-  animation: lira-diamond-arc-spin 1.7s infinite;
+.hugo-diamond.processing .hugo-diamond-arc { opacity: 1; }
+.hugo-diamond.processing .hugo-diamond-arc polygon {
+  animation: hugo-diamond-arc-spin 1.7s infinite;
 }
-@keyframes lira-diamond-arc-spin {
+@keyframes hugo-diamond-arc-spin {
   0%   { stroke-dashoffset: 0;    animation-timing-function: cubic-bezier(0.55,0,0.40,0.60); }
   22%  { stroke-dashoffset: -80;  animation-timing-function: cubic-bezier(0.20,0.30,0.50,0.85); }
   48%  { stroke-dashoffset: -150; animation-timing-function: cubic-bezier(0.55,0,0.45,0.70); }
   74%  { stroke-dashoffset: -230; animation-timing-function: cubic-bezier(0.25,0.25,0.40,0.90); }
   100% { stroke-dashoffset: -283; }
 }
-.lira-diamond.processing .lira-diamond-arc {
-  animation: lira-diamond-arc-wobble 2.3s ease-in-out infinite;
+.hugo-diamond.processing .hugo-diamond-arc {
+  animation: hugo-diamond-arc-wobble 2.3s ease-in-out infinite;
 }
-@keyframes lira-diamond-arc-wobble {
+@keyframes hugo-diamond-arc-wobble {
   0%, 100% { transform: scale(1)     rotate(0deg); }
   30%      { transform: scale(1.03)  rotate(2deg); }
   55%      { transform: scale(0.98)  rotate(-1.5deg); }
@@ -2053,18 +2053,18 @@ body.jarvis-offline .personality-btn {
    easing technique as the idle breathe above, just faster and with more
    amplitude on both scale and the clip-path ripple, so it visibly reads
    as reacting to speech rather than idly drifting. background/box-shadow
-   are gone from this loop too (see .lira-diamond-glow for where the
+   are gone from this loop too (see .hugo-diamond-glow for where the
    "glows from inside" feeling now actually lives) — border-color is a
-   plain one-off transition (already declared on .lira-diamond-shape) to
+   plain one-off transition (already declared on .hugo-diamond-shape) to
    its hotter resting gold, not part of the repeating animation. */
-.lira-diamond.speaking .lira-diamond-shape,
-.lira-diamond.speaking .lira-diamond-facet-svg {
-  animation: lira-diamond-speak 0.85s infinite;
+.hugo-diamond.speaking .hugo-diamond-shape,
+.hugo-diamond.speaking .hugo-diamond-facet-svg {
+  animation: hugo-diamond-speak 0.85s infinite;
 }
-.lira-diamond.speaking .lira-diamond-shape {
-  border-color: #ffd76a;
+.hugo-diamond.speaking .hugo-diamond-shape {
+  border-color: #6ab7ff;
 }
-@keyframes lira-diamond-speak {
+@keyframes hugo-diamond-speak {
   0%   { transform: scale(1);     clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); animation-timing-function: cubic-bezier(0.34,0.20,0.50,0.90); }
   14%  { transform: scale(1.05);  clip-path: polygon(48% 2%, 98% 47%, 52% 98%, 2% 53%);   animation-timing-function: cubic-bezier(0.40,0,0.30,1); }
   33%  { transform: scale(0.97);  clip-path: polygon(52% 1%, 99% 53%, 48% 99%, 1% 47%);   animation-timing-function: cubic-bezier(0.30,0.15,0.55,0.90); }
@@ -2077,7 +2077,7 @@ body.jarvis-offline .personality-btn {
    independent of (and out of phase with) the orb's own shape animation
    above, per spec ("the glow should breathe independently from the
    diamond shape — slightly out of phase"). Lives as a real sibling layer
-   INSIDE .lira-diamond-orb (not a pseudo-element, and not layered via
+   INSIDE .hugo-diamond-orb (not a pseudo-element, and not layered via
    z-index tricks) — its gradient is transparent through roughly the
    diamond's own footprint (0-42%) and only blooms in the ring beyond
    that (62-82%), so it never muddies her crisp edges regardless of paint
@@ -2087,36 +2087,36 @@ body.jarvis-offline .personality-btn {
    cooler when idle") is a plain one-off `transition` on the resting
    gradient when the state class changes, not something animated inside
    the loop itself. */
-.lira-diamond-glow {
+.hugo-diamond-glow {
   position: absolute;
   inset: -16px;
   border-radius: 50%;
-  background: radial-gradient(circle, transparent 0%, transparent 42%, rgba(240,192,64,0.30) 62%, transparent 82%);
+  background: radial-gradient(circle, transparent 0%, transparent 42%, rgba(64,156,240,0.30) 62%, transparent 82%);
   filter: blur(3px);
   opacity: 0.55;
   pointer-events: none;
   transform: scale(1);
   transition: opacity 0.6s ease, background 0.6s ease;
 }
-.lira-diamond.idle .lira-diamond-glow {
-  animation: lira-diamond-glow-idle 4.8s ease-in-out infinite;
+.hugo-diamond.idle .hugo-diamond-glow {
+  animation: hugo-diamond-glow-idle 4.8s ease-in-out infinite;
 }
-@keyframes lira-diamond-glow-idle {
+@keyframes hugo-diamond-glow-idle {
   0%, 100% { opacity: 0.45; transform: scale(0.94); }
   50%      { opacity: 0.65; transform: scale(1.05); }
 }
-.lira-diamond.wake .lira-diamond-glow {
-  animation: lira-diamond-glow-idle 1.4s ease-in-out infinite;
+.hugo-diamond.wake .hugo-diamond-glow {
+  animation: hugo-diamond-glow-idle 1.4s ease-in-out infinite;
 }
-.lira-diamond.processing .lira-diamond-glow {
+.hugo-diamond.processing .hugo-diamond-glow {
   opacity: 0.5;   /* calm and steady — doesn't compete with the arc spinner */
 }
-.lira-diamond.speaking .lira-diamond-glow {
+.hugo-diamond.speaking .hugo-diamond-glow {
   /* Warmer — orange-gold rather than idle's paler gold */
   background: radial-gradient(circle, transparent 0%, transparent 40%, rgba(255,180,90,0.42) 60%, transparent 84%);
-  animation: lira-diamond-glow-speak 1.05s ease-in-out infinite;
+  animation: hugo-diamond-glow-speak 1.05s ease-in-out infinite;
 }
-@keyframes lira-diamond-glow-speak {
+@keyframes hugo-diamond-glow-speak {
   0%, 100% { opacity: 0.55; transform: scale(0.98); }
   45%      { opacity: 0.9;  transform: scale(1.18); }
 }
@@ -2127,72 +2127,72 @@ body.jarvis-offline .personality-btn {
    this widget stays permanently mounted on nearly every screen and a
    per-frame JS loop here would be a needless always-on cost for something
    this small. Individually classed (not :nth-child) since siblings inside
-   .lira-diamond-orb include non-particle divs/SVGs that would throw off
+   .hugo-diamond-orb include non-particle divs/SVGs that would throw off
    sibling-index counting. Each gets its own hand-authored @keyframes path
    (3-4 uneven points, never a circle) and a distinct animation-delay so
    none of the 6 move in lockstep. Visible/animating only while idle or
    speaking (per spec, "particles accelerate" while speaking) — same
-   duration-per-state-class split .lira-diamond-glow already uses for its
+   duration-per-state-class split .hugo-diamond-glow already uses for its
    own idle/speaking pair, just applied to duration instead of intensity. */
-.lira-diamond-particle {
+.hugo-diamond-particle {
   position: absolute;
   top: 50%; left: 50%;
   width: 2px; height: 2px;
   border-radius: 50%;
-  background: #f0c040;
-  box-shadow: 0 0 3px #f0c040;
+  background: #409cf0;
+  box-shadow: 0 0 3px #409cf0;
   opacity: 0;
   pointer-events: none;
 }
-.lira-diamond.idle .lira-diamond-particle-1 { animation: lira-particle-drift-1 7.2s ease-in-out infinite; animation-delay: 0s;    }
-.lira-diamond.idle .lira-diamond-particle-2 { animation: lira-particle-drift-2 8.6s ease-in-out infinite; animation-delay: -1.4s; }
-.lira-diamond.idle .lira-diamond-particle-3 { animation: lira-particle-drift-3 6.4s ease-in-out infinite; animation-delay: -3.1s; }
-.lira-diamond.idle .lira-diamond-particle-4 { animation: lira-particle-drift-4 9.3s ease-in-out infinite; animation-delay: -0.6s; }
-.lira-diamond.idle .lira-diamond-particle-5 { animation: lira-particle-drift-5 7.8s ease-in-out infinite; animation-delay: -4.2s; }
-.lira-diamond.idle .lira-diamond-particle-6 { animation: lira-particle-drift-6 6.9s ease-in-out infinite; animation-delay: -2.5s; }
+.hugo-diamond.idle .hugo-diamond-particle-1 { animation: hugo-particle-drift-1 7.2s ease-in-out infinite; animation-delay: 0s;    }
+.hugo-diamond.idle .hugo-diamond-particle-2 { animation: hugo-particle-drift-2 8.6s ease-in-out infinite; animation-delay: -1.4s; }
+.hugo-diamond.idle .hugo-diamond-particle-3 { animation: hugo-particle-drift-3 6.4s ease-in-out infinite; animation-delay: -3.1s; }
+.hugo-diamond.idle .hugo-diamond-particle-4 { animation: hugo-particle-drift-4 9.3s ease-in-out infinite; animation-delay: -0.6s; }
+.hugo-diamond.idle .hugo-diamond-particle-5 { animation: hugo-particle-drift-5 7.8s ease-in-out infinite; animation-delay: -4.2s; }
+.hugo-diamond.idle .hugo-diamond-particle-6 { animation: hugo-particle-drift-6 6.9s ease-in-out infinite; animation-delay: -2.5s; }
 /* Speaking — identical paths, much shorter duration so they visibly speed up */
-.lira-diamond.speaking .lira-diamond-particle-1 { animation: lira-particle-drift-1 2.1s ease-in-out infinite; }
-.lira-diamond.speaking .lira-diamond-particle-2 { animation: lira-particle-drift-2 2.5s ease-in-out infinite; }
-.lira-diamond.speaking .lira-diamond-particle-3 { animation: lira-particle-drift-3 1.9s ease-in-out infinite; }
-.lira-diamond.speaking .lira-diamond-particle-4 { animation: lira-particle-drift-4 2.7s ease-in-out infinite; }
-.lira-diamond.speaking .lira-diamond-particle-5 { animation: lira-particle-drift-5 2.3s ease-in-out infinite; }
-.lira-diamond.speaking .lira-diamond-particle-6 { animation: lira-particle-drift-6 2.0s ease-in-out infinite; }
-@keyframes lira-particle-drift-1 {
+.hugo-diamond.speaking .hugo-diamond-particle-1 { animation: hugo-particle-drift-1 2.1s ease-in-out infinite; }
+.hugo-diamond.speaking .hugo-diamond-particle-2 { animation: hugo-particle-drift-2 2.5s ease-in-out infinite; }
+.hugo-diamond.speaking .hugo-diamond-particle-3 { animation: hugo-particle-drift-3 1.9s ease-in-out infinite; }
+.hugo-diamond.speaking .hugo-diamond-particle-4 { animation: hugo-particle-drift-4 2.7s ease-in-out infinite; }
+.hugo-diamond.speaking .hugo-diamond-particle-5 { animation: hugo-particle-drift-5 2.3s ease-in-out infinite; }
+.hugo-diamond.speaking .hugo-diamond-particle-6 { animation: hugo-particle-drift-6 2.0s ease-in-out infinite; }
+@keyframes hugo-particle-drift-1 {
   0%   { transform: translate(-2px, -14px) scale(0.7); opacity: 0;    }
   20%  { opacity: 0.65; }
   45%  { transform: translate(12px, -6px)  scale(1);   opacity: 0.55; }
   72%  { transform: translate(6px, 10px)   scale(0.9); opacity: 0.4;  }
   100% { transform: translate(-2px, -14px) scale(0.7); opacity: 0;    }
 }
-@keyframes lira-particle-drift-2 {
+@keyframes hugo-particle-drift-2 {
   0%   { transform: translate(16px, 4px)   scale(0.6); opacity: 0;    }
   25%  { opacity: 0.5;  }
   50%  { transform: translate(4px, 15px)   scale(1.1); opacity: 0.6;  }
   78%  { transform: translate(-10px, 5px)  scale(0.8); opacity: 0.35; }
   100% { transform: translate(16px, 4px)   scale(0.6); opacity: 0;    }
 }
-@keyframes lira-particle-drift-3 {
+@keyframes hugo-particle-drift-3 {
   0%   { transform: translate(-15px, 6px)  scale(0.8); opacity: 0;    }
   30%  { opacity: 0.6;  }
   55%  { transform: translate(-6px, -12px) scale(1);   opacity: 0.5;  }
   80%  { transform: translate(8px, -3px)   scale(0.7); opacity: 0.3;  }
   100% { transform: translate(-15px, 6px)  scale(0.8); opacity: 0;    }
 }
-@keyframes lira-particle-drift-4 {
+@keyframes hugo-particle-drift-4 {
   0%   { transform: translate(3px, 17px)   scale(0.65); opacity: 0;    }
   18%  { opacity: 0.55; }
   48%  { transform: translate(-13px, 4px)  scale(1);    opacity: 0.6;  }
   76%  { transform: translate(-4px, -11px) scale(0.85); opacity: 0.4;  }
   100% { transform: translate(3px, 17px)   scale(0.65); opacity: 0;    }
 }
-@keyframes lira-particle-drift-5 {
+@keyframes hugo-particle-drift-5 {
   0%   { transform: translate(11px, -10px) scale(0.75); opacity: 0;    }
   22%  { opacity: 0.5;  }
   50%  { transform: translate(1px, 13px)   scale(0.95); opacity: 0.55; }
   74%  { transform: translate(-12px, -2px) scale(0.8);  opacity: 0.3;  }
   100% { transform: translate(11px, -10px) scale(0.75); opacity: 0;    }
 }
-@keyframes lira-particle-drift-6 {
+@keyframes hugo-particle-drift-6 {
   0%   { transform: translate(-8px, -13px) scale(0.7); opacity: 0;    }
   35%  { opacity: 0.6;  }
   60%  { transform: translate(13px, 2px)   scale(1);   opacity: 0.5;  }
@@ -2208,11 +2208,11 @@ body.jarvis-offline .personality-btn {
    alone can't shift color — same deliberate exception as elsewhere in
    this file), settling back to hue-rotate(0)/saturate(1), i.e. her own
    ordinary gold, not the new personality's color. */
-.lira-diamond.personality-shift .lira-diamond-shape,
-.lira-diamond.personality-shift .lira-diamond-facet-svg {
-  animation: lira-diamond-personality-ripple 0.8s cubic-bezier(0.45,0.05,0.55,0.95);
+.hugo-diamond.personality-shift .hugo-diamond-shape,
+.hugo-diamond.personality-shift .hugo-diamond-facet-svg {
+  animation: hugo-diamond-personality-ripple 0.8s cubic-bezier(0.45,0.05,0.55,0.95);
 }
-@keyframes lira-diamond-personality-ripple {
+@keyframes hugo-diamond-personality-ripple {
   0%   { transform: scale(1);    filter: hue-rotate(0deg)   saturate(1); }
   30%  { transform: scale(0.9);  filter: hue-rotate(35deg)  saturate(1.6); }
   55%  { transform: scale(1.12); filter: hue-rotate(-20deg) saturate(1.4); }
@@ -2221,14 +2221,14 @@ body.jarvis-offline .personality-btn {
 }
 
 /* Click-to-expand bubble — premium pass: same glass-panel language as
-   .lira-diamond-text above and the main menu's own panels (rgba(0,4,10,0.88)
+   .hugo-diamond-text above and the main menu's own panels (rgba(0,4,10,0.88)
    + blur(16px) + 0.5px accent-blue border + angular clip-path), replacing
    the old personality-tinted var(--p-mid) border + border-radius:8px + gold
    glow box-shadow. Default anchor is bottom-right of the orb (matching the
    diamond's own default position); _positionDiamondBubble() flips left/
    right and up/down inline based on the diamond's current (autonomously
    chosen) position, so it never opens off-screen. */
-.lira-diamond-bubble {
+.hugo-diamond-bubble {
   position: absolute;
   right: 0;
   bottom: calc(100% + 14px);
@@ -2248,13 +2248,13 @@ body.jarvis-offline .personality-btn {
   pointer-events: none;
   transition: opacity 0.25s ease, transform 0.25s cubic-bezier(.4,0,.2,1);
 }
-.lira-diamond.open .lira-diamond-bubble {
+.hugo-diamond.open .hugo-diamond-bubble {
   opacity: 1;
   transform: scale(1);
   pointer-events: auto;
 }
 
-.lira-diamond-bubble-text {
+.hugo-diamond-bubble-text {
   font-family: var(--mm-font-sans);
   font-size: 13px;
   line-height: 1.5;
@@ -2262,7 +2262,7 @@ body.jarvis-offline .personality-btn {
   max-height: 140px;
   overflow-y: auto;
 }
-.lira-diamond-bubble-text:empty::before {
+.hugo-diamond-bubble-text:empty::before {
   content: 'Aún no ha dicho nada.';
   color: rgba(255,255,255,0.3);
   font-style: italic;
@@ -2270,7 +2270,7 @@ body.jarvis-offline .personality-btn {
 
 /* Bottom-border-only per spec ("minimal") — no background (already true),
    no full border, replacing the old 1px solid gold border + border-radius. */
-.lira-diamond-bubble-input {
+.hugo-diamond-bubble-input {
   background: transparent;
   border: none;
   border-bottom: 0.5px solid rgba(63,169,245,0.3);
@@ -2282,8 +2282,8 @@ body.jarvis-offline .personality-btn {
   outline: none;
   transition: border-color 0.25s ease;
 }
-.lira-diamond-bubble-input::placeholder { color: rgba(255,255,255,0.7); }
-.lira-diamond-bubble-input:focus {
+.hugo-diamond-bubble-input::placeholder { color: rgba(255,255,255,0.7); }
+.hugo-diamond-bubble-input:focus {
   border-bottom-color: #3fa9f5;
 }
 
@@ -2308,7 +2308,7 @@ body.jarvis-offline .personality-btn {
    matter (no min-width in this file exceeds 210px, and section content is
    itself capped at max-width:680px, well under 800px), but re-verify at the
    literal minimum if this area is touched again. z-index 8550: above normal
-   section content, below the unified floating LIRA diamond (8600, which only
+   section content, below the unified floating HUGO diamond (8600, which only
    ever shows on the opposite side of the screen by default) and modals.
 ═══════════════════════════════════════════════════════════════════════════ */
 .app-launcher {
@@ -2449,11 +2449,11 @@ body.jarvis-offline .personality-btn {
 /* Each personality's static color — never overridden by shell or theme transitions */
 .personality-btn[data-p="jarvis"] { color: #00d4ff; border-color: rgba(0,212,255,0.25); }
 .personality-btn[data-p="friday"] { color: #b44fff; border-color: rgba(180,79,255,0.25); }
-.personality-btn[data-p="lira"]   { color: #f0c040; border-color: rgba(240,192,64,0.25); }
+.personality-btn[data-p="hugo"]   { color: #409cf0; border-color: rgba(64,156,240,0.25); }
 /* Active state: full brightness + subtle glow */
 .personality-btn.active[data-p="jarvis"] { border-color: rgba(0,212,255,0.65); box-shadow: 0 0 8px rgba(0,212,255,0.22); }
 .personality-btn.active[data-p="friday"] { border-color: rgba(180,79,255,0.65); box-shadow: 0 0 8px rgba(180,79,255,0.22); }
-.personality-btn.active[data-p="lira"]   { border-color: rgba(240,192,64,0.65); box-shadow: 0 0 8px rgba(240,192,64,0.22); }
+.personality-btn.active[data-p="hugo"]   { border-color: rgba(64,156,240,0.65); box-shadow: 0 0 8px rgba(64,156,240,0.22); }
 /* Inactive: dim; hovered inactive: less dim */
 .personality-btn:not(.active) { opacity: 0.28; }
 .personality-btn:not(.active):hover { opacity: 0.65; }
@@ -2577,7 +2577,7 @@ body.jarvis-offline .personality-btn {
    or a genuine system announcement — so it's defined here for spec
    completeness but effectively unused today. */
 .maint-type-system  { color: rgba(63,169,245,0.6); }
-.maint-type-warning { color: rgba(240,192,64,0.7); }
+.maint-type-warning { color: rgba(64,156,240,0.7); }
 .maint-type-error   { color: rgba(255,68,68,0.8); border-left: 2px solid rgba(255,68,68,0.4); padding-left: 8px; }
 .maint-type-normal  { color: rgba(255,255,255,0.45); }
 
@@ -2852,7 +2852,7 @@ body.jarvis-offline .personality-btn {
 }
 .mm-energy-field.inner {
   width: 240px; height: 240px;
-  background: radial-gradient(circle closest-side, rgba(240,192,64,0.06) 0%, transparent 100%);
+  background: radial-gradient(circle closest-side, rgba(64,156,240,0.06) 0%, transparent 100%);
   animation: mm-energy-breathe-a 9.5s ease-in-out infinite;
 }
 .mm-energy-field.outer {
@@ -2873,11 +2873,11 @@ body.jarvis-offline .personality-btn {
   0%, 100% { transform: translate(-50%, -50%) scale(1.15); }
   50%      { transform: translate(-50%, -50%) scale(0.85); }
 }
-/* Holds glow/ring/spinner/core/wave — the parts the diamond clip-path (LIRA)
+/* Holds glow/ring/spinner/core/wave — the parts the diamond clip-path (HUGO)
    actually cuts to shape. .mm-orb-gem decorations deliberately live OUTSIDE
    this wrapper, as direct children of .mm-orb-wrap (same as .mm-hud-readout),
    so a clip-path applied here never clips them too — mirrors .orb-shape /
-   .orb-gem in the chat orb above. Defaults to LIRA's diamond clip-path since
+   .orb-gem in the chat orb above. Defaults to HUGO's diamond clip-path since
    she's the default personality; applyPersonality() sets this to 'none' for
    JARVIS/FRIDAY at runtime. */
 .mm-orb-shape {
@@ -2904,7 +2904,7 @@ body.jarvis-offline .personality-btn {
 /* personality ring */
 .mm-orb-ring {
   position: absolute; inset: 0;
-  /* Defaults to 0 (diamond) — LIRA is the default personality; see .mm-orb-wrap */
+  /* Defaults to 0 (diamond) — HUGO is the default personality; see .mm-orb-wrap */
   border-radius: 0;
   border: 1.5px solid var(--p-color);
   box-shadow: 0 0 12px var(--p-color), 0 0 30px var(--p-a02), inset 0 0 22px var(--p-dim);
@@ -2931,16 +2931,16 @@ body.jarvis-offline .personality-btn {
    for the old 200px orb, ~18% of size) */
 .mm-orb-core {
   position: absolute; inset: 21px;
-  /* Defaults to 0 (diamond) — LIRA is the default personality; see .mm-orb-wrap */
+  /* Defaults to 0 (diamond) — HUGO is the default personality; see .mm-orb-wrap */
   border-radius: 0;
   background: radial-gradient(circle, var(--p-dim) 0%, transparent 75%);
   transition: background var(--tt), border-radius 0.8s ease;
 }
 
-/* LIRA-only orb decoration — gem markers at the diamond's 4 points, scaled
+/* HUGO-only orb decoration — gem markers at the diamond's 4 points, scaled
    up (~1.35x) from .orb-gem in the chat orb to match this orb's larger size
    (200px vs 148px), same ratio as .bar → .mm-bar. Visible by default since
-   LIRA is the default personality; applyPersonality() hides these for
+   HUGO is the default personality; applyPersonality() hides these for
    JARVIS/FRIDAY at runtime (that state has no main-menu equivalent of
    .orb-bracket — this orb simply shows no corner decoration for them,
    unchanged from before this fix). */
@@ -3016,13 +3016,13 @@ body.jarvis-offline .personality-btn {
    .mm-edge-readouts, see that block below. Removed rather than left as an
    orphaned rule.) */
 
-/* Personality name — Rajdhani 700, LIRA's own identity mark rather than the
+/* Personality name — Rajdhani 700, HUGO's own identity mark rather than the
    Inter/JetBrains Mono system-chrome pairing used everywhere else in this
    section (see --mm-font-display). Geometric but with more character than
    Inter — deliberately not on the strict 11/14/18/28/48 scale (32px is a
    one-off for this single title). color stays var(--p-color) (not a
    hardcoded gold) so JARVIS/FRIDAY still recolor correctly when active —
-   #f0c040 is simply what --p-color already resolves to for LIRA (the
+   #409cf0 is simply what --p-color already resolves to for HUGO (the
    default persona), matching the spec's intent without breaking the other
    two personalities' existing color-adaptive name. position:relative + the
    ::after beneath it fake a soft contact-shadow so the label reads as
@@ -3056,7 +3056,7 @@ body.jarvis-offline .personality-btn {
   .mm-name { font-size: 20px; letter-spacing: 0.35em; }
 }
 
-/* Status (Escuchando / Procesando / Hablando) — also Rajdhani (LIRA's own
+/* Status (Escuchando / Procesando / Hablando) — also Rajdhani (HUGO's own
    face, paired with .mm-name), not the mono system-chrome font used by
    every other label in this section — this one line is part of her
    identity cluster, not system telemetry. Base color is the spec's
@@ -3130,7 +3130,7 @@ body.speaking   .mm-status-dot { animation: none; opacity: 1; } /* steady — no
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CONTEXTUAL PANELS — weather/time/... side panels that slide in beside the
-   orb while LIRA speaks about that topic. See core/commands.py's
+   orb while HUGO speaks about that topic. See core/commands.py's
    _maybe_emit_panel() (backend trigger, via the 'show_panel' socket event
    emitted through core/server.py's emit_show_panel()) and the "CONTEXTUAL
    PANELS" section in the script below (frontend: PANEL_RENDERERS registry +
@@ -3331,7 +3331,7 @@ body.speaking   .mm-status-dot { animation: none; opacity: 1; } /* steady — no
   transition: opacity 0.5s ease;
 }
 .mm-floating-text.visible { opacity: 1; }
-/* The user's own echoed message — dimmer/italic, distinct from LIRA's
+/* The user's own echoed message — dimmer/italic, distinct from HUGO's
    reply that (almost always) follows right after it. */
 .mm-floating-text.user-echo { color: rgba(232,232,232,0.5); font-style: italic; }
 
@@ -3567,7 +3567,7 @@ body.sleeping .mm-orb-glow        { opacity: 0.10; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   GOLD PARTICLE FIELD — LIRA's "dust in light". Rewritten as a vanilla-JS +
+   GOLD PARTICLE FIELD — HUGO's "dust in light". Rewritten as a vanilla-JS +
    requestAnimationFrame system (_mmVisualLoop(), see script near
    _wireMMActions) instead of per-particle CSS @keyframes: each particle's
    position is computed every frame from its own organic curve (figure-8/
@@ -3585,15 +3585,15 @@ body.sleeping .mm-orb-glow        { opacity: 0.10; }
   z-index: 1; /* above the facet SVG, below nothing in particular — purely cosmetic layer */
 }
 .mm-particle {
-  /* Fixed gold (#f0c040) regardless of active personality — same "always
-     LIRA's diamond/particles" convention as .lira-diamond-orb elsewhere in
+  /* Fixed gold (#409cf0) regardless of active personality — same "always
+     HUGO's diamond/particles" convention as .hugo-diamond-orb elsewhere in
      this file, and the spec's own literal color. */
   position: absolute;
   top: 0; left: 0;
   width: 2px; height: 2px;
   border-radius: 50%;
-  background: #f0c040;
-  box-shadow: 0 0 3px #f0c040, 0 0 6px rgba(240,192,64,0.5);
+  background: #409cf0;
+  box-shadow: 0 0 3px #409cf0, 0 0 6px rgba(64,156,240,0.5);
   opacity: 0;
   will-change: transform, opacity;
 }
@@ -3642,7 +3642,7 @@ body.sleeping .mm-orb-glow        { opacity: 0.10; }
 /* Radar arcs — pure decoration, no data. Both sit in the TOP corners per
    spec ("two decorative arc elements in top corners"); same accent chrome
    color as the rest of the HUD shell (never var(--p-color) — this is
-   system chrome, not a LIRA-owned element). */
+   system chrome, not a HUGO-owned element). */
 .mm-radar-arc {
   /* stroke color/opacity are set directly on the <circle>'s own attributes
      in the markup (SVG presentation attributes win over an inherited CSS
@@ -3930,7 +3930,7 @@ body.sleeping .mm-orb-glow        { opacity: 0.10; }
 }
 .badge-completado    { color: rgba(0,255,128,0.8); border-color: rgba(0,255,128,0.40); background: rgba(0,255,128,0.07); }
 .badge-no-completado { color: rgba(255,68,68,0.7); border-color: rgba(255,68,68,0.40); background: rgba(255,68,68,0.07); }
-.badge-construccion  { color: rgba(240,192,64,0.8); border-color: rgba(240,192,64,0.40); background: rgba(240,192,64,0.07); }
+.badge-construccion  { color: rgba(64,156,240,0.8); border-color: rgba(64,156,240,0.40); background: rgba(64,156,240,0.07); }
 .badge-no-construido { color: rgba(255,68,68,0.7); border-color: rgba(255,68,68,0.30); background: rgba(255,68,68,0.05); }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -4192,7 +4192,7 @@ body.sleeping .mm-orb-glow        { opacity: 0.10; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   LIRA CORE — Estado/Pensamiento/Memoria/Mapa sub-tabs. .core-panel follows
+   HUGO CORE — Estado/Pensamiento/Memoria/Mapa sub-tabs. .core-panel follows
    the exact same "display:none, .active → flex" toggle #conceptPanel/
    #designPanel already use above, driven by _switchCoreSubTab() — see the
    script. Estado/Memoria reuse .info-row/.info-key/.info-val (Ajustes'
@@ -4355,7 +4355,7 @@ body.sleeping .mm-orb-glow        { opacity: 0.10; }
 /* Distinct shape + color per node type, per spec — facts/episodes are
    filled circles, armor is an outlined diamond, concepts a filled hexagon. */
 .core-map-node-fact    { fill: #3fa9f5; stroke: none; }
-.core-map-node-episode { fill: #f0c040; stroke: none; }
+.core-map-node-episode { fill: #409cf0; stroke: none; }
 .core-map-node-armor   { fill: rgba(63,169,245,0.15); stroke: #3fa9f5; stroke-width: 1.5; }
 .core-map-node-concept { fill: #b44fff; stroke: none; }
 .core-map-node-group.core-map-node-selected .core-map-node-fact,
@@ -4377,7 +4377,7 @@ body.sleeping .mm-orb-glow        { opacity: 0.10; }
 }
 
 /* Mapa — click-to-inspect side panel. Same dark/gold HUD aesthetic as
-   .lira-diamond-bubble (rgba(8,10,14,0.92) + var(--p-mid) border), but
+   .hugo-diamond-bubble (rgba(8,10,14,0.92) + var(--p-mid) border), but
    anchored inside .core-map-graph instead of floating over the whole app. */
 .core-map-detail {
   position: absolute;
@@ -4486,7 +4486,7 @@ body.sleeping .mm-orb-glow        { opacity: 0.10; }
    Opens #conceptModalOverlay in create mode (see script). Armor Bay
    premium pass: hardcoded #3fa9f5 border+text now, per spec's literal
    color — a deliberate departure from this button's previous
-   personality-owned var(--p-color) (gold-when-LIRA) convention; the spec
+   personality-owned var(--p-color) (gold-when-HUGO) convention; the spec
    gives an explicit flat color here, same as .detail-name-lg elsewhere in
    this pass. Angular clip-path, no fill (transparent bg) keeps it
    "prominent but not aggressive" per spec, not a solid/filled button. */
@@ -4614,7 +4614,7 @@ body.sleeping .mm-orb-glow        { opacity: 0.10; }
    their original IDs, so all existing save/edit/delete JS logic is
    untouched — only this surrounding chrome is new.
    Personality-owned color (var(--p-color)) throughout, matching every other
-   themed control in the app — reads gold specifically when LIRA (the
+   themed control in the app — reads gold specifically when HUGO (the
    personality this feature belongs to) is active.
 ═══════════════════════════════════════════════════════════════════════════ */
 #conceptModalOverlay {
@@ -4882,7 +4882,7 @@ body.sleeping .mm-orb-glow        { opacity: 0.10; }
   50%      { opacity: 0.55; }
 }
 /* Rajdhani (toolbar premium pass) — same identity face as .mm-name/
-   .mm-status-label in the main menu, so LIRA's own name reads consistently
+   .mm-status-label in the main menu, so HUGO's own name reads consistently
    wherever it appears. */
 .p-indicator-name {
   font-family: var(--mm-font-display);
@@ -4927,7 +4927,7 @@ body.test-mode-active .test-mode-bar-indicator { display: block; }
 
 /* SLEEP — always-visible persistent-bar indicator, same subtle/never-
    hidden-behind-a-menu philosophy as the test-mode dot above (Joan should
-   always be able to tell LIRA is mid-maintenance without opening Ajustes),
+   always be able to tell HUGO is mid-maintenance without opening Ajustes),
    but a small monospace "ZZZ" glyph instead of a plain dot — reads more
    like "sleeping" at a glance than an undifferentiated colored square
    would, and stays consistent with the mechanical/JetBrains-Mono chrome

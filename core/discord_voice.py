@@ -236,7 +236,7 @@ threading.Thread(target=_prewarm_vosk, daemon=True, name="discord-voice-vosk-pre
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# JOIN MODE — how LIRA reacts when Joan joins a voice channel in a guild
+# JOIN MODE — how HUGO reacts when Joan joins a voice channel in a guild
 # she's already in. Persisted (survives a restart, same as every other
 # data/*.json setting in this app) rather than in-memory-only, since this
 # is a standing preference, not per-session state.

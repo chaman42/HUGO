@@ -29,7 +29,7 @@
 #
 # duck_gate_update (interrupt-ducking, further below) is UNCHANGED and
 # deliberately not migrated to Silero — it's solving a different problem
-# (is mic input LIRA's own voice bleeding back through the speakers vs.
+# (is mic input HUGO's own voice bleeding back through the speakers vs.
 # Joan's real voice, a relative-loudness comparison against her own output
 # RMS) that speech/non-speech classification doesn't address.
 # ═══════════════════════════════════════════════════════════════════════════
@@ -133,7 +133,7 @@ def compute_rms_float(data_float) -> float:
     computation as compute_rms but without the /32768.0 int16-range
     conversion, since these samples are already in that same normalized
     range. Used by core.voice's self-output RMS tracking (interrupt
-    feature, step 1) to measure how loud LIRA is currently playing,
+    feature, step 1) to measure how loud HUGO is currently playing,
     independent of the mic-side int16 path."""
     return float(np.sqrt(np.mean(data_float.astype(np.float32) ** 2)))
 

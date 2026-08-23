@@ -5,7 +5,7 @@
 #   - GET /api/notifications (core/routes_notifications.py) → ui/js's
 #     startup check, shown subtly in the chat log (see ui/js/notifications.js).
 #   - _deliver_pending_notifications(), called at the top of every
-#     dispatch_command() (core/commands.py) so LIRA mentions it naturally
+#     dispatch_command() (core/commands.py) so HUGO mentions it naturally
 #     the next time Joan talks to her — same "next real interaction" timing
 #     as core.reminders._deliver_session_reminders, which this mirrors.
 # Whichever channel reaches an unread notification first marks it read —
@@ -109,7 +109,7 @@ def _deliver_pending_notifications(personality: str) -> None:
     # for calendar events, reminders, app-open, etc. (see core.intent's own
     # docstring on _pending_action). Set it right here, at delivery time,
     # not when the notification was first created — Joan might not talk to
-    # LIRA again for hours, and the proposal should only "exist" from the
+    # HUGO again for hours, and the proposal should only "exist" from the
     # moment she actually hears the question.
     message = due["message"]
     already_phrased = False

@@ -164,17 +164,17 @@ muteBtn.addEventListener('click', async () => {
 
 // TTS (voice output) mute — mirrors the mic mute block above, but hits
 // /api/tts_mute /api/tts_unmute (core/server.py → core.voice.set_tts_muted).
-// The mic itself is never touched: LIRA keeps listening and replying in
+// The mic itself is never touched: HUGO keeps listening and replying in
 // chat, she just stops speaking.
 function applyTtsMuteState(muted) {
   _isTtsMuted = muted
   if (muted) {
     ttsMuteBtn.textContent = '🔈'
-    ttsMuteBtn.title       = "Unmute LIRA's voice"
+    ttsMuteBtn.title       = "Unmute HUGO's voice"
     ttsMuteBtn.classList.add('muted')
   } else {
     ttsMuteBtn.textContent = '🔊'
-    ttsMuteBtn.title       = "Mute LIRA's voice"
+    ttsMuteBtn.title       = "Mute HUGO's voice"
     ttsMuteBtn.classList.remove('muted')
   }
   // Keep the main-menu mirror button (#mmToggleTts) in sync — same pattern

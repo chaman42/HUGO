@@ -80,12 +80,11 @@ import time
 import urllib.request
 import uuid
 
-from core.voice import speak, speak_kokoro_lira, speak_xtts, get_tts_engine
+from core.voice import speak
 from core import tools
 from core import memory
 from core import personality as personality_mod
 from core import intent as intent_mod
-from core import intent_armor as armor_intent_mod
 from core import groq_client
 from core import session as session_mod
 from core import actions
@@ -124,7 +123,7 @@ from core.sleep_control import (
 # import y` binding is fine here even though jarvis.py's watchdog doesn't
 # track individual core/personalities/*.py files for hot-reload, unlike the
 # module-object imports above.
-from core.personalities.lira import INTERNAL_CRITERIA
+from core.personalities.hugo import INTERNAL_CRITERIA
 from core.activity import on_user_activity
 from core.groq_config import GROQ_MODEL_CHAIN, _last_latency
 from core.groq_client import _groq_complete_fast, _groq_complete_extract
@@ -234,35 +233,24 @@ def _say_for(
     personality: str, text: str,
     cmd_start: float | None = None, llm_done_mono: float | None = None,
 ) -> None:
-    """Dispatch TTS to the correct engine. Always non-blocking.
+    """Dispatch TTS. Always non-blocking.
 
-    TTS engine routing — reads core.voice.get_tts_engine() FRESH on every
-    call (not a frozen constant), so a live switch via
-    POST /api/set_tts_engine (see core/routes_control.py) applies starting
-    with the very next reply, no restart needed:
-
-    get_tts_engine() == 'kokoro' (the default): Kokoro ef_dora (LIRA's
-      Spanish female voice, warm and natural).
-
-    get_tts_engine() == 'xtts' routes through the cloned voice in
-    data/voice_reference.wav instead (see core.voice.speak_xtts), falling
-    back to LIRA's own Kokoro voice above if XTTS fails.
-
-    get_tts_engine() == 'say' routes straight through macOS's native `say`
-    command (core.voice.speak) instead of Kokoro/XTTS — no model to load,
-    so it's the fastest/lightest option, just the most robotic-sounding.
-    Passes no explicit voice, so `say` uses whatever System Voice is set in
-    System Settings -> Accessibility -> Spoken Content — including a Siri
-    voice, if Joan has downloaded and selected one there — and follows the
-    system default automatically if that's ever changed outside the app.
-    Speaking rate is computed per message by _dynamic_say_rate() rather
-    than fixed — see its own docstring.
+    Routes straight through macOS's native `say` command (core.voice.speak)
+    — the only TTS engine left (Kokoro and XTTS were removed). Passes no
+    explicit voice, so `say` uses whatever System Voice is set in System
+    Settings -> Accessibility -> Spoken Content — including a Siri voice, if
+    Joan has downloaded and selected one there — and follows the system
+    default automatically if that's ever changed outside the app. Speaking
+    rate is computed per message by _dynamic_say_rate() rather than fixed —
+    see its own docstring.
 
     llm_done_mono: time.monotonic() reading from the instant this turn's
-    reply text was finalized — threaded through to whichever speak_*()
-    engine function runs so it can measure "time from LLM response
-    complete to first audio output" (see core.voice._emit_tts_first_audio)
-    for the chat's latency display (ui/js/chat-render.js).
+    reply text was finalized — threaded through to core.voice.speak(), but
+    currently unused there (it used to measure "time from LLM response
+    complete to first audio output" via core.voice._emit_tts_first_audio,
+    removed along with Kokoro/XTTS — `say` has no comparable first-audio
+    signal, see core.voice._speak_say_blocking's own comment). Kept as a
+    plumbed-through parameter in case a future engine wants it again.
     """
     # Phase 1 conversational intelligence: every actual reply opens/refreshes
     # the post-response context window in core/listener.py, so the NEXT
@@ -276,20 +264,7 @@ def _say_for(
     except Exception:
         pass
 
-    if get_tts_engine() == "xtts":
-        speak_xtts(text, personality=personality, cmd_start=cmd_start, llm_done_mono=llm_done_mono)
-        return
-
-    if get_tts_engine() == "say":
-        speak(text, rate=_dynamic_say_rate(text), cmd_start=cmd_start, llm_done_mono=llm_done_mono)
-        return
-
-    tts = personality_mod.PERSONALITIES[personality]["tts"]
-    if tts == "kokoro_lira":
-        speak_kokoro_lira(text, cmd_start=cmd_start, llm_done_mono=llm_done_mono)
-    else:
-        # macOS say — only reached if tts="say" or an unknown value
-        speak(text, cmd_start=cmd_start, llm_done_mono=llm_done_mono)
+    speak(text, rate=_dynamic_say_rate(text), cmd_start=cmd_start, llm_done_mono=llm_done_mono)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -312,7 +287,7 @@ def _say_for(
 #      changes its mind at generation time (same second-safety-net pattern
 #      as core.background_loops._maybe_send_proactive_message).
 #   3. Delivery through the normal TTS pipeline (_say_for) — no special
-#      prefix, just Lira speaking naturally, logged the same "Jarvis: %s"
+#      prefix, just Hugo speaking naturally, logged the same "Jarvis: %s"
 #      way as a real reply so it renders as a normal chat bubble too (see
 #      core.server.SocketIOLogHandler).
 #
@@ -383,7 +358,7 @@ def maybe_ambient_intervention(buffer_text: str) -> None:
     still talking), test mode, a real command already in flight
     (_dispatch_busy — set for the full duration of dispatch_command,
     covering both Groq processing and its TTS reply), TTS already speaking
-    or in its post-speech cooldown (voice.in_cooldown() — covers Lira's own
+    or in its post-speech cooldown (voice.in_cooldown() — covers Hugo's own
     proactive lines from core.background_loops too, so the two mechanisms
     never overlap), then the strict 10-minute rate limit. Only after all of
     those does it pay for the Phase 2 should_intervene() gate and the
@@ -457,7 +432,7 @@ def maybe_ambient_intervention(buffer_text: str) -> None:
         # Any other bracket-wrapped output is never valid dialogue — the
         # only legitimate bracketed reply is the literal '[SILENCIO]' token
         # above. Small local models (llama3.2:1b) sometimes drift into
-        # roleplay-style stage directions instead ("[lira mira al techo...]")
+        # roleplay-style stage directions instead ("[hugo mira al techo...]")
         # despite the prompt forbidding it; catch that here so it can never
         # reach TTS/chat history even if the prompt-side fix isn't enough.
         if verdict.startswith("[") and verdict.endswith("]"):
@@ -522,7 +497,7 @@ _IDENTITY_WEIGHT_CONTEXT    = 0.05
 _IDENTITY_VOICE_FLOOR = 0.35
 
 # Graceful degradation (spec item 4): if confidence was recently high and
-# drops into the uncertain/unknown range mid-conversation, LIRA notes it
+# drops into the uncertain/unknown range mid-conversation, HUGO notes it
 # out loud once rather than silently downgrading — a real drop (cold,
 # fatigue, bad mic) is exactly the case voice alone would otherwise
 # misread as "not Joan". Session-only, in-memory (same scope as
@@ -554,7 +529,7 @@ def _identify_speaker_multi_factor(transcript: str, audio_path: str | None) -> t
                  this turn (unknown speaker, per spec item 3).
       degraded:  True when confidence just dropped from a recently-high
                  reading into the uncertain/unknown range — the caller
-                 should have LIRA note it out loud (spec item 4's graceful
+                 should have HUGO note it out loud (spec item 4's graceful
                  degradation, e.g. '¿Estás bien? Suenas diferente.').
 
     When speaker.SPEAKER_VERIFICATION_ENABLED is False, returns (1.0,
@@ -672,17 +647,17 @@ def finish_voice_enrollment(sample_paths: list[str]) -> None:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# LIRA INTUITION — cross-session pattern tracking (data/conversation_patterns.json)
-# and the 'INTUICIÓN' block built from it. LIRA-exclusive: both
+# HUGO INTUITION — cross-session pattern tracking (data/conversation_patterns.json)
+# and the 'INTUICIÓN' block built from it. HUGO-exclusive: both
 # _record_turn_for_patterns() and _build_intuition_context() are only ever
-# called when the active personality is "lira" (see their call sites in
+# called when the active personality is "hugo" (see their call sites in
 # _dispatch_command_impl) — jarvis/friday never touch this file or this
 # behavior.
 #
 # Deliberately appended straight onto user_content rather than threaded
 # through core.personalities.base._build_system_prompt as a new layer —
 # that function is shared by all three personalities, and this feature's
-# own scope is core/commands.py + core/personalities/lira.py only. A block
+# own scope is core/commands.py + core/personalities/hugo.py only. A block
 # of text sitting in the latest user-turn's content is just as "read" by
 # the model as one sitting in the system message for a single stateless
 # completion call — there's no meaningful difference for this purpose.
@@ -693,7 +668,7 @@ def finish_voice_enrollment(sample_paths: list[str]) -> None:
 #     topic matches its trigger side.
 #   - behavioral     — current tone is non-neutral AND a recent episode's
 #     topic/summary shares real keyword overlap with it (or with a small
-#     stress-keyword list), giving LIRA something concrete to (subtly)
+#     stress-keyword list), giving HUGO something concrete to (subtly)
 #     connect the tone to.
 #   - context-based  — only surfaces for genuinely notable moments (late
 #     night, or a long session) rather than on every single turn — "only
@@ -774,7 +749,7 @@ def _save_conversation_patterns(data: dict) -> None:
 
 def _record_turn_for_patterns(transcript: str, tone: str, reply: str = "") -> None:
     """Updates data/conversation_patterns.json with this turn's signal —
-    called once per real turn, for LIRA only, AFTER _build_intuition_context()
+    called once per real turn, for HUGO only, AFTER _build_intuition_context()
     already ran for this same turn (so a pattern can only ever be built
     from PAST turns, never tautologically from itself). Skipped entirely
     in test mode, same as core.memory._extract_and_save_memory — a test
@@ -853,7 +828,7 @@ def _record_turn_for_patterns(transcript: str, tone: str, reply: str = "") -> No
 
 def _build_intuition_context(transcript: str, tone: str) -> str:
     """Builds the 'INTUICIÓN' block — up to _MAX_INTUITION_OBSERVATIONS
-    short, honestly-hedged observations LIRA should weave into her reply
+    short, honestly-hedged observations HUGO should weave into her reply
     naturally, never announce ('nunca digas: he detectado un patrón').
     Reads data/conversation_patterns.json as it stood BEFORE this turn
     (see _record_turn_for_patterns, called separately afterward) — every
@@ -952,10 +927,10 @@ def _safe_parse_date(date_str: str) -> "datetime.date | None":
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# LIRA INTERNAL CRITERIA — Phase 2 (data/conversation_patterns.json +
-# data/facts_*.json). Distinct from LIRA INTUITION above: intuition is a
+# HUGO INTERNAL CRITERIA — Phase 2 (data/conversation_patterns.json +
+# data/facts_*.json). Distinct from HUGO INTUITION above: intuition is a
 # cross-session flourish that can surface most turns; internal criteria are
-# LIRA's own priorities (see core.personalities.lira.INTERNAL_CRITERIA) —
+# HUGO's own priorities (see core.personalities.hugo.INTERNAL_CRITERIA) —
 # not emotions, things that matter to her by design — and fire AT MOST ONCE
 # PER SESSION (not per message, see _criterion_fired_this_session), and only
 # once the evidence for one of them is unambiguous, never on a first
@@ -963,10 +938,10 @@ def _safe_parse_date(date_str: str) -> "datetime.date | None":
 # (deliberately NOT phrased as an instruction — see _detect_internal_
 # criterion's own docstring below for why this changed from the original
 # 'CRITERIO INTERNO' framing), same placement rationale as
-# _build_intuition_context's own module comment above: LIRA-exclusive
+# _build_intuition_context's own module comment above: HUGO-exclusive
 # scope, no reason to thread it through the shared core.personalities.
 # base._build_system_prompt. The line is raw information, not a script —
-# LIRA (per core.personalities.lira's own explicit instruction to treat
+# HUGO (per core.personalities.hugo's own explicit instruction to treat
 # this context as optional and usually ignore it) decides whether it's
 # worth a word at all, same as every other honestly-hedged context block
 # in this app.
@@ -1050,7 +1025,7 @@ def _detect_inconsistency_criterion(transcript: str, current_topics: set[str]) -
     lowered = transcript.lower()
     if not any(marker in lowered for marker in markers):
         return None
-    pool = memory._load_shared_facts() + memory._load_personality_facts("lira")
+    pool = memory._load_shared_facts() + memory._load_personality_facts("hugo")
     for fact in pool:
         if memory._keywords(fact.get("fact", "")) & current_topics:
             return "Esto no cuadra con lo que me dijiste antes."
@@ -1088,7 +1063,7 @@ def _detect_risk_criterion(transcript: str) -> str | None:
 
 
 def _detect_internal_criterion(transcript: str, tone: str) -> str | None:
-    """Runs LIRA's internal criteria (core.personalities.lira.INTERNAL_
+    """Runs HUGO's internal criteria (core.personalities.hugo.INTERNAL_
     CRITERIA), in priority order, against real conversation/memory signal
     and returns AT MOST one 'CONTEXTO OPCIONAL' line — the first detector
     below whose evidence clears its bar, never on a first mention (every
@@ -1099,9 +1074,9 @@ def _detect_internal_criterion(transcript: str, tone: str) -> str | None:
 
     Detection stays exactly as sharp as before — only the framing of the
     result changed. This used to come back as 'CRITERIO INTERNO: ...', an
-    instruction LIRA almost always acted on, which read as mechanical. Now
+    instruction HUGO almost always acted on, which read as mechanical. Now
     it's handed over as plain optional context, with core.personalities.
-    lira's system prompt explicitly told to use it rarely — the model
+    hugo's system prompt explicitly told to use it rarely — the model
     decides whether/how to voice it, not this function."""
     global _criterion_fired_this_session
     if _criterion_fired_this_session:
@@ -1128,17 +1103,17 @@ def _detect_internal_criterion(transcript: str, tone: str) -> str | None:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# LIRA ACTIVE HABITS — Phase 3 (data/habits.json). Habits are written
+# HUGO ACTIVE HABITS — Phase 3 (data/habits.json). Habits are written
 # exclusively by scripts/reflective_mode.py's habit-analysis sleep sub-phase
 # (see that script — it mines data/conversation_patterns.json's per-turn
 # signals recorded above, scores each completed session's quality with
 # Ollama, and only promotes a candidate once its evidence clears a
 # deterministic confidence bar). This file's job is just the read side:
 # load whatever is currently active and fold it into the prompt, same
-# 'LIRA-exclusive, appended onto user_content' placement as LIRA INTUITION
-# and LIRA INTERNAL CRITERIA above, for the same reason (this feature's
+# 'HUGO-exclusive, appended onto user_content' placement as HUGO INTUITION
+# and HUGO INTERNAL CRITERIA above, for the same reason (this feature's
 # scope is core/commands.py + scripts/reflective_mode.py only — no shared
-# core.personalities.base._build_system_prompt layer needed for a LIRA-only
+# core.personalities.base._build_system_prompt layer needed for a HUGO-only
 # concern). usage_count is incremented here, at injection time, the one
 # place that reliably knows a habit was actually surfaced this turn.
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1162,7 +1137,7 @@ def _save_habits(habits: list[dict]) -> None:
 
 
 def _build_habits_context() -> str:
-    """Returns the 'HÁBITOS ACTIVOS' block for LIRA's strongest active
+    """Returns the 'HÁBITOS ACTIVOS' block for HUGO's strongest active
     habits (highest confidence first, capped at _MAX_HABITS_INJECTED), or ''
     if data/habits.json has none yet — the common case until enough sessions
     have actually been scored. Bumps each surfaced habit's usage_count by
@@ -1193,16 +1168,16 @@ def _build_habits_context() -> str:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# LIRA SOCIAL SKILLS — Phase 4 (data/social_skills.json). Written exclusively
+# HUGO SOCIAL SKILLS — Phase 4 (data/social_skills.json). Written exclusively
 # by scripts/reflective_mode.py's 'Aprendizaje Social' sleep sub-phase (see
-# that script — it reviews a digest of LIRA's last 20 completed sessions
+# that script — it reviews a digest of HUGO's last 20 completed sessions
 # with Ollama to extract general COMMUNICATION principles, distinct from
 # the fixed-hypothesis habits above: these are open-ended and can be
 # anything Ollama genuinely notices, reinforced or decayed run over run).
-# This file's job is just the read side, same 'LIRA-exclusive, appended
-# onto user_content' placement as LIRA INTUITION / LIRA INTERNAL CRITERIA /
-# LIRA ACTIVE HABITS above, for the same reason (no shared core.
-# personalities.base._build_system_prompt layer needed for a LIRA-only
+# This file's job is just the read side, same 'HUGO-exclusive, appended
+# onto user_content' placement as HUGO INTUITION / HUGO INTERNAL CRITERIA /
+# HUGO ACTIVE HABITS above, for the same reason (no shared core.
+# personalities.base._build_system_prompt layer needed for a HUGO-only
 # concern). times_applied/last_applied are bumped here, at injection time,
 # same pattern as _build_habits_context's own usage_count bump above.
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1226,7 +1201,7 @@ def _save_social_skills(skills: list[dict]) -> None:
 
 
 def _build_social_skills_context() -> str:
-    """Returns the 'PRINCIPIOS DE COMUNICACIÓN' block for LIRA's strongest
+    """Returns the 'PRINCIPIOS DE COMUNICACIÓN' block for HUGO's strongest
     active principles (highest confidence first, capped at
     _MAX_SKILLS_INJECTED), or '' if data/social_skills.json has none yet —
     the common case until enough sessions have been reviewed. Deliberately
@@ -1260,7 +1235,7 @@ def _build_social_skills_context() -> str:
 
 
 def _augment_with_agenda_and_health(messages: list[dict]) -> list[dict]:
-    """Append LIRA's calendar/Apple Health awareness to the system message
+    """Append HUGO's calendar/Apple Health awareness to the system message
     right before it reaches Groq — the same live-data-in-the-prompt idea as
     core.personalities.base._build_system_prompt's DATOS EN TIEMPO REAL
     section (weather/location/etc.), but kept here since this integration
@@ -1291,7 +1266,7 @@ def _augment_with_agenda_and_health(messages: list[dict]) -> list[dict]:
 
 def _augment_with_user_model(messages: list[dict]) -> list[dict]:
     """Append the compact 'MODELO DE JOAN' block (data/user_model.json —
-    LIRA's living understanding of Joan as a person, built/updated by
+    HUGO's living understanding of Joan as a person, built/updated by
     scripts/reflective_mode.py's 'Modelo de Usuario' sleep sub-phase) to
     the system message right before it reaches Groq — same system-message-
     augmentation pattern and placement as _augment_with_agenda_and_health
@@ -1328,14 +1303,14 @@ def _phrase_skill_result(
     """Turns a skill's raw execute() output into an actual in-character
     reply, instead of that raw string becoming the reply outright (bug fix
     2026-08-14). skills/*.py's execute() methods return plain data/
-    confirmation strings — never written in LIRA's voice, since that's not
+    confirmation strings — never written in HUGO's voice, since that's not
     their job — but both skill_dispatch call sites in
     _dispatch_command_impl below used to just assign that string straight
     to `reply`. Concretely: asking 'cómo puedo sacarme el carnet jove en
     valencia' matched the investigations skill and came back as
     'Investigación iniciada: cómo puedo sacarme el carnet jove en
     valencia.' verbatim — Joan's actual question never got answered, and
-    nothing about it sounded like LIRA.
+    nothing about it sounded like HUGO.
 
     This is the second half of a normal tool-use loop instead: hand the
     skill's result back to the model as something it just learned, and
@@ -1578,7 +1553,7 @@ def generate_summary(topic: str, context: str | None = None) -> str:
     persisting it — see intent_mod._pending_action and
     actions._execute_pending_confirm's "estudio_summary" branch, which is
     what actually calls _append_json_record/_emit_estudio_updated once
-    confirmed. Returns LIRA's spoken proposal — never raises; a Groq
+    confirmed. Returns HUGO's spoken proposal — never raises; a Groq
     failure still returns a natural reply rather than crashing dispatch.
     """
     explicit_topic = (topic or "").strip()
@@ -1827,7 +1802,7 @@ def generate_schema(topic: str, context: str | None = None, schema_type: str = "
     from 'pon un evento el viernes'. Saves immediately, per Level 1's own
     definition (see this module's header comment). Returns a raw result
     for the caller to phrase naturally via response._format_response — not
-    LIRA's final spoken line itself (bug fix: it used to be, identically
+    HUGO's final spoken line itself (bug fix: it used to be, identically
     worded every time) — never raises.
     """
     explicit_topic = (topic or "").strip()
@@ -1912,749 +1887,6 @@ def generate_schema(topic: str, context: str | None = None, schema_type: str = "
     # sibling non-Groq-exempt intents) — bug fix: this used to be the
     # literal spoken line itself, identical every single time.
     return f"Esquema sobre «{subject}» guardado en Estudio, con {len(parsed['nodes'])} nodos."
-
-
-# ---------------------------------------------------------------------------
-# Armor Design Studio (Diseño → Armaduras, Phase 1) — Joan is always the
-# designer, LIRA is the copilot: she answers questions/asks for clarification
-# by default, and only proposes concrete decisions for a zone when the user
-# explicitly hands it over (core.intent.is_design_takeover — 'desarrolla
-# esto', 'toma el control', etc.). Both entry points below are called from
-# core/design_routes.py's POST /api/designs/chat, one call per user message
-# in the workspace's left-panel conversation — never through the main voice
-# dispatch pipeline, since the workspace already carries its own
-# zone/design/history state that _dispatch_command_impl has no notion of.
-# ---------------------------------------------------------------------------
-
-_ARMOR_KNOWLEDGE_PATH = "data/armor_knowledge.json"
-
-_DESIGN_ZONE_LABELS = {
-    "helmet":    "casco",
-    "shoulders": "hombreras",
-    "chest":     "peto/pecho",
-    "arms":      "brazos",
-    "waist":     "cintura/abdomen",
-    "legs":      "piernas",
-    "boots":     "botas",
-}
-
-
-def _load_armor_knowledge() -> list[dict]:
-    """Fail-soft load of data/armor_knowledge.json's 'models' array — same
-    convention as _append_json_record above. A missing/corrupt file just
-    means LIRA's design suggestions lose their historical grounding, not a
-    crash of the chat turn."""
-    try:
-        with open(_ARMOR_KNOWLEDGE_PATH, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        models = data.get("models", [])
-        return models if isinstance(models, list) else []
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
-        return []
-
-
-def _armor_knowledge_context(zone: str, limit: int = 6) -> str:
-    """Condenses armor_knowledge.json into a short block the design-mode
-    prompt can cite from — title + innovaciones/limitaciones only (specs and
-    full descriptions would blow the token budget for no real benefit here).
-    Capped at `limit` most recent models — the earlier ones (papel, celo)
-    rarely have anything relevant to say about a modern zone decision."""
-    models = _load_armor_knowledge()[-limit:]
-    lines = []
-    for m in models:
-        name = m.get("name", "?")
-        innov = m.get("innovaciones", "")
-        limit_txt = m.get("limitaciones", "")
-        lines.append(f"- {name}: innovaciones: {innov} | limitaciones: {limit_txt}")
-    return "\n".join(lines)
-
-
-def handle_design_mode(zone: str, current_design: dict, conversation_history: list[dict]) -> dict:
-    """Generate LIRA's next turn in the design workspace's chat for `zone`.
-
-    `current_design` is the full design record (see data/designs.json's
-    shape in core/design_routes.py's module comment) — used for the other
-    zones' state so LIRA doesn't contradict decisions already made elsewhere
-    in the same design. `conversation_history` is the workspace's own
-    chat log for this design, [{"role": "user"|"lira", "text": str}, ...],
-    most recent last.
-
-    Returns {"reply": str, "suggestion": dict | None}. `suggestion`, when
-    present, is a proposed {"material", "mechanism", "aesthetic_notes"} for
-    `zone` — only produced when the last user message is a takeover request
-    (core.intent.is_design_takeover); otherwise LIRA just answers/asks in
-    `reply` and `suggestion` is None, since Joan is always the one deciding
-    unless he explicitly hands the zone over. Never raises — a Groq failure
-    still returns a natural reply rather than crashing the chat turn.
-    """
-    from core import intent as intent_mod2
-    from core.personalities.lira import PERSONALITY as _LIRA_PERSONALITY
-
-    last_user_msg = ""
-    for turn in reversed(conversation_history or []):
-        if turn.get("role") == "user":
-            last_user_msg = turn.get("text", "")
-            break
-
-    takeover = intent_mod2.is_design_takeover(last_user_msg)
-    zone_label = _DESIGN_ZONE_LABELS.get(zone, zone)
-    knowledge = _armor_knowledge_context(zone)
-
-    other_zones = []
-    for z, data in (current_design.get("zones") or {}).items():
-        if z != zone and isinstance(data, dict) and data.get("status") == "diseñado":
-            other_zones.append(f"{_DESIGN_ZONE_LABELS.get(z, z)}: {data.get('material', '')} — {data.get('mechanism', '')}")
-    other_zones_txt = "\n".join(other_zones) if other_zones else "(ninguna otra zona definida todavía)"
-
-    system_prompt = _LIRA_PERSONALITY.get("system", "Eres LIRA, la asistente de Joan.")
-    system_prompt += (
-        "\n\nAhora mismo estás en el Estudio de Diseño de Armaduras, ayudando a Joan a "
-        f"diseñar la zona '{zone_label}' de una armadura nueva. Joan es siempre el "
-        "diseñador — tú eres su copiloto. Por defecto solo escuchas, haces preguntas "
-        "aclaratorias sobre decisiones de diseño poco claras, y comentas. NUNCA "
-        "propones decisiones de diseño concretas sin que Joan te lo pida "
-        "explícitamente (frases como 'desarrolla esto', 'toma el control', 'no sé "
-        "cómo seguir', 'qué harías tú aquí').\n\n"
-        f"Modelos anteriores de Joan (para referencia natural, ej. 'En el Model VI "
-        f"usaste raíles para el abdomen, ¿algo similar aquí?'):\n{knowledge}\n\n"
-        f"Zonas ya diseñadas en esta armadura:\n{other_zones_txt}\n\n"
-        + (
-            "Joan te ha pedido que tomes el control de esta zona. Propón UNA decisión "
-            "de diseño concreta y coherente con el resto de la armadura (material, "
-            "mecanismo, notas estéticas), citando un modelo anterior si encaja de forma "
-            "natural. Sé breve y directa, como hablarías normalmente. Termina "
-            "confirmando con Joan antes de darlo por definitivo."
-            if takeover else
-            "Responde a Joan sobre esta zona: si algo no está claro, pregunta; si "
-            "comenta una idea, coméntala con tu criterio. No propongas una decisión "
-            "de diseño completa a menos que te lo pida explícitamente."
-        )
-    )
-
-    messages = [{"role": "system", "content": system_prompt}]
-    for turn in (conversation_history or [])[-10:]:
-        role = "assistant" if turn.get("role") == "lira" else "user"
-        text = turn.get("text", "")
-        if text:
-            messages.append({"role": role, "content": text})
-    if not messages[-1:] or messages[-1]["role"] != "user":
-        messages.append({"role": "user", "content": last_user_msg or f"Hablemos de la zona {zone_label}."})
-
-    try:
-        reply = groq_client._groq_complete(messages, max_tokens=350)
-    except Exception:
-        logger.warning("handle_design_mode: Groq call failed", exc_info=True)
-        reply = response._pf(
-            "Se me ha cortado la conexión un momento, señor. ¿Repites?",
-            "Se me ha cortado la conexión un momento. ¿Repites?",
-            "Perdí la señal un segundo. Repite eso.",
-        )
-
-    suggestion = None
-    if takeover and reply:
-        suggestion = {
-            "material": "",
-            "mechanism": "",
-            "aesthetic_notes": reply.strip()[:400],
-        }
-
-    return {"reply": reply.strip(), "suggestion": suggestion}
-
-
-def generate_design_name_suggestions(design: dict) -> list[str]:
-    """3 name candidates for a design left unnamed when Joan hits 'Guardar
-    en Estudio' (see core/design_routes.py's POST /api/designs) — generated
-    from whatever zones/notes are already filled in via the existing Groq
-    call. Falls back to generic numbered names if Groq fails or the design
-    has nothing to go on yet — never raises."""
-    zones = design.get("zones") or {}
-    filled = [
-        f"{_DESIGN_ZONE_LABELS.get(z, z)}: {d.get('material', '')} {d.get('mechanism', '')} {d.get('aesthetic_notes', '')}".strip()
-        for z, d in zones.items()
-        if isinstance(d, dict) and (d.get("material") or d.get("mechanism") or d.get("aesthetic_notes"))
-    ]
-    description = "\n".join(filled) if filled else (design.get("notes") or "")
-
-    fallback = ["Diseño sin nombre I", "Diseño sin nombre II", "Diseño sin nombre III"]
-    if not description.strip():
-        return fallback
-
-    system_prompt = (
-        "Eres un asistente que propone nombres cortos y evocadores para diseños de "
-        "armaduras tipo Iron Man, en español. Responde EXCLUSIVAMENTE con 3 nombres, "
-        "uno por línea, sin numeración ni texto adicional. Cada nombre debe tener "
-        "entre 2 y 5 palabras, y reflejar la estética o características del diseño."
-    )
-    user_prompt = f"Características del diseño:\n{description[:800]}"
-
-    try:
-        raw = groq_client._groq_complete(
-            [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            max_tokens=100,
-        )
-        names = [line.strip(" -•\t") for line in raw.splitlines() if line.strip()]
-        names = [n for n in names if n][:3]
-        return names if len(names) == 3 else (names + fallback)[:3]
-    except Exception:
-        logger.warning("generate_design_name_suggestions: Groq call failed", exc_info=True)
-        return fallback
-
-
-# ---------------------------------------------------------------------------
-# Armor Design Studio Phase 2 — interactive zone-by-zone design. Three more
-# LIRA entry points, all called from core/design_routes.py's own Phase 2
-# endpoints (POST /api/designs/zone-suggestions, /consistency-check,
-# /summary), same never-raises/fail-soft convention as handle_design_mode
-# and generate_design_name_suggestions above.
-# ---------------------------------------------------------------------------
-
-_ZONE_OPTION_RE = re.compile(
-    r"OPCI[OÓ]N\s*\d+\s*:?\s*\n"
-    r"T[IÍ]TULO:\s*(?P<title>.+?)\s*\n"
-    r"MATERIAL:\s*(?P<material>.+?)\s*\n"
-    r"MECANISMO:\s*(?P<mechanism>.+?)\s*\n"
-    r"EST[EÉ]TICA:\s*(?P<aesthetic>.+?)\s*\n"
-    r"RAZ[OÓ]N:\s*(?P<rationale>.+?)(?=\n\s*OPCI[OÓ]N\s*\d+|\Z)",
-    re.IGNORECASE | re.DOTALL,
-)
-
-_PARTS_LIBRARY_PATH = "data/parts_library.json"
-
-
-def _load_parts_library() -> list[dict]:
-    """Fail-soft load of data/parts_library.json — same convention as
-    _load_armor_knowledge above. Grows over time: historical parts seeded
-    from armor_knowledge.json, plus every part LIRA documents ('AÑADIR
-    PIEZA') or that gets auto-saved when a zone is marked 'diseñado' (see
-    core/design_routes.py's POST /api/parts-library)."""
-    try:
-        with open(_PARTS_LIBRARY_PATH, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return data if isinstance(data, list) else []
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
-        return []
-
-
-def _parts_context(zone: str, limit: int = 4) -> str:
-    """Condenses the parts library entries for `zone` into a short block
-    generate_zone_suggestions can draw on — same spirit as
-    _armor_knowledge_context, but at the individual-part level rather than
-    whole-model level, so LIRA can reference concrete reusable pieces, not
-    just prior armors in the abstract."""
-    parts = [p for p in _load_parts_library() if isinstance(p, dict) and p.get("zone") == zone][-limit:]
-    if not parts:
-        return "(sin piezas registradas para esta zona todavía)"
-    return "\n".join(
-        f"- {p.get('name', '?')} ({p.get('source_model') or p.get('source', '')}): {p.get('description', '')}"
-        for p in parts
-    )
-
-
-def generate_zone_suggestions(zone: str, current_design: dict, feedback: str | None = None) -> list[dict]:
-    """3 distinct, concrete design options for `zone` (see
-    core/design_routes.py's POST /api/designs/zone-suggestions — both the
-    'Pedir sugerencia a LIRA' and 'Diseñar con LIRA' buttons in the zone
-    detail panel trigger this the same way). Each option:
-    {"title", "material", "mechanism", "aesthetic_notes", "rationale"}.
-    Grounded in armor_knowledge.json AND data/parts_library.json, so options
-    can reference real prior models/pieces ('el Model VIII usó pauldrones
-    angulares...'). `feedback` is Joan's own words after discarding all 3
-    of a previous batch ('Ninguna convence. Describe qué cambiarías' in the
-    UI) — when present, the new batch is steered by it instead of being a
-    blind repeat. Falls back to 3 generic placeholder options if Groq fails
-    or its output doesn't parse — never raises, and never returns fewer
-    than 3 so the frontend can always render 3 cards."""
-    zone_label = _DESIGN_ZONE_LABELS.get(zone, zone)
-    knowledge = _armor_knowledge_context(zone)
-    parts = _parts_context(zone)
-
-    other_zones = []
-    for z, data in (current_design.get("zones") or {}).items():
-        if z != zone and isinstance(data, dict) and data.get("status") == "diseñado":
-            other_zones.append(f"{_DESIGN_ZONE_LABELS.get(z, z)}: {data.get('material', '')} — {data.get('aesthetic_notes', '')}")
-    other_zones_txt = "\n".join(other_zones) if other_zones else "(ninguna otra zona definida todavía)"
-
-    system_prompt = (
-        "Eres LIRA, copiloto de diseño de armaduras tipo Iron Man de Joan. Genera "
-        "EXACTAMENTE 3 opciones de diseño distintas y concretas para una zona "
-        "concreta de la armadura, en español. Responde EXCLUSIVAMENTE en este "
-        "formato exacto, sin texto adicional antes ni después:\n"
-        "OPCIÓN 1:\n"
-        "TÍTULO: <nombre corto de la opción, 2-4 palabras>\n"
-        "MATERIAL: <material principal>\n"
-        "MECANISMO: <mecanismo o partes móviles, o 'ninguno'>\n"
-        "ESTÉTICA: <color/acabado/rasgos distintivos>\n"
-        "RAZÓN: <una frase, por qué encaja, citando un modelo o pieza anterior si aplica>\n"
-        "OPCIÓN 2:\n(mismo formato)\n"
-        "OPCIÓN 3:\n(mismo formato)\n"
-        "Las 3 opciones deben ser genuinamente distintas entre sí (no variaciones "
-        "menores de la misma idea)."
-    )
-    user_prompt = (
-        f"Zona a diseñar: {zone_label}\n\n"
-        f"Modelos anteriores de Joan (cita uno si encaja de forma natural):\n{knowledge}\n\n"
-        f"Piezas ya registradas para esta zona en la biblioteca de piezas:\n{parts}\n\n"
-        f"Zonas ya diseñadas en esta armadura (para coherencia):\n{other_zones_txt}"
-    )
-    if feedback and feedback.strip():
-        user_prompt += (
-            f"\n\nJoan descartó las 3 opciones anteriores y dijo lo siguiente sobre qué "
-            f"cambiar: \"{feedback.strip()}\". Genera 3 opciones NUEVAS que tengan esto "
-            f"en cuenta — no repitas las ideas descartadas."
-        )
-
-    fallback = [
-        {"title": f"Opción {i}", "material": "", "mechanism": "", "aesthetic_notes": "", "rationale": ""}
-        for i in (1, 2, 3)
-    ]
-
-    try:
-        raw = groq_client._groq_complete(
-            [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            max_tokens=600,
-        )
-        options = [
-            {
-                "title": m.group("title").strip(),
-                "material": m.group("material").strip(),
-                "mechanism": m.group("mechanism").strip(),
-                "aesthetic_notes": m.group("aesthetic").strip(),
-                "rationale": m.group("rationale").strip(),
-            }
-            for m in _ZONE_OPTION_RE.finditer(raw)
-        ]
-        return options[:3] if len(options) >= 3 else (options + fallback)[:3]
-    except Exception:
-        logger.warning("generate_zone_suggestions: Groq call failed", exc_info=True)
-        return fallback
-
-
-def check_design_consistency(current_design: dict) -> str:
-    """Cross-zone technical/aesthetic consistency check across every
-    'diseñado' zone (see core/design_routes.py's POST
-    /api/designs/consistency-check — triggered on-demand from a 'Revisar
-    consistencia' button, and automatically, silently, right after a zone
-    suggestion is accepted). Returns a short Spanish flag sentence (e.g.
-    'El material del casco y los hombros no combinan bien
-    estructuralmente') if LIRA finds something worth mentioning, or '' if
-    there's nothing notable — per spec, LIRA only flags on a clear issue,
-    never manufactures a complaint just to say something. Never raises."""
-    zones = {
-        z: d for z, d in (current_design.get("zones") or {}).items()
-        if isinstance(d, dict) and d.get("status") == "diseñado"
-    }
-    if len(zones) < 2:
-        return ""
-
-    lines = [
-        f"- {_DESIGN_ZONE_LABELS.get(z, z)}: material={d.get('material', '(sin definir)')}, "
-        f"mecanismo={d.get('mechanism', '(ninguno)')}, estética={d.get('aesthetic_notes', '(sin definir)')}"
-        for z, d in zones.items()
-    ]
-    system_prompt = (
-        "Eres LIRA, copiloto de diseño de armaduras de Joan. Revisa las siguientes "
-        "zonas ya diseñadas de una misma armadura y evalúa si hay alguna "
-        "incoherencia técnica o estética CLARA entre ellas (materiales que no "
-        "combinan estructuralmente, mecanismos incompatibles, estéticas que "
-        "chocan). Sé exigente: si todo encaja razonablemente, NO inventes un "
-        "problema. Responde EXCLUSIVAMENTE con 'OK' si no hay nada que señalar, "
-        "o con una única frase breve en español señalando el problema concreto "
-        "si lo hay — sin explicaciones extra."
-    )
-    user_prompt = "Zonas diseñadas:\n" + "\n".join(lines)
-
-    try:
-        raw = groq_client._groq_complete(
-            [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            max_tokens=120,
-        )
-        raw = raw.strip()
-        if not raw or raw.upper().startswith("OK"):
-            return ""
-        return raw
-    except Exception:
-        logger.warning("check_design_consistency: Groq call failed", exc_info=True)
-        return ""
-
-
-def generate_design_summary(design: dict) -> dict:
-    """Full design summary document for 'DISEÑO COMPLETO' (all 7 zones
-    'diseñado' — see core/design_routes.py's POST /api/designs/summary).
-    Returns a record shaped like generate_summary()'s own record (same
-    data/summaries.json shape, so it shows up in ESTUDIO → RESÚMENES
-    alongside every other summary) — the caller is responsible for
-    appending/persisting it (design_routes.py, not this function, mirroring
-    how design saves themselves are handled at the routes layer). Never
-    raises — falls back to a plain zone listing if Groq fails."""
-    zones = design.get("zones") or {}
-    zone_lines = [
-        f"- {_DESIGN_ZONE_LABELS.get(z, z)}: {d.get('material', '')} — {d.get('mechanism', '') or 'sin mecanismo'} — {d.get('aesthetic_notes', '')}"
-        for z, d in zones.items()
-        if isinstance(d, dict) and d.get("status") == "diseñado"
-    ]
-    name = (design.get("name") or "Diseño sin nombre").strip()
-
-    system_prompt = (
-        "Eres un asistente que redacta documentos de resumen de diseño de "
-        "armaduras, en español. Responde EXCLUSIVAMENTE en este formato exacto, "
-        "sin texto adicional antes ni después:\n"
-        "TÍTULO: <título breve>\n"
-        "PUNTOS:\n"
-        "- <punto clave 1>\n"
-        "- <punto clave 2>\n"
-        "(3 a 8 puntos, uno por zona relevante o por característica destacada)\n"
-        "CONCLUSIÓN: <valoración breve de conjunto, una frase>"
-    )
-    user_prompt = f"Nombre del diseño: {name}\n\nZonas diseñadas:\n" + "\n".join(zone_lines)
-
-    try:
-        raw = groq_client._groq_complete(
-            [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            max_tokens=700,
-        )
-    except Exception:
-        logger.warning("generate_design_summary: Groq call failed", exc_info=True)
-        raw = ""
-
-    title, _narrative, points, conclusion = _parse_summary_output(raw, fallback_title=name[:60])
-    content_lines = [f"- {p}" for p in points] if points else zone_lines
-    if conclusion:
-        content_lines.append(f"\nConclusión: {conclusion}")
-
-    return {
-        "id":           uuid.uuid4().hex[:12],
-        "title":        title or name,
-        "date":         datetime.datetime.now().isoformat(),
-        "type":         "tema",
-        "content":      "\n".join(content_lines),
-        "source_topic": f"Diseño de armadura: {name}",
-        "excerpt":      (points[0] if points else conclusion or "Resumen de diseño de armadura.")[:140],
-    }
-
-
-def generate_concept_description(design: dict) -> str:
-    """One-line description for the Conceptuales entry a design gets saved
-    as when Joan hits 'GUARDAR EN ESTUDIO' (see core/design_routes.py's
-    POST /api/designs/save-to-concept). Spec's own example shape: 'Armadura
-    [name] — [key characteristics from zones]'. Built from whichever zones
-    are actually 'diseñado' — if none are, falls back to a generic
-    in-progress line without a Groq call (nothing concrete to describe
-    yet). Never raises."""
-    name = (design.get("name") or "Diseño sin nombre").strip()
-    zones = design.get("zones") or {}
-    designed = {
-        z: d for z, d in zones.items()
-        if isinstance(d, dict) and d.get("status") == "diseñado" and (d.get("material") or d.get("aesthetic_notes"))
-    }
-    if not designed:
-        return f"Armadura {name} — diseño en curso, todavía sin zonas confirmadas."
-
-    zone_lines = "\n".join(
-        f"- {_DESIGN_ZONE_LABELS.get(z, z)}: {d.get('material', '')} — {d.get('aesthetic_notes', '')}"
-        for z, d in designed.items()
-    )
-
-    system_prompt = (
-        "Eres un asistente que escribe descripciones breves de conceptos de "
-        "armadura para un catálogo, en español. A partir del nombre y las zonas "
-        "ya diseñadas, escribe UNA sola frase con el formato exacto "
-        "'Armadura <nombre> — <características clave>', sin comillas, sin texto "
-        "adicional antes ni después. Las características clave deben resumir "
-        "materiales y estética distintiva en pocas palabras, no listar cada zona."
-    )
-    user_prompt = f"Nombre: {name}\n\nZonas diseñadas:\n{zone_lines}"
-
-    try:
-        raw = groq_client._groq_complete(
-            [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            max_tokens=120,
-        )
-        line = raw.strip().strip('"').splitlines()[0].strip()
-        return line[:300] if line else f"Armadura {name}."
-    except Exception:
-        logger.warning("generate_concept_description: Groq call failed", exc_info=True)
-        first = next(iter(designed.values()))
-        return f"Armadura {name} — {first.get('material', '')} {first.get('aesthetic_notes', '')}".strip()[:300]
-
-
-_NEW_PART_RE = re.compile(
-    r"NOMBRE:\s*(?P<name>.+?)\s*\n"
-    r"DESCRIPCI[OÓ]N:\s*(?P<description>.+?)\s*\n"
-    r"MATERIAL:\s*(?P<material>.+?)\s*\n"
-    r"MECANISMO:\s*(?P<mechanism>.+?)\s*(?:\Z)",
-    re.IGNORECASE | re.DOTALL,
-)
-
-
-def document_new_part(zone: str, description: str) -> dict:
-    """Turns Joan's free-text description into a structured part record for
-    the parts drawer's 'AÑADIR PIEZA' flow (see core/design_routes.py's
-    POST /api/parts-library, mode 'describe'). Returns
-    {"name", "description", "material", "mechanism"} — the caller
-    (design_routes.py) fills in id/zone/source/created_at and persists it.
-    Falls back to using Joan's own text verbatim as both name and
-    description if Groq fails or the output doesn't parse — never raises,
-    and a part is always produced (this is an explicit 'add to library'
-    action, there's no sensible way to produce nothing here)."""
-    zone_label = _DESIGN_ZONE_LABELS.get(zone, zone)
-    system_prompt = (
-        "Eres LIRA, copiloto de diseño de armaduras de Joan. Joan te describe una "
-        "pieza o mecanismo para añadir a la biblioteca de piezas reutilizables. "
-        "Documéntala de forma estructurada y concisa, en español. Responde "
-        "EXCLUSIVAMENTE en este formato exacto, sin texto adicional antes ni "
-        "después:\n"
-        "NOMBRE: <nombre corto, 2-5 palabras>\n"
-        "DESCRIPCIÓN: <1-2 frases describiendo la pieza>\n"
-        "MATERIAL: <material principal, o 'sin especificar'>\n"
-        "MECANISMO: <mecanismo o partes móviles, o 'ninguno'>"
-    )
-    user_prompt = f"Zona: {zone_label}\n\nDescripción de Joan: {description.strip()}"
-
-    fallback = {
-        "name": description.strip()[:60] or "Pieza sin nombre",
-        "description": description.strip(),
-        "material": "",
-        "mechanism": "",
-    }
-
-    try:
-        raw = groq_client._groq_complete(
-            [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            max_tokens=200,
-        )
-        m = _NEW_PART_RE.search(raw)
-        if not m:
-            return fallback
-        return {
-            "name": m.group("name").strip()[:80],
-            "description": m.group("description").strip(),
-            "material": m.group("material").strip(),
-            "mechanism": m.group("mechanism").strip(),
-        }
-    except Exception:
-        logger.warning("document_new_part: Groq call failed", exc_info=True)
-        return fallback
-
-
-# ---------------------------------------------------------------------------
-# Armor Design Studio Phase 3 — autopilot mode. Joan sets the direction
-# (free-text description + optional style reference/material/mechanism/
-# avoid constraints), LIRA designs each selected zone autonomously, Joan
-# reviews. See core/design_routes.py's POST /api/designs/autopilot-zone —
-# the frontend calls this once PER ZONE, sequentially, awaiting each before
-# starting the next (see ui/js/design-studio.js's _dsRunAutopilot), so
-# every call after the first already sees the previous zones' autopiloted
-# decisions in `current_design` — that's what gives a multi-zone autopilot
-# run internal consistency without any extra plumbing here.
-# ---------------------------------------------------------------------------
-
-_AUTOPILOT_ZONE_RE = re.compile(
-    r"MATERIAL:\s*(?P<material>.+?)\s*\n"
-    r"MECANISMO:\s*(?P<mechanism>.+?)\s*\n"
-    r"EST[EÉ]TICA:\s*(?P<aesthetic>.+?)\s*\n"
-    r"RAZONAMIENTO:\s*(?P<reasoning>.+?)\s*(?:\Z)",
-    re.IGNORECASE | re.DOTALL,
-)
-
-# Autopilot is a batch, local-first workload (up to 7 sequential zone
-# decisions per run) — it uses Ollama directly, never Groq, so a run never
-# touches Joan's Groq quota. Same endpoint/model/call convention as
-# core.sleep_llm._ollama_generate, duplicated rather than imported for the
-# same dependency-isolation reasoning documented there.
-_AUTOPILOT_OLLAMA_HOST         = "http://localhost:11434"
-# 1b over 3b: a 7-zone run is 7 sequential CPU generations — 3b measured at
-# ~3 minutes per zone on this hardware (Intel i7, no GPU), making a full run
-# 15-20+ minutes. 1b is materially faster for the same short, templated
-# MATERIAL/MECANISMO/ESTÉTICA/RAZONAMIENTO output this needs — quality loss
-# is acceptable for a first-pass design suggestion Joan reviews and can
-# redesign per-zone anyway (see _dsReviewHandoff in ui/js/design-studio.js).
-_AUTOPILOT_OLLAMA_MODEL        = "llama3.2:1b"
-_AUTOPILOT_OLLAMA_GENERATE_URL = f"{_AUTOPILOT_OLLAMA_HOST}/api/generate"
-
-
-def _autopilot_ollama_generate(system: str, user: str, max_tokens: int) -> str | None:
-    """One /api/generate call (non-streaming) for a single autopilot zone.
-    Returns the response text, or None on any failure (daemon not up yet,
-    timeout, empty response) — never raises. Generous timeout since even
-    the 1B model can be slow cold (first call right after
-    ensure_ollama_daemon_running(), before it's resident) on CPU-only
-    hardware."""
-    try:
-        payload = json.dumps({
-            "model":   _AUTOPILOT_OLLAMA_MODEL,
-            "prompt":  user,
-            "system":  system,
-            "stream":  False,
-            "options": {"num_predict": max_tokens},
-        }).encode("utf-8")
-        req = urllib.request.Request(
-            _AUTOPILOT_OLLAMA_GENERATE_URL, data=payload, method="POST",
-            headers={"Content-Type": "application/json"},
-        )
-        with urllib.request.urlopen(req, timeout=180) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        text = str(data.get("response", "")).strip()
-        return text or None
-    except Exception as e:
-        logger.warning("run_autopilot_zone: Ollama call failed: %s", e)
-        return None
-
-
-def run_autopilot_zone(zone: str, current_design: dict, constraints: dict) -> dict:
-    """One autonomous, confident design decision for `zone` — no options,
-    a single pick with LIRA's stated reasoning (see core/design_routes.py's
-    POST /api/designs/autopilot-zone, called once per zone in the
-    'PILOTO AUTOMÁTICO' execution loop). Returns {"material", "mechanism",
-    "aesthetic_notes", "reasoning"}. `constraints` (all optional, from the
-    autopilot dialog):
-        {"description": str, "style_reference": str, "material_limit": str,
-         "mechanism_pref": str, "avoid": str}
-    Grounded in armor_knowledge.json + parts_library.json like
-    generate_zone_suggestions, but instructed to commit to ONE decision and
-    explain it — including, per spec, explicit call-outs when it
-    deliberately avoids a past model's approach ('Evité el sistema de
-    raíles del Model VI porque...'). Uses Ollama (local, free) rather than
-    Groq — autopilot can burn through 7 sequential calls per run and Groq
-    stays reserved for conversation; the daemon is expected to already be
-    up (see /api/designs/autopilot-start, called once before the run's
-    zone loop starts). Falls back to an empty-but-honest placeholder if
-    Ollama is unreachable/fails or output doesn't parse — never raises,
-    the execution loop must keep moving through every queued zone
-    regardless."""
-    zone_label = _DESIGN_ZONE_LABELS.get(zone, zone)
-    knowledge = _armor_knowledge_context(zone)
-    parts = _parts_context(zone)
-
-    other_zones = []
-    for z, data in (current_design.get("zones") or {}).items():
-        if z != zone and isinstance(data, dict) and data.get("material"):
-            other_zones.append(f"{_DESIGN_ZONE_LABELS.get(z, z)}: {data.get('material', '')} — {data.get('aesthetic_notes', '')}")
-    other_zones_txt = "\n".join(other_zones) if other_zones else "(ninguna otra zona definida todavía)"
-
-    constraints = constraints or {}
-    constraint_lines = []
-    if constraints.get("description"):
-        constraint_lines.append(f"Dirección general de Joan: {constraints['description']}")
-    if constraints.get("style_reference"):
-        constraint_lines.append(f"Referencia estética/estructural: inspírate en el {constraints['style_reference']}.")
-    if constraints.get("material_limit"):
-        constraint_lines.append(f"Límite de materiales: {constraints['material_limit']}")
-    if constraints.get("mechanism_pref"):
-        constraint_lines.append(f"Preferencia de mecanismo: {constraints['mechanism_pref']}")
-    if constraints.get("avoid"):
-        constraint_lines.append(f"Cosas a evitar: {constraints['avoid']}")
-    constraints_txt = "\n".join(constraint_lines) if constraint_lines else "(sin restricciones específicas — usa tu criterio)"
-
-    # A concrete worked example (not just an abstract format description) —
-    # added specifically for llama3.2:1b's sake. The 3B model followed the
-    # abstract instruction reliably; 1B measured ~85% failure to even
-    # attempt the format (one run just echoed the prompt back verbatim) —
-    # few-shot examples are a well-known reliability fix for smaller
-    # instruction-following models where an abstract spec alone isn't
-    # enough. Kept short (well under the 200-token budget) so it doesn't
-    # eat into the actual generation's headroom.
-    system_prompt = (
-        "Eres LIRA, copiloto de diseño de armaduras tipo Iron Man de Joan, funcionando "
-        "en modo PILOTO AUTOMÁTICO: Joan te ha dado una dirección general y tú tomas "
-        "la decisión de diseño para una zona concreta de forma autónoma y confiada — "
-        "NO opciones múltiples, una única decisión. Responde EXCLUSIVAMENTE en este "
-        "formato exacto, sin texto adicional antes ni después, empezando tu respuesta "
-        "directamente con la palabra MATERIAL:\n"
-        "MATERIAL: <material principal>\n"
-        "MECANISMO: <mecanismo o partes móviles, o 'ninguno'>\n"
-        "ESTÉTICA: <color/acabado/rasgos distintivos>\n"
-        "RAZONAMIENTO: <2-4 frases explicando por qué, citando modelos anteriores "
-        "cuando aplique — si evitas deliberadamente algo de un modelo anterior, dilo "
-        "explícitamente y por qué>\n\n"
-        "Ejemplo de una respuesta correcta para la zona 'pecho':\n"
-        "MATERIAL: Placa de aluminio anodizado sobre base de kevlar\n"
-        "MECANISMO: Panel frontal abisagrado que se abre para acceso al reactor\n"
-        "ESTÉTICA: Rojo carmesí con líneas doradas, reactor circular centrado y visible\n"
-        "RAZONAMIENTO: El aluminio anodizado da rigidez sin el peso del acero del Model V. "
-        "El panel abisagrado facilita mantenimiento, algo que el Model VII no permitía."
-    )
-    # The reminder is folded in from the very first attempt (not just retries)
-    # — measured live: without it, llama3.2:1b fails the format on attempt 1
-    # ~100% of the time (echoes the prompt back), wasting a full ~60-70s call
-    # before the reminder-augmented retry that actually succeeds. Baking it
-    # in from the start roughly halves real per-zone latency.
-    user_prompt = (
-        "RECUERDA: tu respuesta debe empezar EXACTAMENTE con 'MATERIAL:' — "
-        "nada de saludos, nada de repetir esta pregunta, solo las 4 líneas "
-        "del formato pedido.\n\n"
-        f"Zona a diseñar: {zone_label}\n\n"
-        f"{constraints_txt}\n\n"
-        f"Modelos anteriores de Joan:\n{knowledge}\n\n"
-        f"Piezas registradas para esta zona:\n{parts}\n\n"
-        f"Otras zonas ya decididas en esta misma armadura (para coherencia):\n{other_zones_txt}"
-    )
-
-    fallback = {
-        "material": "", "mechanism": "", "aesthetic_notes": "",
-        "reasoning": "No he podido generar una decisión para esta zona ahora mismo — puedes rellenarla manualmente.",
-    }
-
-    logger.info("[AUTOPILOT] calling Ollama for zone=%s (model=%s, url=%s)",
-                zone, _AUTOPILOT_OLLAMA_MODEL, _AUTOPILOT_OLLAMA_GENERATE_URL)
-    # 200 tokens is enough for MATERIAL/MECANISMO/ESTÉTICA (each one short
-    # phrase) + RAZONAMIENTO capped at 2-4 sentences per the system prompt
-    # above — 350 was leaving headroom this content never actually used.
-    # One retry on a parse failure (same reinforced prompt both times) — 1B
-    # occasionally ignores the format instruction entirely even with the
-    # few-shot example + reminder; a second attempt at the same ~60s cost is
-    # far cheaper than falling back to an empty zone Joan has to fill by hand.
-    for attempt in (1, 2):
-        logger.info("[AUTOPILOT] calling Ollama for zone=%s attempt=%d (model=%s, url=%s)",
-                    zone, attempt, _AUTOPILOT_OLLAMA_MODEL, _AUTOPILOT_OLLAMA_GENERATE_URL)
-        raw = _autopilot_ollama_generate(system_prompt, user_prompt, max_tokens=200)
-        if not raw:
-            logger.warning("[AUTOPILOT] zone=%s attempt=%d — Ollama returned nothing usable", zone, attempt)
-            continue
-        logger.info("[AUTOPILOT] zone=%s attempt=%d — Ollama raw response (%d chars): %s",
-                    zone, attempt, len(raw), raw[:300])
-        m = _AUTOPILOT_ZONE_RE.search(raw)
-        if not m:
-            logger.warning("[AUTOPILOT] zone=%s attempt=%d — response didn't match expected format", zone, attempt)
-            continue
-        return {
-            "material": m.group("material").strip(),
-            "mechanism": m.group("mechanism").strip(),
-            "aesthetic_notes": m.group("aesthetic").strip(),
-            "reasoning": m.group("reasoning").strip(),
-        }
-
-    logger.warning("[AUTOPILOT] zone=%s — both attempts failed, using empty fallback", zone)
-    return fallback
-
-
-# Phase 4 — trigger phrases for voice enrollment. Deliberately coarse regex
-# (same style as intent_mod's own mode-switch/diamond-move detectors) since
-# this only needs to catch an explicit, deliberate request — false negatives
-# just mean Joan repeats herself, false positives would be far more
-# disruptive (an actual command misread as an enrollment request).
-_VOICE_ENROLL_RE = re.compile(
-    r"\b(aprende|reconoce|configura|activa|graba)\b.{0,20}"
-    r"\b(mi\s+voz|huella\s+de\s+voz|reconocimiento\s+de\s+voz|voz)\b",
-    re.IGNORECASE,
-)
 
 
 def dispatch_command(transcript: str, context: str | None = None,
@@ -2807,62 +2039,6 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
                 logger.warning("Could not emit diamond_move", exc_info=True)
             return
 
-        # ── ArmorOS: connect/disconnect to a suit? ───────────────────────────
-        # 'conéctate al modelo 8' / 'desconéctate' — sets a session-scoped
-        # context (core.intent_armor's _connected_model) so later bare light
-        # commands know which suit they refer to, without Joan naming it
-        # every time. Same early, silent-to-Groq shape as the mode-switch/
-        # diamond-move checks above.
-        armor_connect = armor_intent_mod._detect_armor_connect(transcript)
-        if armor_connect:
-            with personality_mod._personality_lock:
-                current_p = personality_mod._personality
-            if armor_connect == "connect":
-                armor_intent_mod.set_connected_model("model-8")
-                result = "Conectada al Modelo 8."
-            else:
-                armor_intent_mod.set_connected_model(None)
-                result = "Desconectada del Modelo 8."
-            # Phrased naturally through response._format_response, not
-            # spoken as a fixed string verbatim — same "no hardcoded
-            # confirmation replies" treatment eac524f already gave
-            # actions.py's pending_confirm and generate_schema (bug fix:
-            # this was a fresh copy of that exact anti-pattern, added this
-            # session for the ArmorOS feature without checking that
-            # precedent first).
-            confirm = response._format_response(result, transcript=transcript, personality=current_p)
-            logger.info("Jarvis: %s", confirm)
-            _say_for(current_p, confirm, cmd_start=cmd_start)
-            return
-
-        # ── ArmorOS: light/reactor on/off? ────────────────────────────────────
-        # 'enciende el reactor del modelo 8' (always works) or the bare
-        # 'enciende el reactor' (only once connected — see
-        # core.intent_armor._detect_armor_light's docstring). Sends the same
-        # BLE signal the app's Controlar ON/OFF buttons send
-        # (core/armor_light.py) — no firmware involved in adding this trigger.
-        armor_light_cmd = armor_intent_mod._detect_armor_light(transcript)
-        if armor_light_cmd:
-            with personality_mod._personality_lock:
-                current_p = personality_mod._personality
-            try:
-                import core.armor_light as armor_light_mod
-                if armor_light_cmd == "baliza":
-                    armor_light_mod.set_baliza()
-                    result = "Modo baliza activado."
-                else:
-                    armor_light_mod.set_light(armor_light_cmd == "on")
-                    result = "Reactor encendido." if armor_light_cmd == "on" else "Reactor apagado."
-            except Exception:
-                logger.warning("Could not set Modelo 8 light via BLE", exc_info=True)
-                result = "No se ha podido conectar con el Modelo 8 por bluetooth — puede que esté apagado o fuera de alcance."
-            # Same natural-phrasing treatment as the connect/disconnect
-            # block above — never a fixed string spoken verbatim.
-            confirm = response._format_response(result, transcript=transcript, personality=current_p)
-            logger.info("Jarvis: %s", confirm)
-            _say_for(current_p, confirm, cmd_start=cmd_start)
-            return
-
         # ── Voice enrollment request? (Phase 4) ──────────────────────────────
         # A deterministic short-circuit, same shape as the mode-switch/
         # diamond-move checks above — never reaches Groq. Kicks off
@@ -2902,23 +2078,23 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
             return
 
         # ── Determine current personality ────────────────────────────────────
-        # LIRA is the only personality (JARVIS/FRIDAY removed 2026-08-10) —
+        # HUGO is the only personality (JARVIS/FRIDAY removed 2026-08-10) —
         # nothing left to switch between, so the old "Personality switch?"
         # detection block that used to sit here is gone.
         with personality_mod._personality_lock:
             current_p = personality_mod._personality
 
         # ── Wake-word-only invocation ────────────────────────────────────────
-        # If the transcript is just "LIRA" with no follow-up command, give a
+        # If the transcript is just "HUGO" with no follow-up command, give a
         # brief ready-acknowledgment. Phrased naturally through
         # response._format_response rather than a fixed string (bug fix:
         # personality_mod._WAKE_ACK used to be spoken completely verbatim —
         # by far the most frequent single reply in the logs, and zero
         # character since it never touched the LLM at all). Not "sending a
         # bare wake word to Groq as a query" — the raw status below is a
-        # known fact, not the empty transcript itself; same distinction the
-        # ArmorOS confirmations above make. _format_response's own fallback
-        # returns the raw result verbatim on any Groq failure, so this still
+        # known fact, not the empty transcript itself. _format_response's
+        # own fallback returns the raw result verbatim on any Groq failure,
+        # so this still
         # degrades to a plain ack rather than raising.
         if personality_mod._WAKE_ONLY_RE.match(transcript):
             ack = response._format_response(
@@ -2933,9 +2109,9 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
         # Voice-only, and only for substantive utterances (the cheap
         # deterministic short-circuits above — mode switch, diamond move,
         # personality switch, bare wake-word ack — never pay the Ollama round
-        # trip). Answers: is Lira actually being addressed here ("Lira,
-        # ¿puedes hacer esto?") vs. merely mentioned ("Lira puede hacer
-        # esto.", "Creo que Lira debería aprender esto.") — or, for a
+        # trip). Answers: is Hugo actually being addressed here ("Hugo,
+        # ¿puedes hacer esto?") vs. merely mentioned ("Hugo puede hacer
+        # esto.", "Creo que Hugo debería aprender esto.") — or, for a
         # no-wake-word continuation inside the post-response context window,
         # is this really a continuation of the exchange vs. unrelated speech
         # the mic picked up. A fast local check (Ollama llama3.2:1b, regex
@@ -2955,7 +2131,7 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
 
         # ── Social reasoning gate (Phase 2 — general "should I speak?") ─────
         # Runs after the Phase 1 addressed/continuation check above (which
-        # only filters "was Lira's name actually meant for her"). This is
+        # only filters "was Hugo's name actually meant for her"). This is
         # the broader call: given the last ~30s of conversation, the active
         # HUD section, and the time, does it actually make sense to
         # intervene right now — same INTERVENIR/SILENCIO reasoning
@@ -3076,12 +2252,12 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
         logger.info("[LATENCY] T1_intent_detected t=+%.3fs intent=%s", time.monotonic() - cmd_start, intent)
 
         # ── Contextual panel — best-effort, before the reply is generated;
-        # never affects what LIRA actually says (see core.session._maybe_emit_panel).
+        # never affects what HUGO actually says (see core.session._maybe_emit_panel).
         session_mod._maybe_emit_panel(intent, transcript)
 
         # ── Tone — detected fresh from the raw transcript, injected into the
         # system prompt (see core.personalities.base._build_system_prompt) so
-        # LIRA adapts her delivery without a separate LLM call to classify
+        # HUGO adapts her delivery without a separate LLM call to classify
         # it. Feature-flagged: "neutral" (a real, already-supported value —
         # see _detect_tone's own default) is used verbatim when the flag is
         # off, so every downstream consumer of `tone` needs no None-handling
@@ -3089,7 +2265,7 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
         tone = intent_mod._detect_tone(transcript) if memory.is_feature_enabled("deteccion_tono") else "neutral"
         logger.debug("Tone=%s", tone)
 
-        # ── LIRA intuition — only for the open-ended conversational path
+        # ── HUGO intuition — only for the open-ended conversational path
         # (unknown / web_search), where a subtle personality flourish
         # actually fits; a deterministic reply like "sube el volumen" has
         # no business getting a philosophical aside about the hour. See
@@ -3099,12 +2275,12 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
         # Phase 4/5: skipped entirely for an unrestricted-memory turn only —
         # an unidentified speaker (restrict_memory) gets none of Joan's
         # personal patterns/habits/episodes surfaced back at them.
-        if current_p == "lira" and intent in ("unknown", "web_search") and not restrict_memory:
+        if current_p == "hugo" and intent in ("unknown", "web_search") and not restrict_memory:
             intuition = _build_intuition_context(transcript, tone)
             if intuition:
                 user_content = f"{user_content}\n\n{intuition}"
 
-            # LIRA internal criteria — Phase 2 (see _detect_internal_criterion's
+            # HUGO internal criteria — Phase 2 (see _detect_internal_criterion's
             # own docstring above). Same open-ended-path-only scope as
             # intuition just above: a deterministic reply has no business
             # carrying a 'CONTEXTO OPCIONAL' aside.
@@ -3112,14 +2288,14 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
             if criterion:
                 user_content = f"{user_content}\n\n{criterion}"
 
-            # LIRA active habits — Phase 3 (see _build_habits_context's own
+            # HUGO active habits — Phase 3 (see _build_habits_context's own
             # docstring above). Same open-ended-path-only scope as intuition
             # and internal criteria just above.
             habits_context = _build_habits_context()
             if habits_context:
                 user_content = f"{user_content}\n\n{habits_context}"
 
-            # LIRA social skills — Phase 4 (see _build_social_skills_context's
+            # HUGO social skills — Phase 4 (see _build_social_skills_context's
             # own docstring above). Same open-ended-path-only scope as
             # intuition/criteria/habits just above.
             skills_context = _build_social_skills_context()
@@ -3168,7 +2344,7 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
 
         if intent == "unknown":
             # ── Skill dispatch (see core/skill_dispatch.py) ─────────────────
-            # LIRA-only (same scope as intuition/criteria/habits above) —
+            # HUGO-only (same scope as intuition/criteria/habits above) —
             # skills/ is her capabilities layer, not a general JARVIS
             # feature. Explicit path first: the user names a skill
             # directly (matches one of its `triggers` phrases) — deterministic,
@@ -3177,7 +2353,7 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
             # below if no skill matched, or if the matched skill's
             # execute() failed.
             skill_reply = None
-            if current_p == "lira":
+            if current_p == "hugo":
                 explicit_skill = skill_dispatch.detect_explicit_skill_request(transcript)
                 if explicit_skill:
                     raw_result = skill_dispatch.run_skill(explicit_skill, transcript, {"personality": current_p})
@@ -3194,7 +2370,7 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
             if skill_reply:
                 reply = skill_reply
             else:
-                skills_context = skill_dispatch.build_skills_awareness_context() if current_p == "lira" else None
+                skills_context = skill_dispatch.build_skills_awareness_context() if current_p == "hugo" else None
                 augmented_content = f"{user_content}\n\n{skills_context}" if skills_context else user_content
                 messages = _augment_with_user_model(_augment_with_agenda_and_health(
                     session_mod._get_messages_with_history(
@@ -3210,7 +2386,7 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
                     reply, already_spoken = _stream_and_speak_reply(current_p, messages, cmd_start)
                 else:
                     reply = groq_client._groq_complete(messages)
-                # Implicit path — LIRA decided on her own a skill fits (see
+                # Implicit path — HUGO decided on her own a skill fits (see
                 # build_skills_awareness_context's [USAR_SKILL: nombre]
                 # convention). Her marker line is never meant for Joan, so it
                 # never reaches him either way — but the skill's raw result
@@ -3253,7 +2429,7 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
         elif intent in ("generate_summary", "generate_schema"):
             # Structured-content generation (ESTUDIO -> RESÚMENES/ESQUEMAS).
             # generate_summary() still makes its own Groq call internally
-            # and returns LIRA's FINAL confirmation reply directly (Level 3
+            # and returns HUGO's FINAL confirmation reply directly (Level 3
             # propose-then-confirm — see its own docstring) — untouched.
             # generate_schema() (Level 1 now — see its own docstring) only
             # returns a raw result; phrased naturally here via the same
@@ -3272,7 +2448,7 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
                     schema_result, transcript=transcript, personality=current_p, tone=tone,
                 )
         elif intent == "create_task":
-            # Same "makes its own Groq call internally, returns LIRA's
+            # Same "makes its own Groq call internally, returns HUGO's
             # FINAL reply directly" treatment as generate_summary/
             # generate_schema just above.
             reply = create_task_from_goal(parameters.get("goal", ""))
@@ -3283,7 +2459,7 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
             # cryptic empty reply.
             import core.code_engine_dispatch as code_engine_dispatch
             report = code_engine_dispatch.review(parameters.get("topic", ""))
-            reply = report or "El código de LIRA está desactivado ahora mismo, así que no puedo revisarlo."
+            reply = report or "El código de HUGO está desactivado ahora mismo, así que no puedo revisarlo."
         elif intent == "code_engine_task":
             # Fire-and-forget — see core.code_engine_dispatch.dispatch_module_task()'s
             # own docstring for why this never blocks on the goal itself
@@ -3297,7 +2473,7 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
             reply = (
                 f"Vale, {verb} el módulo de {topic.lower()}. Te aviso cuando esté listo."
                 if started else
-                "El código de LIRA está desactivado ahora mismo, así que no puedo hacer eso."
+                "El código de HUGO está desactivado ahora mismo, así que no puedo hacer eso."
             )
         elif intent in actions._NO_GROQ_INTENTS:
             # Volume/open-app/calendar-write/calendar-confirm: deterministic
@@ -3313,7 +2489,7 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
         # Phase 5 — graceful degradation: confidence just dropped from a
         # recently-high reading (see _identify_speaker_multi_factor). Never
         # locks Joan out — just a brief, natural check prepended to whatever
-        # LIRA was already going to say, per spec item 4's exact example.
+        # HUGO was already going to say, per spec item 4's exact example.
         if identity_degraded:
             reply = "¿Estás bien? Suenas diferente. " + reply
 
@@ -3344,11 +2520,11 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
             except Exception:
                 logger.warning("Linguistic fingerprint live update failed (non-critical)", exc_info=True)
         reminders._maybe_store_reminder(transcript, reply, current_p)
-        # LIRA-only pattern tracking (see _build_intuition_context above) —
+        # HUGO-only pattern tracking (see _build_intuition_context above) —
         # recorded AFTER the reply, using this turn's own transcript/tone,
         # so a pattern only ever gets built from turns that already
         # happened, never tautologically from the one currently in flight.
-        if current_p == "lira":
+        if current_p == "hugo":
             _record_turn_for_patterns(transcript, tone, reply)
 
         # Phase 6 — secret protection, second independent layer (the first
@@ -3370,10 +2546,9 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
 
         _log_reply_as_bubbles(reply)
         # llm_done_mono is captured HERE — the instant the reply text is
-        # finalized — and threaded into _say_for() so whichever TTS engine
-        # ends up speaking it can measure "time from LLM response complete
-        # to first audio output" (see core.voice._emit_tts_first_audio) for
-        # the chat's timing display.
+        # finalized — and threaded into _say_for(), though currently unused
+        # there (see _say_for's own docstring — it used to measure "time to
+        # first audio output" for Kokoro/XTTS, removed along with those).
         llm_done_mono = time.monotonic()
         # Emitted AFTER the "Jarvis: %s" log line above (which is what
         # creates this reply's chat bubble on the frontend via the

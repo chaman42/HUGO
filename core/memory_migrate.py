@@ -21,7 +21,7 @@ import os
 import re
 
 from core.memory_store import (
-    MEMORY_LIRA_PATH,
+    MEMORY_HUGO_PATH,
     MEMORY_SHARED_PATH,
     _CONTENT_TYPES,
     _load_fact_file,
@@ -153,7 +153,7 @@ def run_memory_v2_migration() -> None:
 
     total_migrated = 0
     total_candidates = 0
-    for path in (MEMORY_SHARED_PATH, MEMORY_LIRA_PATH):
+    for path in (MEMORY_SHARED_PATH, MEMORY_HUGO_PATH):
         migrated, candidates = _migrate_file(path, _ollama_generate)
         total_migrated += migrated
         total_candidates += candidates

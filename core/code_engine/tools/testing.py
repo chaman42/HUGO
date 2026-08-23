@@ -23,8 +23,8 @@ logger = logging.getLogger("code_engine")
 _OUTPUT_CAP = 5000
 
 # Deliberately NOT core.code_engine._CODE_CONTEXT — that system prompt is
-# specifically about generating a skills/ LiraSkill module file, which
-# would bias suggest_fix() toward LIRA's own module shape instead of
+# specifically about generating a skills/ HugoSkill module file, which
+# would bias suggest_fix() toward HUGO's own module shape instead of
 # whatever arbitrary project's own conventions actually apply.
 _FIX_CONTEXT = (
     "Eres un asistente que analiza fallos de pruebas de software y sugiere "

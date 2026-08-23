@@ -95,7 +95,7 @@ def _proactivity_ollama_generate(system: str, user: str, max_tokens: int = 150) 
 def _proactive_blocked() -> bool:
     """True while a proactive message would interrupt — command processing
     or active/cooling-down TTS. Checked before every proactive send,
-    spontaneous or reminder, so LIRA never talks over Joan or herself."""
+    spontaneous or reminder, so HUGO never talks over Joan or herself."""
     import core.commands as commands
     if commands._dispatch_busy.is_set():
         return True
@@ -184,23 +184,6 @@ def _gather_proactivity_context() -> str:
     except Exception:
         logger.debug("Proactivity context: reminders lookup failed", exc_info=True)
 
-    # Bug Hunter — soft signal only. 'critica' findings are deliberately
-    # excluded here since they're announced immediately and unconditionally
-    # by core.bughunter_routes._announce_critical_findings (same two-tier
-    # design reminders.py itself uses — see that function's docstring),
-    # so this would double-mention them. Everything else is genuinely a
-    # "by the way" candidate, same weight as investigations above — Joan
-    # asked for exactly this split (2026-08-18).
-    try:
-        from core import bughunter_routes as bh
-        findings = bh._load_json_array(bh._FINDINGS_PATH)
-        pending_findings = [f for f in findings if f.get("status") == "nuevo" and f.get("severity") != "critica"]
-        if pending_findings:
-            titles = ", ".join(f.get("title", "") for f in pending_findings[:5])
-            lines.append(f"Bug Hunter tiene {len(pending_findings)} hallazgo(s) nuevo(s) sin revisar: {titles}.")
-    except Exception:
-        logger.debug("Proactivity context: Bug Hunter findings lookup failed", exc_info=True)
-
     return "\n".join(lines)
 
 
@@ -248,12 +231,12 @@ def _maybe_send_proactive_message() -> None:
             current_p = personality_mod._personality
         display_name = personality_mod.PERSONALITIES[current_p]["display_name"].replace(" ", "")
 
-        # Compact, not the full lira.py character prompt — this call goes to a
+        # Compact, not the full hugo.py character prompt — this call goes to a
         # tiny local model (llama3.2:1b, see _PROACTIVITY_OLLAMA_MODEL above),
         # which follows a short, concrete voice description far better than a
         # long one. Previously this was generic ("en tu propio tono") with no
         # actual voice content, which is exactly backwards for a spontaneous
-        # comment — it's the one place LIRA speaks with nobody prompting her,
+        # comment — it's the one place HUGO speaks with nobody prompting her,
         # so it needs her voice MORE, not less.
         system_prompt = (
             f"Eres {display_name}, la asistente de Joan. No estás esperando que te hablen — estás "
@@ -323,7 +306,7 @@ def _proactive_loop() -> None:
     check (see module comments above). Started at the bottom of this file,
     same daemon-thread pattern used elsewhere here
     (core.session._compress_oldest_history) and in core/voice.py
-    (_tts_worker, _prewarm_kokoro)."""
+    (_tts_worker)."""
     import core.commands as commands
     from core import reminders
     from core import session as session_mod
@@ -446,7 +429,7 @@ def _initiative_loop() -> None:
 
 # ---------------------------------------------------------------------------
 # Sleep phase watcher — pushes near-real-time 'sleep_phase_update' socket
-# events to NÚCLEO LIRA's Estado tab (see core/server.py's
+# events to NÚCLEO HUGO's Estado tab (see core/server.py's
 # emit_sleep_phase_update()) while a continuous-sleep subprocess is alive.
 #
 # Continuous sleep runs as a genuine CHILD PROCESS (see core/sleep_control.py)
@@ -499,280 +482,3 @@ def _sleep_phase_watch_loop() -> None:
         except Exception:
             logger.warning("Sleep phase watch failed (non-critical)", exc_info=True)
 
-
-# ---------------------------------------------------------------------------
-# BLACKOUT WATCH — added 2026-08-22. Detects a real household power outage
-# (not this Mac's own AC/battery switch, which is meaningless here — it's a
-# MacBook and would just ride it out silently) by pinging one specific mesh
-# WiFi node, not the household's main gateway. The main Movistar router sits
-# on a SAI (UPS), so it — and therefore this Mac's own WiFi — stays up
-# through most outages; pinging it would never catch a real blackout. The
-# node at _BLACKOUT_PING_HOST (10.74.1.66) was picked instead 2026-08-22
-# specifically because it is NOT on the SAI and, of the two non-SAI
-# candidates found, had by far the cleanest/lowest-latency link to this Mac
-# (~9ms avg / 15.5ms stddev vs ~38ms/60ms for the other candidate) — see
-# project memory for the full identification process.
-#
-# Detection and response are on fully independent paths: ping is over the
-# (SAI-backed, still-alive) household WiFi, while the actual response goes
-# out over direct Bluetooth to the Modelo 8 reactor chip — no WiFi/mains
-# needed for that hop at all, so it still works even if the whole LAN were
-# to go down. Both directions are debounced (_BLACKOUT_CONFIRM_TICKS
-# consecutive pings) so a single dropped packet or the node rebooting for
-# an unrelated reason doesn't trigger a false alarm.
-# ---------------------------------------------------------------------------
-_BLACKOUT_PING_HOST = "10.74.1.66"
-_BLACKOUT_TICK_SECONDS = 12
-_BLACKOUT_CONFIRM_TICKS = 3        # ~36s of consecutive failures/successes before acting either way
-_BLACKOUT_PING_TIMEOUT_S = 2.0
-
-
-def _ping_host(host: str, timeout_s: float) -> bool:
-    import subprocess
-    try:
-        result = subprocess.run(
-            ["ping", "-c", "1", "-W", str(int(timeout_s * 1000)), host],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=timeout_s + 1,
-        )
-        return result.returncode == 0
-    except Exception:
-        return False
-
-
-def _blackout_announce(result: str) -> None:
-    """Same _format_response → _speak_unprompted pattern as reminders.py —
-    never a hardcoded string spoken verbatim, see 'No Hardcoded Replies'
-    memory."""
-    from core import personality as personality_mod
-    from core import response as response_mod
-    with personality_mod._personality_lock:
-        current_p = personality_mod._personality
-    spoken = response_mod._format_response(result, personality=current_p)
-    _speak_unprompted(current_p, spoken)
-
-
-def _handle_blackout_detected() -> None:
-    logger.warning("Blackout watch: %s unreachable — likely a real power outage, turning on the reactor.", _BLACKOUT_PING_HOST)
-    try:
-        import core.armor_light as armor_light_mod
-        armor_light_mod.set_light(True)
-        _blackout_announce("Parece que se ha ido la luz. He encendido el reactor del modelo 8.")
-    except Exception:
-        logger.warning("Blackout watch: could not turn on the reactor over BLE", exc_info=True)
-        _blackout_announce("Parece que se ha ido la luz — he intentado encender el reactor, pero no he podido conectar con el modelo 8 por bluetooth.")
-
-
-def _handle_blackout_restored() -> None:
-    logger.info("Blackout watch: %s reachable again — power restored, turning off the reactor.", _BLACKOUT_PING_HOST)
-    try:
-        import core.armor_light as armor_light_mod
-        armor_light_mod.set_light(False)
-        _blackout_announce("Ha vuelto la luz. He apagado el reactor del modelo 8.")
-    except Exception:
-        logger.warning("Blackout watch: could not turn off the reactor over BLE", exc_info=True)
-        _blackout_announce("Ha vuelto la luz, aunque no he podido apagar el reactor por bluetooth.")
-
-
-def _blackout_watch_loop() -> None:
-    consecutive_down = 0
-    consecutive_up = 0
-    blackout_active = False
-    while True:
-        time.sleep(_BLACKOUT_TICK_SECONDS)
-        try:
-            reachable = _ping_host(_BLACKOUT_PING_HOST, _BLACKOUT_PING_TIMEOUT_S)
-            if reachable:
-                consecutive_up += 1
-                consecutive_down = 0
-            else:
-                consecutive_down += 1
-                consecutive_up = 0
-
-            if not blackout_active and consecutive_down >= _BLACKOUT_CONFIRM_TICKS:
-                blackout_active = True
-                _handle_blackout_detected()
-            elif blackout_active and consecutive_up >= _BLACKOUT_CONFIRM_TICKS:
-                blackout_active = False
-                _handle_blackout_restored()
-        except Exception:
-            logger.warning("Blackout watch tick failed (non-critical)", exc_info=True)
-
-
-# ---------------------------------------------------------------------------
-# BUG HUNTER — Auto Mode (Phase 3, see "Bug Hunter Backend Plan" memory).
-# While data/bughunter_state.json's "auto_mode" is true, cycles through
-# data/bughunter_scope.json on its own, spaced by "auto_mode_interval_hours"
-# (a tunable number, not hardcoded — see core/bughunter_routes.py's module
-# docstring), calling core.bughunter_routes.start_scan() — the SAME function
-# the Scan tab's manual "Iniciar escaneo" button calls, so this is not a
-# separate scanning code path with its own rules: same non-destructive
-# checks (core/bughunter_scan.py), same _scan_lock (one scan at a time,
-# manual or auto), same dedup, same "never auto-submits a finding" — see
-# the "Bug Hunter Constraints" memory. This loop's only job is deciding
-# WHEN and WHICH Scope target, never HOW to scan it.
-#
-# Deliberately paced FASTER than every other loop in this file — Joan was
-# explicit (2026-08-18) that turning Auto Mode on is a "go now" signal, not
-# an ambient background behavior like the proactive/initiative loops above,
-# which are intentionally unhurried. A short default interval plus a short
-# tick just means Scope gets worked through quickly once enabled; it does
-# NOT relax the non-destructive/read-only rule on any single target, which
-# is enforced entirely inside core/bughunter_scan.py regardless of cadence.
-#
-# Rotation state (auto_mode_last_target_id/auto_mode_last_tick) lives in
-# bughunter_state.json, not here — this loop is stateless between ticks by
-# design, same as every other loop in this file; a process restart just
-# resumes the rotation from whatever's on disk.
-# ---------------------------------------------------------------------------
-
-_BUGHUNTER_TICK_SECONDS = 60  # 1 min — checks fast so a just-enabled Auto Mode doesn't sit idle waiting for the next tick
-
-# Program discovery (searching for new candidate bounty programs to
-# SUGGEST — never auto-added to Scope) runs on its own, much slower
-# cadence than scan rotation above: it calls a real search API
-# (core.tools_search.search_web(), Serper primary) and there's no reason
-# to burn that budget every 72s the way target scanning does.
-_BUGHUNTER_DISCOVERY_INTERVAL_SECONDS = 3600  # 1 hour
-
-
-def _bughunter_maybe_discover_programs(bh, state: dict) -> None:
-    """Independent of _scan_lock/current_activity below — discovery never
-    touches a Scope target, it only searches the web for candidates to
-    list in Programas' Sugerencias. Re-loads and saves state under
-    bh._data_lock rather than mutating the caller's `state` in place (the
-    web search below can take several seconds, so re-reading afterward
-    avoids clobbering a concurrent scope/suggestion write); the caller's
-    own copy of `state` stays valid for the rest of the tick regardless,
-    since nothing here touches the fields the scan-rotation logic reads
-    (current_activity/auto_mode_last_tick/auto_mode_last_target_id)."""
-    last = state.get("auto_mode_last_discovery")
-    if last:
-        try:
-            last_dt = datetime.datetime.fromisoformat(last)
-            elapsed = (datetime.datetime.now(datetime.timezone.utc) - last_dt).total_seconds()
-            if elapsed < _BUGHUNTER_DISCOVERY_INTERVAL_SECONDS:
-                return
-        except Exception:
-            pass  # unparseable timestamp — treat as "due"
-
-    from core import bughunter_scan
-    existing_urls = {s.get("url") for s in bh._load_json_array(bh._SUGGESTIONS_PATH) if s.get("url")}
-    try:
-        new_suggestions = bughunter_scan.discover_program_suggestions(existing_urls)
-    except Exception:
-        logger.warning("Bug Hunter program discovery failed (non-critical)", exc_info=True)
-        new_suggestions = []
-
-    with bh._data_lock:
-        state = bh._load_state()
-        state["auto_mode_last_discovery"] = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
-        bh._save_json(bh._STATE_PATH, state)
-
-    if not new_suggestions:
-        return
-
-    now = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
-    for s in new_suggestions:
-        s["id"] = uuid.uuid4().hex[:12]
-        s["status"] = "pendiente"
-        s["discovered_at"] = now
-
-    # Re-read `existing` here (not the pre-search snapshot above) so a
-    # dismiss/promote that landed during the slow web-search calls above
-    # isn't silently reverted by this write — see _data_lock's docstring
-    # in core.bughunter_routes for the race this closes.
-    with bh._data_lock:
-        existing = bh._load_json_array(bh._SUGGESTIONS_PATH)
-        existing.extend(new_suggestions)
-        bh._save_json(bh._SUGGESTIONS_PATH, existing)
-
-        state = bh._load_state()
-        bh._log_activity(state, f"{len(new_suggestions)} programa(s) sugerido(s) encontrados — revisar en Programas")
-        bh._save_json(bh._STATE_PATH, state)
-    bh._emit_updated()
-
-
-def _bughunter_auto_tick() -> None:
-    from core import bughunter_routes as bh
-
-    state = bh._load_state()
-    if not state.get("auto_mode"):
-        return
-
-    _bughunter_maybe_discover_programs(bh, state)
-
-    if state.get("current_activity"):
-        return  # a scan (manual or auto) is already running — try again next tick
-
-    interval_hours = state.get("auto_mode_interval_hours") or 4
-    last_tick = state.get("auto_mode_last_tick")
-    if last_tick:
-        try:
-            last_dt = datetime.datetime.fromisoformat(last_tick)
-            elapsed = (datetime.datetime.now(datetime.timezone.utc) - last_dt).total_seconds()
-            if elapsed < interval_hours * 3600:
-                return
-        except Exception:
-            pass  # unparseable timestamp — treat as "due", same as never having run
-
-    scope = bh._load_json_array(bh._SCOPE_PATH)
-    if not scope:
-        return  # auto mode is on but Scope is empty — nothing to do until Joan adds a target
-
-    ids = [t.get("id") for t in scope]
-    last_id = state.get("auto_mode_last_target_id")
-    next_idx = (ids.index(last_id) + 1) % len(ids) if last_id in ids else 0
-    target = scope[next_idx]
-
-    # Recorded here, before start_scan() — even if the lock is unexpectedly
-    # held (shouldn't happen given the current_activity check above, but a
-    # manual scan could theoretically slip in between the two checks), the
-    # rotation still advances so auto mode can't get stuck retrying the
-    # same target forever.
-    state["auto_mode_last_target_id"] = target.get("id")
-    state["auto_mode_last_tick"] = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
-    bh._save_json(bh._STATE_PATH, state)
-
-    ok, message = bh.start_scan(target)
-    logger.info("Bug Hunter auto-mode tick — %s: %s", target.get("name"), message)
-
-
-def _bughunter_auto_loop() -> None:
-    """Background thread — same daemon-thread + hot-reload dedup pattern as
-    every other loop in this file (see the threading.enumerate() guard at
-    the bottom)."""
-    while True:
-        try:
-            _bughunter_auto_tick()
-        except Exception:
-            logger.warning("Bug Hunter auto-mode tick failed (non-critical)", exc_info=True)
-        time.sleep(_BUGHUNTER_TICK_SECONDS)
-
-
-# Started at import time — runs for the lifetime of the process (i.e. "while
-# jarvis.py is active"), same pattern as core/voice.py's _tts_worker and
-# _prewarm_kokoro daemon threads.
-#
-# Bug fix (duplicate proactive messages): jarvis.py's watchdog-based file
-# watcher calls importlib.reload() on core/commands.py whenever it changes
-# on disk (active during development) — this module is not itself part of
-# that hot-reload map, so its own body only ever runs once per process
-# regardless; the threading.enumerate() guard below is kept anyway as cheap,
-# harmless insurance.
-if not any(t.name == "proactive-loop" for t in threading.enumerate()):
-    threading.Thread(target=_proactive_loop, daemon=True, name="proactive-loop").start()
-
-if not any(t.name == "reflective-loop" for t in threading.enumerate()):
-    threading.Thread(target=_reflective_loop, daemon=True, name="reflective-loop").start()
-
-if not any(t.name == "sleep-phase-watch" for t in threading.enumerate()):
-    threading.Thread(target=_sleep_phase_watch_loop, daemon=True, name="sleep-phase-watch").start()
-
-if not any(t.name == "initiative-loop" for t in threading.enumerate()):
-    threading.Thread(target=_initiative_loop, daemon=True, name="initiative-loop").start()
-
-if not any(t.name == "bughunter-auto-loop" for t in threading.enumerate()):
-    threading.Thread(target=_bughunter_auto_loop, daemon=True, name="bughunter-auto-loop").start()
-
-if not any(t.name == "blackout-watch-loop" for t in threading.enumerate()):
-    threading.Thread(target=_blackout_watch_loop, daemon=True, name="blackout-watch-loop").start()

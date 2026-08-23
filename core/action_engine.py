@@ -253,7 +253,7 @@ class ActionEngine:
         self, result: ActionResult, judgment: JudgmentResult | None, *,
         background: bool, action: ProposedAction | None = None,
     ) -> None:
-        """How LIRA tells Joan about an 'act' outcome — the only decision
+        """How HUGO tells Joan about an 'act' outcome — the only decision
         that ever reaches here (suggest/ask are queued directly by
         core.initiative.run_proactive_cycle, never executed). A failed
         proactive (implicit) action stays completely silent, per spec —
@@ -430,7 +430,7 @@ def _tool_task_engine(action: ProposedAction) -> ActionResult:
 
     from core.task_engine import task_engine
     task_id = task_engine.create_task(
-        goal=action.description, steps=[action.description], priority=2, created_by="lira",
+        goal=action.description, steps=[action.description], priority=2, created_by="hugo",
     )
     return ActionResult(action_id="", success=True, output=task_id, tool_used="task_engine")
 
@@ -443,7 +443,7 @@ def _tool_subagent_manager(action: ProposedAction) -> ActionResult:
     logic here."""
     from core.task_engine import task_engine
     task_id = task_engine.create_task(
-        goal=action.description, steps=[action.description], priority=3, created_by="lira",
+        goal=action.description, steps=[action.description], priority=3, created_by="hugo",
     )
     return ActionResult(action_id="", success=True, output=task_id, tool_used="subagent_manager")
 

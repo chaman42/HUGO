@@ -1,16 +1,16 @@
 #!/bin/bash
 #
-# rebuild_app.sh — one-command rebuild + reinstall of LIRA.app from current
+# rebuild_app.sh — one-command rebuild + reinstall of HUGO.app from current
 # source (git pull -> bump ui/sw.js cache key & push -> npm run build ->
-# replace /Applications/LIRA.app).
+# replace /Applications/HUGO.app).
 #
 # NOTE: whenever this script actually rebuilds (i.e. doesn't hit one of the
 # early-exit guards below), it commits and pushes to origin/main on its own
 # — see the "Cache bust" step. That's a real, permanent commit each time,
 # not just a local edit.
 #
-# Bulletproofing (LIRA_FORCE_UPDATE=1, the "Actualizar Sistema" button):
-# every guard below that can short-circuit the run — connectivity, "LIRA is
+# Bulletproofing (HUGO_FORCE_UPDATE=1, the "Actualizar Sistema" button):
+# every guard below that can short-circuit the run — connectivity, "HUGO is
 # running", "already built this commit" — is gated so FORCE bypasses ALL of
 # them unconditionally. A forced run either completes the full
 # pull/bump/build/install chain or fails LOUDLY via fail() (logged, exit 1,
@@ -21,7 +21,7 @@
 #
 # Used two ways:
 #   - Manually from Terminal: ~/Desktop/JarvisLite/scripts/rebuild_app.sh
-#   - Automatically every 6 hours by the com.joan.lira.autoupdate LaunchAgent
+#   - Automatically every 6 hours by the com.joan.hugo.autoupdate LaunchAgent
 #
 # IMPORTANT: never `cd` into the project tree. A launchd-invoked process can
 # hit a macOS TCC "Desktop Folder" permission wall doing that — this project
@@ -51,8 +51,8 @@ export PATH="/usr/local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
 
 REPO="$HOME/Desktop/JarvisLite"
 ELECTRON_DIR="$REPO/electron"
-BUILT_APP="$ELECTRON_DIR/dist/mac-universal/LIRA.app"
-INSTALLED_APP="/Applications/LIRA.app"
+BUILT_APP="$ELECTRON_DIR/dist/mac-universal/HUGO.app"
+INSTALLED_APP="/Applications/HUGO.app"
 # The commit hash last successfully INSTALLED to $INSTALLED_APP — written
 # only at the very end, after every prior step (pull, cache bust, build,
 # install) has confirmed success. Lives in electron/ (gitignored — see
@@ -88,7 +88,7 @@ fail() {
 }
 
 FORCED=false
-[ "${LIRA_FORCE_UPDATE:-0}" = "1" ] && FORCED=true
+[ "${HUGO_FORCE_UPDATE:-0}" = "1" ] && FORCED=true
 
 log "rebuild_app.sh starting (forced=$FORCED)"
 
@@ -96,7 +96,7 @@ log "rebuild_app.sh starting (forced=$FORCED)"
 # Skipped when forced (the button) — same "never let the button no-op"
 # reasoning as every other guard in this script (see the module comment
 # above). 'auto_update_enabled' (Ajustes -> 'Auto-actualización') lets
-# Joan turn off the unattended 6-hourly com.joan.lira.autoupdate
+# Joan turn off the unattended 6-hourly com.joan.hugo.autoupdate
 # LaunchAgent run specifically, without touching the manual "Actualizar
 # Sistema" button at all. Read directly from disk rather than via
 # core.memory_flags — this script runs as its own process, independent of
@@ -122,12 +122,12 @@ fi
 # --- Concurrency lock ---------------------------------------------------
 # Bug fix (root cause of "update button still not working reliably"): nothing
 # previously stopped two rebuild_app.sh instances from running at once — e.g.
-# the com.joan.lira.autoupdate LaunchAgent fires every 6h (StartInterval,
+# the com.joan.hugo.autoupdate LaunchAgent fires every 6h (StartInterval,
 # unconditionally, regardless of what else is happening) completely
 # independently of the "Actualizar Sistema" button. If both land at the same
 # moment, they'd race on the same `git stash`/`pull`/`commit`/`push` sequence
 # and — worse — on `rm -rf "$INSTALLED_APP/Contents"` + `cp -R`, which can
-# leave /Applications/LIRA.app half-overwritten and broken. macOS has no
+# leave /Applications/HUGO.app half-overwritten and broken. macOS has no
 # built-in `flock` (that's Linux-only), so this uses `mkdir` as the lock
 # primitive instead — directory creation is atomic on every filesystem this
 # app runs on, so it's a portable, dependency-free mutex.
@@ -192,15 +192,15 @@ if [ "$FORCED" = false ] && ! curl -s --max-time 5 -o /dev/null https://github.c
 fi
 
 # --- Don't disturb a session that's actively running ------------------------
-# Skipped when LIRA_FORCE_UPDATE=1 (set by launcher.py's POST /api/update,
-# i.e. the "Actualizar LIRA" button) — that's an explicit, user-initiated
+# Skipped when HUGO_FORCE_UPDATE=1 (set by launcher.py's POST /api/update,
+# i.e. the "Actualizar HUGO" button) — that's an explicit, user-initiated
 # request made from inside the very session being updated, where "reinicia
 # la app" is the whole point. Replacing Contents/ under a running process is
 # safe on macOS/Unix (the running binary keeps executing from its already-
 # mapped pages via unlink-while-open semantics; only the next launch sees the
 # new files). The unattended 6-hourly LaunchAgent run leaves this check on.
-if [ "$FORCED" = false ] && pgrep -f "$INSTALLED_APP/Contents/MacOS/LIRA" >/dev/null 2>&1; then
-    log "LIRA is currently running — skipping this run to avoid disrupting an active session"
+if [ "$FORCED" = false ] && pgrep -f "$INSTALLED_APP/Contents/MacOS/HUGO" >/dev/null 2>&1; then
+    log "HUGO is currently running — skipping this run to avoid disrupting an active session"
     exit 0
 fi
 
@@ -234,7 +234,7 @@ fi
 # Bug fix: a real incident (2026-07-26) traced editing-session file
 # corruption directly to this exact stash/pull dance below — it stashed a
 # live Claude Code session's in-progress, uncommitted source edits
-# (git can't tell those apart from the running LIRA app's own data/*.json
+# (git can't tell those apart from the running HUGO app's own data/*.json
 # writes, which is the only case this stash was ever designed for), then
 # the restore failed (see invariant 2 above), leaving the edited files
 # reverted to their last-committed state — indistinguishable from a plain
@@ -244,24 +244,24 @@ fi
 # Claude.app paths).
 #
 # Deliberately checked UNCONDITIONALLY — NOT gated behind
-# `[ "$FORCED" = false ]` like the connectivity/"LIRA running" guards
+# `[ "$FORCED" = false ]` like the connectivity/"HUGO running" guards
 # above, unlike every other guard in this script. Those exist to avoid a
 # pointless no-op during an idle period; this one exists to avoid data
-# loss, and LIRA_FORCE_UPDATE=1 (the "Actualizar Sistema" button) carries
+# loss, and HUGO_FORCE_UPDATE=1 (the "Actualizar Sistema" button) carries
 # the exact same stash risk as the unattended timer if a Claude Code
 # session happens to be active — there's no version of "force" that makes
 # stashing someone's live edits safe. A forced run just fails to no-op
 # this one time; the alternative is silently reverting active work.
 #
-# LIRA_SKIP_CLAUDE_GUARD=1 is the one deliberate exception: it's set only
+# HUGO_SKIP_CLAUDE_GUARD=1 is the one deliberate exception: it's set only
 # when the user re-confirms through a second, explicit "a Claude Code
 # session is active, force anyway?" dialog (see the button's second
 # confirm modal in ui/index.html / ui/app.js) — i.e. the user has already
 # been told about the exact stash risk this guard exists for and chose to
-# accept it for this one run, same as LIRA_FORCE_UPDATE's own confirm
-# modal already does for the ordinary "LIRA will restart" risk.
+# accept it for this one run, same as HUGO_FORCE_UPDATE's own confirm
+# modal already does for the ordinary "HUGO will restart" risk.
 if pgrep -f 'claude' >/dev/null 2>&1; then
-    if [ "${LIRA_SKIP_CLAUDE_GUARD:-0}" = "1" ]; then
+    if [ "${HUGO_SKIP_CLAUDE_GUARD:-0}" = "1" ]; then
         log "Claude Code session active — proceeding anyway (user confirmed override)"
     else
         log "Skipped: Claude Code session active"
@@ -334,7 +334,7 @@ fi
 # --- Staleness check: has the INSTALLED app actually been built from HEAD? -
 # Bug fix: this used to skip the rebuild whenever `git pull` reported "Already
 # up to date". That only tells you local == origin — it says nothing about
-# whether /Applications/LIRA.app was ever built from that commit. In this
+# whether /Applications/HUGO.app was ever built from that commit. In this
 # workflow, commits routinely land in this exact working tree via `git commit
 # && git push` run directly here (not fetched from elsewhere), so local is
 # essentially always "up to date" with origin even when dozens of unbuilt
@@ -344,13 +344,13 @@ CURRENT_COMMIT=$(git rev-parse HEAD)
 LAST_BUILT_COMMIT=""
 [ -f "$APP_VERSION_FILE" ] && LAST_BUILT_COMMIT=$(cat "$APP_VERSION_FILE")
 
-# LIRA_FORCE_UPDATE=1 (the manual "Actualizar Sistema" button) always
+# HUGO_FORCE_UPDATE=1 (the manual "Actualizar Sistema" button) always
 # bypasses this check unconditionally, same as the guards above — the whole
 # point of "bulletproof" is that clicking the button always performs a real
 # rebuild, never a no-op, regardless of what we think is already installed.
 if [ "$FORCED" = false ] && [ -n "$LAST_BUILT_COMMIT" ] && [ "$CURRENT_COMMIT" = "$LAST_BUILT_COMMIT" ]; then
     log "installed app already built from current commit ($CURRENT_COMMIT) — nothing to rebuild"
-    echo "LIRA actualizada correctamente"
+    echo "HUGO actualizada correctamente"
     exit 0
 fi
 log "Rebuild needed — current=$CURRENT_COMMIT last_installed=${LAST_BUILT_COMMIT:-none}"
@@ -406,7 +406,7 @@ log "Build produced a valid app bundle at $BUILT_APP"
 
 # --- Install --------------------------------------------------------------
 # /Applications itself isn't writable by this user account (not in the admin
-# group), but the LIRA.app directory already inside it is, since it was
+# group), but the HUGO.app directory already inside it is, since it was
 # installed by this same user — so replace Contents/ in place rather than
 # swapping the top-level bundle.
 log "Installing to ${INSTALLED_APP}…"
@@ -415,7 +415,7 @@ if [ -d "$INSTALLED_APP" ]; then
     cp -R "$BUILT_APP/Contents" "$INSTALLED_APP/Contents" || fail "could not install new app contents"
 else
     cp -R "$BUILT_APP" "$INSTALLED_APP" \
-        || fail "could not install LIRA.app to /Applications (no existing bundle to update in place)"
+        || fail "could not install HUGO.app to /Applications (no existing bundle to update in place)"
 fi
 xattr -cr "$INSTALLED_APP" 2>/dev/null
 
@@ -434,5 +434,5 @@ echo "$CURRENT_COMMIT" > "$APP_VERSION_FILE" \
     || log "WARNING: could not save $APP_VERSION_FILE — next run may rebuild unnecessarily"
 log "Recorded installed version: $CURRENT_COMMIT"
 
-log "LIRA actualizada correctamente"
-echo "LIRA actualizada correctamente"
+log "HUGO actualizada correctamente"
+echo "HUGO actualizada correctamente"

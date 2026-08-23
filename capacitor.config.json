@@ -1,6 +1,6 @@
 {
-  "appId": "com.joan.lira",
-  "appName": "LIRA",
+  "appId": "com.joan.hugo",
+  "appName": "HUGO",
   "webDir": "ui/",
   "server": {
     "url": "http://100.124.252.100:8080",

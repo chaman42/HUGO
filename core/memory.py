@@ -5,7 +5,6 @@
 # memory; memory.some_function(...)` call site across the codebase keeps
 # working unchanged:
 #
-#   core/memory_context.py  — armor/concepts summaries injected into prompts
 #   core/memory_flags.py    — feature flags (data/feature_flags.json)
 #   core/memory_store.py    — Layer 1/2 fact persistence (load/save/dedup/
 #                              upsert/expire), shared paths + constants
@@ -18,7 +17,7 @@
 #   core/memory_stats.py    — health/stats endpoints, active-memory snapshot,
 #                              think-log reader, weekly consolidation
 #   core/memory_user_model.py — the explicit user model (data/user_model.json)
-#                              — LIRA's living understanding of Joan as a
+#                              — HUGO's living understanding of Joan as a
 #                              person, built/updated by scripts/
 #                              reflective_mode.py's 'Modelo de Usuario' sleep
 #                              sub-phase, consulted on every response
@@ -28,24 +27,6 @@
 # each submodule's own comment for its specific lazy-import spots.
 # ═══════════════════════════════════════════════════════════════════════════
 
-from core.memory_context import (
-    _build_armor_summary,
-    _build_concepts_summary,
-    reload_concepts,
-    ARMOR_KNOWLEDGE_PATH,
-    _ARMOR_SUMMARY,
-    _get_armor_models,
-    _select_relevant_armor,
-    _expand_armor_with_references,
-    _format_relevant_armor_block,
-    CONCEPTS_PATH,
-    _concepts_lock,
-    _CONCEPTS_SUMMARY,
-    _get_concepts,
-    _select_relevant_concepts,
-    _expand_concepts_with_references,
-    _format_relevant_concepts_block,
-)
 from core.memory_flags import (
     _load_feature_flags,
     _save_feature_flags,
@@ -55,7 +36,7 @@ from core.memory_flags import (
     set_feature_flag,
 )
 from core.memory_store import (
-    MEMORY_LIRA_PATH,
+    MEMORY_HUGO_PATH,
     MEMORY_SHARED_PATH,
     _MEMORY_HEALTH_WARN_THRESHOLD,
     _TEMPORAL_FACT_PATTERNS,

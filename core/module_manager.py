@@ -1,6 +1,6 @@
-# MODULE MANAGER — manages skills/ only. Never import from lira_core/.
+# MODULE MANAGER — manages skills/ only. Never import from hugo_core/.
 #
-# (This codebase doesn't have a lira_core/ subpackage — core/ is flat, and
+# (This codebase doesn't have a hugo_core/ subpackage — core/ is flat, and
 # the loadable-capabilities layer lives at top-level skills/, not
 # core/skills/. The rule still applies at the boundary that actually
 # exists: this file imports nothing from core/ except the `skills` package
@@ -39,7 +39,7 @@ VALID_STATUSES = ("active", "inactive", "error", "updating", "not_installed")
 # above. A catalog entry describes a capability that may not be built at
 # all yet ("planned"); nothing in this file ever calls
 # update_catalog_status() itself — status changes here only ever happen
-# because a caller (an API route Joan or LIRA triggered) asked for one.
+# because a caller (an API route Joan or HUGO triggered) asked for one.
 CATALOG_STATUSES = (
     "planned", "researching", "designing", "developing", "testing",
     "ready", "installed", "updating", "error",
@@ -409,7 +409,7 @@ class ModuleManager:
     # AND WHAT'S PLANNED (including capabilities with no code at all yet),
     # not what's currently loaded/running. Read via get_catalog*(), written
     # only via update_catalog_status() — never by this file's own bootstrap
-    # or health-check logic, per "only Joan or LIRA explicitly trigger
+    # or health-check logic, per "only Joan or HUGO explicitly trigger
     # status changes".
 
     def _load_catalog(self) -> list:
@@ -432,19 +432,19 @@ class ModuleManager:
 
     def get_catalog_with_ad_hoc(self) -> list:
         """get_catalog() plus one synthetic, DISPLAY-ONLY entry per module
-        Joan asked LIRA to build directly in conversation
+        Joan asked HUGO to build directly in conversation
         (core.code_engine.CodeEngine.create_ad_hoc_module(), catalog_id=
         None on purpose — an ad-hoc request never touches this curated,
         planned-capabilities catalog) — so the Módulos UI can show it too,
         per Joan's request, without polluting modules_catalog.json itself.
 
-        Distinguishing "created by LIRA via conversation" from "just
+        Distinguishing "created by HUGO via conversation" from "just
         happens to have no catalog entry" needs a real signal, not merely
         "absent from the catalog": several of the ORIGINAL hand-built
         skills (calculator, weather, calendar, discord_bridge,
         investigations, schema_generator, web_search) predate Code Engine
         entirely and have never been in the catalog either — treating
-        every catalog-less module as "LIRA-created" would mislabel every
+        every catalog-less module as "HUGO-created" would mislabel every
         one of those. The real signal is each module's own manifest
         (skills/manifests/<name>/module.json) — CodeEngine._generate_module_impl()
         tags every manifest it writes with created_via: 'ad_hoc_conversation'
@@ -473,7 +473,7 @@ class ModuleManager:
             ad_hoc.append({
                 "id": module_name,
                 "name": manifest.get("name", module_name).replace("_", " ").title(),
-                "category": "CREADO POR LIRA",
+                "category": "CREADO POR HUGO",
                 "description": manifest.get("description", ""),
                 "status": "installed" if runtime_status in ("active", "inactive") else (runtime_status or "not_installed"),
                 "version": manifest.get("version"),
@@ -484,9 +484,9 @@ class ModuleManager:
             })
         return catalog + ad_hoc
 
-    def get_lira_flagged_modules(self) -> list:
+    def get_hugo_flagged_modules(self) -> list:
         """Every module whose manifest carries CodeEngine's
-        lira_review_flag (see core.code_engine._stamp_lira_review_flag —
+        hugo_review_flag (see core.code_engine._stamp_hugo_review_flag —
         set on every create_module()/create_ad_hoc_module()/update_module()
         that actually lands on disk) — the whole point being a fast,
         no-argument way for a code-error review pass to pull just the
@@ -498,13 +498,13 @@ class ModuleManager:
         out = []
         for module_name in self.list_manifests():
             manifest = self._load_manifest(module_name)
-            if not manifest or not manifest.get("lira_review_flag"):
+            if not manifest or not manifest.get("hugo_review_flag"):
                 continue
             out.append({
                 "id": module_name,
                 "version": manifest.get("version"),
-                "last_action": manifest.get("lira_review_last_action"),
-                "flagged_at": manifest.get("lira_review_flagged_at"),
+                "last_action": manifest.get("hugo_review_last_action"),
+                "flagged_at": manifest.get("hugo_review_flagged_at"),
             })
         return out
 

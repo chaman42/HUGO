@@ -1,7 +1,7 @@
 # DOCS BROWSER — documentation/GitHub/error research, gated entirely by
 # the 'internet' permission (see core.code_engine.permissions.
 # check_internet_permission — False by default; Joan must opt in). Reuses
-# LIRA's existing web search stack (core.tools_search.search_web —
+# HUGO's existing web search stack (core.tools_search.search_web —
 # Serper.dev primary, DuckDuckGo fallback) rather than standing up a new
 # HTTP client/search API integration; fetch_docs() is the one place this
 # module makes its own request, and it does so with the same

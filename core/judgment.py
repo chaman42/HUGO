@@ -1,6 +1,6 @@
 # ═══════════════════════════════════════════════════════════════════════════
 # JUDGMENT — Proactive Intelligence Phase 3: the gate every proactive action
-# must pass through before LIRA does anything unprompted. Phase 2
+# must pass through before HUGO does anything unprompted. Phase 2
 # (core/situation.py) gave her a running picture of what's going on; this
 # phase decides, given that picture, whether to act, ask, suggest, or stay
 # silent about a specific proposed action.
@@ -63,7 +63,7 @@ _log_lock         = threading.Lock()
 @dataclass
 class ProposedAction:
     """Input to every judgment. `trigger` is free text describing what
-    caused LIRA to consider this — by convention prefixed 'explicit: ...'
+    caused HUGO to consider this — by convention prefixed 'explicit: ...'
     when Joan asked for it directly, 'implicit: ...' when inferred from a
     signal (a pattern, an anomaly, something she said in passing), or left
     unprefixed for a purely system-detected trigger (a module error, a
@@ -78,7 +78,7 @@ class ProposedAction:
     missing rather than raising."""
     description:            str
     type:                   str            # inform | suggest | execute | ask
-    trigger:                str            # what caused LIRA to consider this
+    trigger:                str            # what caused HUGO to consider this
     urgency:                float          # 0.0 - 1.0
     reversible:              bool
     requires_interruption:  bool
@@ -557,7 +557,7 @@ class JudgmentEngine:
             return evaluated, []
 
         # Internal state (core/internal_state.py, Phase 2) genuinely tips
-        # this: a fatigued LIRA holds back more even among valid options,
+        # this: a fatigued HUGO holds back more even among valid options,
         # a currently-confident one is a little more willing to lead with
         # her pick — same "real signal, not decorative" discipline as that
         # module's format_state_block.

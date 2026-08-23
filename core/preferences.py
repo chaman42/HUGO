@@ -1,7 +1,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# PREFERENCES — Entity Pillars Phase 4: "Lira should be able to develop her
+# PREFERENCES — Entity Pillars Phase 4: "Hugo should be able to develop her
 # own intellectual tastes... while being able to explain and revise those
-# preferences." data/preferences.json — LIRA's own stated leanings toward
+# preferences." data/preferences.json — HUGO's own stated leanings toward
 # certain kinds of solutions/approaches ("prefiero soluciones modulares
 # porque...", never a preference ABOUT Joan — that's core/memory_user_model.py's
 # job). Built/updated exclusively by scripts/reflective_mode.py's

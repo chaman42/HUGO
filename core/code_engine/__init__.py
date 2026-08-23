@@ -1,6 +1,6 @@
 # CODE ENGINE — generates and updates skills/ modules only. Never writes
 # outside skills/ (hard-enforced by _safe_path() before every write) and
-# never touches lira_core/ files (doesn't exist — core/ is flat; the rule
+# never touches hugo_core/ files (doesn't exist — core/ is flat; the rule
 # applies at core.module_manager.py/core.task_engine.py, whose PUBLIC APIS
 # this file calls for orchestration — install()/update()/
 # update_catalog_status()/block_task() — but never edits their source).
@@ -382,14 +382,14 @@ try:
 except Exception as e:
     print(f"FAIL import error: {e}"); sys.exit(1)
 
-from skills import LiraSkill
+from skills import HugoSkill
 skill_cls = None
 for _, obj in inspect.getmembers(mod, inspect.isclass):
-    if issubclass(obj, LiraSkill) and obj is not LiraSkill and obj.__module__ == mod.__name__:
+    if issubclass(obj, HugoSkill) and obj is not HugoSkill and obj.__module__ == mod.__name__:
         skill_cls = obj
         break
 if skill_cls is None:
-    print("FAIL no LiraSkill subclass found in module"); sys.exit(1)
+    print("FAIL no HugoSkill subclass found in module"); sys.exit(1)
 
 try:
     instance = skill_cls()
@@ -424,17 +424,17 @@ def _strip_code_fences(text: str) -> str:
 # created_via above, never in _MANIFEST_REQUIRED_FIELDS so ModuleManager's
 # validation and the Módulos catalog UI both ignore it entirely (see
 # module_manager.py's own manifest-field allowlist). The point isn't to
-# show Joan anything; it's a cheap `grep -l '"lira_review_flag": true'
+# show Joan anything; it's a cheap `grep -l '"hugo_review_flag": true'
 # skills/manifests/*/module.json` (or the equivalent programmatic scan a
 # review pass can run) to instantly separate LLM-generated/LLM-modified
 # code from the hand-built skills (calculator, weather, ...) that predate
 # Code Engine — exactly the code most worth double-checking for the
 # eval()/exec()/hardcoded-secret class of bug _review_gate()'s
 # find_security_issues() heuristics can miss.
-def _stamp_lira_review_flag(manifest: dict, action: str) -> dict:
-    manifest["lira_review_flag"] = True
-    manifest["lira_review_last_action"] = action   # "created" | "updated"
-    manifest["lira_review_flagged_at"] = datetime.datetime.now().isoformat(timespec="seconds")
+def _stamp_hugo_review_flag(manifest: dict, action: str) -> dict:
+    manifest["hugo_review_flag"] = True
+    manifest["hugo_review_last_action"] = action   # "created" | "updated"
+    manifest["hugo_review_flagged_at"] = datetime.datetime.now().isoformat(timespec="seconds")
     return manifest
 
 
@@ -452,7 +452,7 @@ def _bump_version(manifest_path: str) -> str:
         parts = ["1", "1"]
     new_version = ".".join(parts)
     manifest["version"] = new_version
-    _stamp_lira_review_flag(manifest, "updated")
+    _stamp_hugo_review_flag(manifest, "updated")
     with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)
     return new_version
@@ -492,12 +492,12 @@ def _advance_catalog_status(manager, catalog_id: str, target: str) -> None:
 
 
 _CODE_CONTEXT = (
-    "Eres un generador de código Python para LIRA, un asistente de voz. "
+    "Eres un generador de código Python para HUGO, un asistente de voz. "
     "Generas EXCLUSIVAMENTE el contenido completo de un archivo Python para "
-    "un 'skill': una clase que hereda de LiraSkill (atributos name, "
+    "un 'skill': una clase que hereda de HugoSkill (atributos name, "
     "description, triggers: list[str], y un método "
     "execute(self, query: str, context: dict) -> str). El archivo debe "
-    "empezar con 'from skills import LiraSkill'. No incluyas explicaciones, "
+    "empezar con 'from skills import HugoSkill'. No incluyas explicaciones, "
     "comentarios de markdown, backticks, ni ningún texto fuera del código "
     "Python del archivo."
 )
@@ -624,7 +624,7 @@ class CodeEngine:
             task_id = existing["id"] if existing else task_engine.create_task(
                 f"Generar módulo: {module_name}",
                 [f"Generar y probar {module_name} en sandbox"],
-                priority=2, created_by="lira",
+                priority=2, created_by="hugo",
             )
             task_engine.block_task(task_id, reason[:300])
         except Exception:
@@ -634,7 +634,7 @@ class CodeEngine:
 
     def _relevant_skills_block(self, goal_text: str, tags: list) -> str:
         """Best-effort procedural knowledge from past completed tasks (see
-        core.skill_forge) — 'so LIRA doesn't repeat past mistakes'. Queries
+        core.skill_forge) — 'so HUGO doesn't repeat past mistakes'. Queries
         SkillForge directly with the capability's own name/id as the goal/
         tags, rather than only reading a TaskEngine task's
         context_snapshot['relevant_skills'] (TaskEngine.create_task()
@@ -675,7 +675,7 @@ class CodeEngine:
             f"```python\n{current_code}\n```\n\n"
             f"Aplica este cambio y devuelve el ARCHIVO COMPLETO actualizado "
             f"(no un diff, no fragmentos): {change}\n\n"
-            f"Mantén la clase LiraSkill existente (mismo name) salvo que el "
+            f"Mantén la clase HugoSkill existente (mismo name) salvo que el "
             f"cambio pida explícitamente lo contrario."
         ) + self._relevant_skills_block(change, [module_name])
 
@@ -799,7 +799,7 @@ class CodeEngine:
                     "entry_point": f"{module_name}.py", "auto_start": False,
                     # Extra field beyond _MANIFEST_REQUIRED_FIELDS (additive —
                     # never validated as forbidden) — lets ModuleManager tell
-                    # a module Joan asked LIRA to build directly in
+                    # a module Joan asked HUGO to build directly in
                     # conversation (catalog_id=None, no catalog entry at all)
                     # apart from one of the original hand-built skills that
                     # also happens to have no catalog entry (calculator,
@@ -809,7 +809,7 @@ class CodeEngine:
                     # for why "no catalog entry" alone isn't a safe signal.
                     "created_via": "catalog" if catalog_id else "ad_hoc_conversation",
                 }
-                _stamp_lira_review_flag(manifest, "created")
+                _stamp_hugo_review_flag(manifest, "created")
                 with open(manifest_path, "w", encoding="utf-8") as f:
                     json.dump(manifest, f, ensure_ascii=False, indent=2)
             except Exception as e:

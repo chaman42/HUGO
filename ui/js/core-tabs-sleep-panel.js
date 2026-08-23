@@ -1,4 +1,4 @@
-// core-tabs-sleep-panel.js — NUCLEO LIRA sub-tab switching, estado polling, think list, and sleep questions/reflections rendering.
+// core-tabs-sleep-panel.js — NUCLEO HUGO sub-tab switching, estado polling, think list, and sleep questions/reflections rendering.
 const CORE_MODE_LABELS = { wake_word: 'Wake Word', conversation: 'Conversación' }
 
 async function _renderCoreEstado() {
@@ -134,11 +134,11 @@ function _stopCoreEstadoPoll() {
 }
 
 // ── Pensamiento ──────────────────────────────────────────────────────────
-let _coreThinkEntries = []   // newest first, capped at 10 — see _onLiraThinking()
+let _coreThinkEntries = []   // newest first, capped at 10 — see _onHugoThinking()
 
 // Reveals `text` progressively into `el` — a subtle typewriter effect, not
 // genuine token-by-token streaming (the backend emits the whole finished
-// block in one 'lira_thinking' event — see core.commands._groq_complete()).
+// block in one 'hugo_thinking' event — see core.commands._groq_complete()).
 // Reveals in small chunks rather than one character at a time so a long
 // block doesn't take unreasonably long to finish appearing.
 function _typewriterReveal(el, text) {
@@ -188,7 +188,7 @@ async function _loadThinkLog() {
   _renderCoreThinkList()
 }
 
-function _onLiraThinking(data) {
+function _onHugoThinking(data) {
   _coreThinkEntries.unshift({ ...data, _fresh: true })
   if (_coreThinkEntries.length > 10) _coreThinkEntries.length = 10
   if (_currentSection === 'core' && _currentCoreSub === 'pensamiento') _renderCoreThinkList()
@@ -310,12 +310,9 @@ async function _renderCoreMemoria() {
 }
 
 // ── Mapa Mental ──────────────────────────────────────────────────────────
-// Interactive D3 force-directed graph — memory facts, episodes, armor
-// models, and concepts, pulled from GET /api/memory_active (facts/
-// episodes/concepts, see core.commands.get_active_memory) plus armor
-// models via _fetchArmorModels() (ui/js/mm-wiring.js — GET /api/armor,
-// core/armor_manager.py), the same source Armor Bay itself renders from,
-// so this never sees a second, divergent copy of that data.
+// Interactive D3 force-directed graph — memory facts, episodes, and
+// concepts, pulled from GET /api/memory_active (facts/episodes/concepts,
+// see core.commands.get_active_memory).
 //
 // Edge logic mirrors core/commands.py's own _fact_similarity/_keywords
 // design ("cheap, dependency-free... simple keyword matching") rather than
@@ -323,7 +320,7 @@ async function _renderCoreMemoria() {
 // they share at least one meaningful (length > 2, non-stopword) word.
 
 // ── Módulos — capability catalog (core.module_manager, data/
-// modules_catalog.json) — EVERY capability LIRA has, is building towards,
+// modules_catalog.json) — EVERY capability HUGO has, is building towards,
 // or has merely planned, not just the ones currently loaded/running (that
 // narrower runtime view is GET /api/modules — this uses the separate
 // GET /api/modules/catalog instead). Grouped by category, collapsible;
@@ -575,7 +572,7 @@ function _renderCatalogRow(m) {
     const deps  = Array.isArray(m.dependencies) && m.dependencies.length ? m.dependencies.map(esc).join(', ') : 'Ninguna'
     const perms = Array.isArray(m.permissions) && m.permissions.length ? m.permissions.map(esc).join(', ') : 'Ninguno'
     const chipColor = CORE_MODULE_STATUS_COLOR[status] || 'var(--accent)'
-    // Same estudio-console-* hero/body-grid/rail shell as ESTUDIO/Armor Bay
+    // Same estudio-console-* hero/body-grid/rail shell as ESTUDIO
     // — every interactive control below (priority stepper, block toggle,
     // build/update trigger) keeps its exact data-* attributes, so the
     // delegated listeners in _renderCoreModulos() need no changes at all.
@@ -639,9 +636,9 @@ function _renderCatalogRow(m) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// PERSONAS — every person LIRA has a saved record of (core/social.py,
+// PERSONAS — every person HUGO has a saved record of (core/social.py,
 // data/social_profiles.json via core/routes_social.py), with a Joan-
-// editable trust tier and knows_lira flag. Modeled directly on the
+// editable trust tier and knows_hugo flag. Modeled directly on the
 // Módulos list above (same .core-module-row/-detail shell, same
 // expand-on-click/re-render-whole-body approach) — a flat list, not
 // grouped by category, since this is a handful of people, not dozens of
@@ -698,7 +695,7 @@ async function _renderCorePersonas() {
     <div class="core-persona-add">
       ${_corePersonaAdding ? _renderPersonaAddForm() : '<button class="core-module-build-btn" id="corePersonaAddBtn">+ Añadir persona</button>'}
     </div>
-    ${people.length ? people.map(p => _renderPersonaRow(p)).join('') : '<div class="core-empty-note">LIRA aún no tiene ningún perfil guardado además de Joan.</div>'}
+    ${people.length ? people.map(p => _renderPersonaRow(p)).join('') : '<div class="core-empty-note">HUGO aún no tiene ningún perfil guardado además de Joan.</div>'}
   `
 
   const addBtn = document.getElementById('corePersonaAddBtn')
@@ -722,7 +719,7 @@ async function _renderCorePersonas() {
   body.querySelectorAll('[data-persona-knows-toggle]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation()
-      _editPersona(btn.dataset.personaId, { knows_lira: btn.dataset.knowsLira !== 'true' })
+      _editPersona(btn.dataset.personaId, { knows_hugo: btn.dataset.knowsHugo !== 'true' })
     })
   })
   body.querySelectorAll('[data-persona-name-save]').forEach(btn => {
@@ -771,7 +768,7 @@ function _renderPersonaRow(p) {
     const chipColor = CORE_PERSONA_TIER_COLOR[tierInfo ? tierInfo.key : 'unknown']
 
     // Same estudio-console-* hero/body-grid/rail shell as Módulos above —
-    // every interactive control (tier picker, knows-LIRA toggle, rename
+    // every interactive control (tier picker, knows-HUGO toggle, rename
     // form, delete) keeps its exact data-* attributes, so the delegated
     // listeners in _renderCorePersonas() need no changes.
     detail = `
@@ -798,9 +795,9 @@ function _renderPersonaRow(p) {
             <div class="estudio-console-block">
               <div class="estudio-console-section-label neutral"><span class="dot"></span>Editar</div>
               <div class="toggle-row core-persona-knows-row">
-                <span class="toggle-label">Conoce a LIRA</span>
-                <button class="toggle-switch${p.knows_lira ? ' on' : ''}" data-persona-knows-toggle="1"
-                        data-persona-id="${esc(p.id)}" data-knows-lira="${p.knows_lira}"></button>
+                <span class="toggle-label">Conoce a HUGO</span>
+                <button class="toggle-switch${p.knows_hugo ? ' on' : ''}" data-persona-knows-toggle="1"
+                        data-persona-id="${esc(p.id)}" data-knows-hugo="${p.knows_hugo}"></button>
               </div>
               <div class="core-persona-name-edit">
                 <input type="text" class="core-module-change-input" data-persona-name-input="${esc(p.id)}"
@@ -831,7 +828,7 @@ function _renderPersonaRow(p) {
       <span class="core-module-emoji">${isJoan ? '👑' : '👤'}</span>
       <span class="core-module-name">${esc(p.name || p.id)}</span>
       <span class="core-persona-badge ${badgeClass}">${badgeLabel}</span>
-      ${p.knows_lira ? '<span class="core-persona-knows-tag" title="Conoce a LIRA">💬</span>' : ''}
+      ${p.knows_hugo ? '<span class="core-persona-knows-tag" title="Conoce a HUGO">💬</span>' : ''}
     </div>
     ${detail}
   `
@@ -853,7 +850,7 @@ function _renderPersonaAddForm() {
         `).join('')}
       </div>
       <div class="toggle-row core-persona-knows-row">
-        <span class="toggle-label">Conoce a LIRA</span>
+        <span class="toggle-label">Conoce a HUGO</span>
         <button type="button" class="toggle-switch" id="corePersonaAddKnows"></button>
       </div>
       <div class="core-persona-add-actions">
@@ -914,7 +911,7 @@ function _wirePersonaAddForm(body) {
             name,
             relationship_to_joan: relSelect ? relSelect.value : 'stranger',
             trust_level: _corePersonaAddTier,
-            knows_lira: _corePersonaAddKnows,
+            knows_hugo: _corePersonaAddKnows,
           }),
         })
       } catch { /* re-render below reflects whatever the backend actually ended up with */ }

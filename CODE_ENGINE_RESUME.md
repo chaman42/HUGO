@@ -6,7 +6,7 @@ session at this file and it should be able to continue directly.
 
 ## What Code Engine is
 
-An autonomous system letting LIRA read, write, test, review, and deploy
+An autonomous system letting HUGO read, write, test, review, and deploy
 code — including her own `skills/` modules — built across 5 phases this
 session (Phase 1: file/git/search tools, Phase 2: shell/deps/testing,
 Phase 3: Planner/Debugger/Orchestrator autonomous cycle, Phase 4:
@@ -47,7 +47,7 @@ system live, not just unit tests:
    an ad-hoc module and a real catalog entry.
 6. **Orchestrator's generic freelance step-execution is wrong for
    "create a module"** — a live end-to-end test produced bare functions
-   (not `LiraSkill` subclasses), a stray duplicate file, and never
+   (not `HugoSkill` subclasses), a stray duplicate file, and never
    actually called `ModuleManager.install()`. Rewired conversational
    create/update (`core/code_engine_dispatch.py`) to call
    `CodeEngine.create_ad_hoc_module()` / `update_module()` directly
@@ -70,7 +70,7 @@ system live, not just unit tests:
 9. **No wall-clock budget on `Orchestrator.execute_goal()`** — only
    retry-count was capped, not elapsed time. Added
    `MAX_GOAL_WALL_CLOCK_SECONDS = 45 * 60`.
-10. **Módulos catalog view didn't show ad-hoc LIRA-created modules** —
+10. **Módulos catalog view didn't show ad-hoc HUGO-created modules** —
     added `ModuleManager.get_catalog_with_ad_hoc()`, tags manifests with
     `created_via: "ad_hoc_conversation"` vs `"catalog"` (NOT just "no
     catalog entry" — several original hand-built skills like calculator/
@@ -140,7 +140,7 @@ activity) when you pick this up, it's orphaned — kill it** (`kill -9
 
 ## Still genuinely unverified (do these next)
 
-1. **`Deployer.deploy_lira_module()`** — depends on the same
+1. **`Deployer.deploy_hugo_module()`** — depends on the same
    `_sandbox_test()` fixed in #5, never re-tested since. Needs `deploy`
    permission temporarily flipped to `true` in
    `data/code_engine_permissions.json` (default `false` — **revert after

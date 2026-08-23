@@ -51,7 +51,7 @@ _DEFAULT_PERMISSIONS = {
         # check_permission().
         "internet": False,
         # Phase 5 — 'deploy' gates every Deployer method that actually
-        # ships something (deploy/deploy_lira_module/update_lira_module) —
+        # ships something (deploy/deploy_hugo_module/update_hugo_module) —
         # path-scoped like shell/install_dependencies/run_tests (checked
         # via check_permission("deploy", path), not the global-only shape
         # 'internet' uses), since a deploy always targets one specific

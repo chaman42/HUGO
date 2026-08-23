@@ -83,7 +83,7 @@
 
 /* Attach type menu — pops up above #attachBtn (see ui/js/chat-render.js's
    .open toggle). Same "dark glass card" recipe used everywhere else in
-   this app for a small floating panel (.lira-diamond-text/-bubble,
+   this app for a small floating panel (.hugo-diamond-text/-bubble,
    .mm-context-panel): rgba(0,4,10,0.88) + blur(16px), 0.5px accent-blue
    border, angular clip-path corners — no new visual language introduced.
    No existing small-anchored-popup pattern existed in this app before
@@ -438,7 +438,7 @@ body.jarvis-offline #modeBtn {
   overflow-y: auto;
   /* Right padding keeps toggle switches clear of the scrollbar thumb (they
      used to sit flush against it, 0px gap) and doubles as parking space for
-     the floating LIRA diamond (see _diamondProtectedRects in
+     the floating HUGO diamond (see _diamondProtectedRects in
      status-diamond-grid.js) so she has real room to rest beside the toggle
      column instead of on top of it. */
   padding: 14px 56px 32px 0;

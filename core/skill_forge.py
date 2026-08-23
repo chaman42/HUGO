@@ -5,7 +5,7 @@
 # module without repeating past mistakes"), not runnable code. Nothing
 # here writes to skills/, and nothing in skills/ reads this file.
 #
-# Uses core.sleep_llm._ollama_generate (llama3.2:3b — LIRA's existing
+# Uses core.sleep_llm._ollama_generate (llama3.2:3b — HUGO's existing
 # conversational-adjacent local model, already used for sleep-phase
 # reasoning) for extraction, NOT core.code_engine.LLMRouter's
 # qwen2.5-coder — this is summarizing a completed task in natural
@@ -195,7 +195,7 @@ class SkillForge:
             f"Objetivo de la tarea: {goal}\n\n"
             f"Pasos completados:\n{steps_text}\n\n"
             "Extrae el conocimiento reutilizable de esta tarea ya completada, "
-            "para que la próxima vez que LIRA haga algo parecido no repita "
+            "para que la próxima vez que HUGO haga algo parecido no repita "
             "errores. Responde SOLO con un JSON con estas claves exactas:\n"
             '"title": string, título breve del procedimiento\n'
             '"procedure": lista de strings, pasos numerados como "1. ..."\n'
@@ -208,7 +208,7 @@ class SkillForge:
         try:
             from core.sleep_llm import _ollama_generate
             raw = _ollama_generate(
-                "Eres LIRA extrayendo conocimiento procedimental de una tarea completada, en español.",
+                "Eres HUGO extrayendo conocimiento procedimental de una tarea completada, en español.",
                 prompt, max_tokens=500,
             )
         except Exception as e:

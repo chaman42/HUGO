@@ -19,16 +19,16 @@
   --scanline:    rgba(63, 169, 245, 0.010);
 
   /* ── PERSONALITY color: orb, name label, messages — set by applyPersonality().
-        LIRA is the only personality now: always #f0c040. ─────────────── */
-  --p-color:  #f0c040;
-  --p-mid:    rgba(240, 192, 64, 0.35);
-  --p-dim:    rgba(240, 192, 64, 0.12);
-  --p-glow:   rgba(240, 192, 64, 0.55);
-  --p-a02:    rgba(240, 192, 64, 0.20);
-  --p-a04:    rgba(240, 192, 64, 0.40);
-  --p-a015:   rgba(240, 192, 64, 0.15);
-  --p-a035:   rgba(240, 192, 64, 0.35);
-  --p-a018:   rgba(240, 192, 64, 0.18);
+        HUGO is the only personality now: always #409cf0. ─────────────── */
+  --p-color:  #409cf0;
+  --p-mid:    rgba(64, 156, 240, 0.35);
+  --p-dim:    rgba(64, 156, 240, 0.12);
+  --p-glow:   rgba(64, 156, 240, 0.55);
+  --p-a02:    rgba(64, 156, 240, 0.20);
+  --p-a04:    rgba(64, 156, 240, 0.40);
+  --p-a015:   rgba(64, 156, 240, 0.15);
+  --p-a035:   rgba(64, 156, 240, 0.35);
+  --p-a018:   rgba(64, 156, 240, 0.18);
 
   /* Fixed colors */
   --bg:     #0a0a0a;
@@ -47,7 +47,7 @@
         same source of truth the spec defines. ──────────────────────────── */
   --mm-font-sans: 'Inter', -apple-system, sans-serif;
   --mm-font-mono: 'JetBrains Mono', var(--font);
-  /* Reserved for .mm-name/.mm-status-label only — LIRA's own identity mark,
+  /* Reserved for .mm-name/.mm-status-label only — HUGO's own identity mark,
      distinct from the system-chrome Inter/JetBrains Mono pairing above. */
   --mm-font-display: 'Rajdhani', var(--mm-font-sans);
   --mm-surface-1:      rgba(255,255,255,0.03);
@@ -184,10 +184,10 @@ body::after {
   gap: 28px;
 }
 
-/* Diamond power button — LIRA's diamond orb (same clip-path/motif as the
+/* Diamond power button — HUGO's diamond orb (same clip-path/motif as the
    main-menu orb, see .mm-orb-shape below), not a circular power-icon
    button with a diamond frame drawn around it. Fixed gold regardless of
-   personality, matching #bootSplash's own "always LIRA's diamond" brand
+   personality, matching #bootSplash's own "always HUGO's diamond" brand
    intro rule — the overlay is the same boot animation continuing, not a
    different, older one underneath. */
 /* Sized ~46% larger than the original 130px — more prominent/cinematic on
@@ -205,7 +205,7 @@ body::after {
 .boot-diamond-glow {
   position: absolute; inset: -35px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(240,192,64,0.35) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(64,156,240,0.35) 0%, transparent 70%);
   opacity: 0.7;
   pointer-events: none;
 }
@@ -215,8 +215,8 @@ body::after {
 .boot-diamond-ring {
   position: absolute; inset: 0;
   clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
-  border: 1.5px solid #f0c040;
-  box-shadow: 0 0 18px #f0c040, inset 0 0 18px rgba(240,192,64,0.3);
+  border: 1.5px solid #409cf0;
+  box-shadow: 0 0 18px #409cf0, inset 0 0 18px rgba(64,156,240,0.3);
   animation: boot-diamond-breathe 2.8s ease-in-out infinite;
   pointer-events: none;
 }
@@ -229,7 +229,7 @@ body::after {
 .boot-diamond-core {
   position: absolute; inset: 50px;
   clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
-  background: radial-gradient(circle, rgba(240,192,64,0.5) 0%, transparent 75%);
+  background: radial-gradient(circle, rgba(64,156,240,0.5) 0%, transparent 75%);
   pointer-events: none;
 }
 
@@ -239,8 +239,8 @@ body::after {
   animation: boot-diamond-pulse-fast 0.9s ease-in-out infinite;
 }
 @keyframes boot-diamond-pulse-fast {
-  0%, 100% { opacity: 0.6; box-shadow: 0 0 18px #f0c040, inset 0 0 18px rgba(240,192,64,0.3); }
-  50%       { opacity: 1;   box-shadow: 0 0 30px #f0c040, inset 0 0 26px rgba(240,192,64,0.5); }
+  0%, 100% { opacity: 0.6; box-shadow: 0 0 18px #409cf0, inset 0 0 18px rgba(64,156,240,0.3); }
+  50%       { opacity: 1;   box-shadow: 0 0 30px #409cf0, inset 0 0 26px rgba(64,156,240,0.5); }
 }
 
 /* Loading indicator — identical technique to #bootSplash's own border
@@ -258,11 +258,11 @@ body::after {
 }
 .boot-diamond-trace polygon {
   fill: none;
-  stroke: #f0c040;
+  stroke: #409cf0;
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-dasharray: 60 194;
-  filter: drop-shadow(0 0 4px #f0c040);
+  filter: drop-shadow(0 0 4px #409cf0);
   animation: boot-trace-loop 1.6s linear infinite;
 }
 
@@ -276,14 +276,14 @@ body::after {
   position: absolute; inset: 0;
   clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
   border: none;
-  background: radial-gradient(circle, rgba(240,192,64,0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(64,156,240,0.15) 0%, transparent 70%);
   cursor: pointer;
   padding: 0;
   outline: none;
   transition: background 0.3s ease, opacity 0.3s ease;
 }
 .power-btn:hover {
-  background: radial-gradient(circle, rgba(240,192,64,0.32) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(64,156,240,0.32) 0%, transparent 70%);
 }
 .power-btn:disabled {
   opacity: 0.35;
@@ -300,9 +300,9 @@ body::after {
 .boot-diamond-gem {
   position: absolute;
   width: 13px; height: 13px;
-  background: #f0c040;
-  border: 1px solid #f0c040;
-  box-shadow: 0 0 4px #f0c040, 0 0 8px rgba(240,192,64,0.55);
+  background: #409cf0;
+  border: 1px solid #409cf0;
+  box-shadow: 0 0 4px #409cf0, 0 0 8px rgba(64,156,240,0.55);
   pointer-events: none;
   animation: boot-gem-sparkle 2.6s ease-in-out infinite;
 }
@@ -311,16 +311,16 @@ body::after {
 .boot-diamond-gem.bottom { bottom: -7px; left: 50%;   transform: translateX(-50%) rotate(45deg); }
 .boot-diamond-gem.left   { top: 50%;     left: -7px;  transform: translateY(-50%) rotate(45deg); }
 @keyframes boot-gem-sparkle {
-  0%, 100% { box-shadow: 0 0 4px #f0c040, 0 0 8px rgba(240,192,64,0.55); }
-  50%       { box-shadow: 0 0 8px #f0c040, 0 0 16px rgba(240,192,64,0.55); }
+  0%, 100% { box-shadow: 0 0 4px #409cf0, 0 0 8px rgba(64,156,240,0.55); }
+  50%       { box-shadow: 0 0 8px #409cf0, 0 0 16px rgba(64,156,240,0.55); }
 }
 
 .boot-label {
   font-size: 1.0rem;
   letter-spacing: 0.55em;
   text-transform: uppercase;
-  color: #f0c040;
-  text-shadow: 0 0 12px rgba(240,192,64,0.55);
+  color: #409cf0;
+  text-shadow: 0 0 12px rgba(64,156,240,0.55);
 }
 
 #bootMsg {
@@ -356,8 +356,8 @@ body::after {
 .boot-splash-grid {
   position: absolute; inset: -60px;
   background-image:
-    repeating-linear-gradient(0deg,  rgba(240,192,64,0.05) 0px, rgba(240,192,64,0.05) 1px, transparent 1px, transparent 32px),
-    repeating-linear-gradient(90deg, rgba(240,192,64,0.05) 0px, rgba(240,192,64,0.05) 1px, transparent 1px, transparent 32px);
+    repeating-linear-gradient(0deg,  rgba(64,156,240,0.05) 0px, rgba(64,156,240,0.05) 1px, transparent 1px, transparent 32px),
+    repeating-linear-gradient(90deg, rgba(64,156,240,0.05) 0px, rgba(64,156,240,0.05) 1px, transparent 1px, transparent 32px);
   opacity: 0;
   transition: opacity 1s ease;
 }
@@ -390,7 +390,7 @@ body::after {
   font-family: var(--font);
   font-size: 0.7rem;
   letter-spacing: 0.03em;
-  color: rgba(240,192,64,0.55);
+  color: rgba(64,156,240,0.55);
   transition: opacity 0.4s ease, transform 0.5s ease, font-size 0.5s ease, min-height 0.5s ease;
 }
 /* Beat 4+: recedes into a smaller supporting readout once the diamond
@@ -416,21 +416,21 @@ body::after {
   flex: 0 0 auto;
   width: 1em;
   text-align: center;
-  color: rgba(240,192,64,0.4);
+  color: rgba(64,156,240,0.4);
   transition: color 0.3s ease, transform 0.3s ease;
 }
 /* Done: brighter text, filled glyph, and a brief flash the instant a real
    stage completes — visually distinct from a line that was simply always
    already-done by the time it was revealed (no flash, just appears lit). */
-.boot-terminal-line.done { color: #f0c040; }
-.boot-terminal-line.done .boot-terminal-glyph { color: #f0c040; transform: scale(1.1); }
+.boot-terminal-line.done { color: #409cf0; }
+.boot-terminal-line.done .boot-terminal-glyph { color: #409cf0; transform: scale(1.1); }
 .boot-terminal-line.just-completed .boot-terminal-glyph {
   animation: boot-check-flash 0.5s ease-out;
 }
 @keyframes boot-check-flash {
-  0%   { text-shadow: 0 0 0 rgba(240,192,64,0); transform: scale(1); }
-  40%  { text-shadow: 0 0 10px rgba(240,192,64,0.9); transform: scale(1.4); }
-  100% { text-shadow: 0 0 0 rgba(240,192,64,0); transform: scale(1.1); }
+  0%   { text-shadow: 0 0 0 rgba(64,156,240,0); transform: scale(1); }
+  40%  { text-shadow: 0 0 10px rgba(64,156,240,0.9); transform: scale(1.4); }
+  100% { text-shadow: 0 0 0 rgba(64,156,240,0); transform: scale(1.1); }
 }
 /* Blinking cursor after whichever line is currently the active (not yet
    done) one — same idea as the old "most recently revealed line" cursor,

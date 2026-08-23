@@ -4,10 +4,10 @@
 # cycles/conversations until it's completed, blocked, or failed.
 #
 # Distinct from core/investigations.py: investigations are open-ended
-# QUESTIONS LIRA reasons about autonomously during sleep (Incubación),
+# QUESTIONS HUGO reasons about autonomously during sleep (Incubación),
 # accumulating hypotheses with no fixed step list. Tasks are discrete,
 # step-based GOALS with an explicit completion criterion, created by Joan
-# (or LIRA) and advanced one step at a time — a project-tracking
+# (or HUGO) and advanced one step at a time — a project-tracking
 # primitive, not a research one. The two files are intentionally separate
 # and never merged; nothing here reads or writes data/investigations.json.
 #
@@ -116,7 +116,7 @@ class TaskEngine:
         # no LLM call, so it's safe on this synchronous path. Stashed into
         # context_snapshot so anything that later works this task (a human,
         # or core.code_engine.CodeEngine — see its own prompt builders) can
-        # see what LIRA already learned from similar past tasks.
+        # see what HUGO already learned from similar past tasks.
         relevant_skills = []
         try:
             from core.skill_forge import skill_forge, _simple_tags
@@ -284,7 +284,7 @@ class TaskEngine:
     # Deliberate and explicit — nothing in advance_task()/advance_during_sleep()
     # decides on its own that a step "needs" subagents; per core.subagent's
     # own "no subagents outside sleep cycles without explicit request" rule,
-    # a caller (Joan, or a future planning step LIRA runs with Joan's
+    # a caller (Joan, or a future planning step HUGO runs with Joan's
     # go-ahead) has to call spawn_subagents_for_step() itself.
 
     def spawn_subagents_for_step(self, task_id: str, subagent_specs: list) -> list:
@@ -402,7 +402,7 @@ class TaskEngine:
         one step — independent of the Sleep System's own token budget, so
         it still runs even on a cycle where the 8-phase session itself was
         skipped. Queues a proactive notification either way (partial
-        progress or full completion) so LIRA can mention it next time Joan
+        progress or full completion) so HUGO can mention it next time Joan
         talks to her, without this file touching the conversation layer
         directly."""
         pending = self.get_pending_tasks()

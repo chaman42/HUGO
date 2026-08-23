@@ -1,7 +1,7 @@
 # DEBUGGER — analyzes tracebacks/logs (regex extraction + one LLMRouter
 # call for root_cause/suggested_fix), locates the actual source of an
 # error via CodeSearch, and adds/removes temporary debug logging. Every
-# temp-logging line add_temp_logging() inserts is tagged '# LIRA_DEBUG'
+# temp-logging line add_temp_logging() inserts is tagged '# HUGO_DEBUG'
 # so remove_temp_logging() can find and strip exactly (and only) what it
 # added — never touches a print()/logger call that was already there.
 # Read-only for analysis; every mutation (temp logging insert/remove)
@@ -18,7 +18,7 @@ logger = logging.getLogger("code_engine")
 _TRACEBACK_FILE_LINE_RE = re.compile(r'File "([^"]+)", line (\d+)')
 _PYTHON_ERROR_RE = re.compile(r'^([A-Za-z_][\w.]*(?:Error|Exception|Warning)):\s*(.*)$', re.MULTILINE)
 
-_DEBUG_TAG = "# LIRA_DEBUG"
+_DEBUG_TAG = "# HUGO_DEBUG"
 
 _DEBUG_CONTEXT = (
     "Eres un asistente que diagnostica errores de software a partir de tracebacks y "
@@ -115,7 +115,7 @@ class Debugger(CodeEngineTool):
             return {"error": str(e)}
 
         prompt = (
-            (f"Contexto — qué intentaba hacer LIRA: {context}\n\n" if context else "")
+            (f"Contexto — qué intentaba hacer HUGO: {context}\n\n" if context else "")
             + f"Log:\n{content}\n\nResume qué salió mal y por qué, en 2-3 frases."
         )
         summary = _llm_call(prompt)
@@ -160,7 +160,7 @@ class Debugger(CodeEngineTool):
         return {"ok": False, "error": "failure dict has no 'test'/'file'/'command' to reproduce"}
 
     def add_temp_logging(self, file: str, lines: list) -> bool:
-        """Inserts one print(), tagged '# LIRA_DEBUG', right before each
+        """Inserts one print(), tagged '# HUGO_DEBUG', right before each
         given 1-indexed line — via Editor.insert(), so every insertion
         still gets Editor's own automatic backup. Inserts bottom-up so
         earlier insertions don't shift the line numbers of ones still to
@@ -177,7 +177,7 @@ class Debugger(CodeEngineTool):
         return ok_all
 
     def remove_temp_logging(self, file: str) -> bool:
-        """Strips every line containing the '# LIRA_DEBUG' tag — nothing
+        """Strips every line containing the '# HUGO_DEBUG' tag — nothing
         else. Still goes through Editor's own backup first."""
         allowed, reason = check_permission("write", file)
         if not allowed:

@@ -1,6 +1,6 @@
 # ═══════════════════════════════════════════════════════════════════════════
 # USER MODEL — a living, compact document (data/user_model.json) capturing
-# LIRA's understanding of Joan as a person: how he thinks, works, and
+# HUGO's understanding of Joan as a person: how he thinks, works, and
 # operates — not a fact dump. Built/updated exclusively by
 # scripts/reflective_mode.py's 'Modelo de Usuario' sleep sub-phase (Ollama
 # only, see that script), which reviews memory facts, episodes, and recent
@@ -22,7 +22,7 @@ import threading
 USER_MODEL_PATH = "data/user_model.json"
 # Append-only revision trail — one line per (field, update) that actually
 # changed the live document. The document itself (USER_MODEL_PATH) is a
-# snapshot of LIRA's *current* read of Joan; this is how she got there —
+# snapshot of HUGO's *current* read of Joan; this is how she got there —
 # same "kept for history, not silently overwritten" spirit as
 # core.memory_store._mark_fact_outdated's 'outdated'/'outdated_reason' on
 # facts, just for the interpretation layer instead of the fact layer (see
@@ -38,7 +38,7 @@ _STRING_FIELDS = (
     "thinking_style",
     "work_style",
     "communication_preferences",
-    "relationship_with_lira",
+    "relationship_with_hugo",
 )
 # List fields: unioned, never shrunk — new items are appended, nothing
 # already stored is ever dropped by an update, only by the length cap
@@ -64,7 +64,7 @@ _DEFAULT_USER_MODEL = {
     "patterns":                   [],
     "strengths":                  [],
     "blind_spots":                [],
-    "relationship_with_lira":     "",
+    "relationship_with_hugo":     "",
 }
 
 
@@ -148,7 +148,7 @@ def update_user_model(updates: dict, reasoning: str | None = None) -> tuple[dict
     USER_MODEL_HISTORY_PATH (old value, new value, `reasoning` — the
     caller's one-line account of why, if it has one — and timestamp)
     instead of the previous value being silently clobbered. This is what
-    lets a later pass answer "what did LIRA used to think about Joan, and
+    lets a later pass answer "what did HUGO used to think about Joan, and
     why did that change" instead of only ever seeing the current snapshot."""
     with _user_model_lock:
         model = _load_user_model()
@@ -212,7 +212,7 @@ def _has_content(model: dict) -> bool:
 
 
 def format_user_model_block(model: dict | None = None) -> str:
-    """Compact 'MODELO DE JOAN' block for injection into the prompt — LIRA's
+    """Compact 'MODELO DE JOAN' block for injection into the prompt — HUGO's
     understanding of who she's talking to, never a data dump. Returns ''
     until the model has genuinely been built (the common case before the
     first qualifying sleep session), so nothing empty is ever injected.
@@ -241,8 +241,8 @@ def format_user_model_block(model: dict | None = None) -> str:
         candidates.append(f"Punto ciego: {', '.join(model['blind_spots'][:2])}")
     if model.get("communication_preferences"):
         candidates.append(f"Prefiere que le hables: {model['communication_preferences']}")
-    if model.get("relationship_with_lira"):
-        candidates.append(f"Con LIRA: {model['relationship_with_lira']}")
+    if model.get("relationship_with_hugo"):
+        candidates.append(f"Con HUGO: {model['relationship_with_hugo']}")
 
     lines = candidates[:6]
     if not lines:

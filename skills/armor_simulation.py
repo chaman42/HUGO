@@ -1,6 +1,6 @@
-from skills import LiraSkill
+from skills import HugoSkill
 
-class armor_simulation(LiraSkill):
+class armor_simulation(HugoSkill):
     name = "armor_simulation"
     description = "Simulación física de la armadura antes de construirla"
     triggers = ["simular armadura", "prueba de armadura"]

@@ -8,7 +8,7 @@
 .boot-splash-particle {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(240,192,64,0.12) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(64,156,240,0.12) 0%, transparent 70%);
   pointer-events: none;
   will-change: transform;
 }
@@ -29,7 +29,7 @@
   background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%);
 }
 
-/* Beat 4: the LIRA diamond orb reveal — scale up from small with a glow
+/* Beat 4: the HUGO diamond orb reveal — scale up from small with a glow
    burst, not just a fade. Terminal fades out as this plays. */
 .boot-splash-orb {
   position: absolute;
@@ -44,7 +44,7 @@
 .boot-splash-orb-glow {
   position: absolute; inset: -37px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(240,192,64,0.65) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(64,156,240,0.65) 0%, transparent 70%);
   opacity: 0;
 }
 .boot-splash-orb.reveal .boot-splash-orb-glow {
@@ -58,8 +58,8 @@
 .boot-splash-orb-ring {
   position: absolute; inset: 0;
   clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
-  border: 1.5px solid #f0c040;
-  box-shadow: 0 0 16px #f0c040, inset 0 0 16px rgba(240,192,64,0.3);
+  border: 1.5px solid #409cf0;
+  box-shadow: 0 0 16px #409cf0, inset 0 0 16px rgba(64,156,240,0.3);
   /* Held invisible until the outline-draw animation above actually
      finishes tracing (500ms — see the choreography comment on
      .boot-splash-draw), then solidifies over the SAME 300ms the draw
@@ -77,18 +77,18 @@
   animation: boot-orb-idle-pulse 2.4s ease-in-out infinite;
 }
 @keyframes boot-orb-idle-pulse {
-  0%, 100% { box-shadow: 0 0 16px #f0c040, inset 0 0 16px rgba(240,192,64,0.3); }
-  50%       { box-shadow: 0 0 26px #f0c040, inset 0 0 22px rgba(240,192,64,0.45); }
+  0%, 100% { box-shadow: 0 0 16px #409cf0, inset 0 0 16px rgba(64,156,240,0.3); }
+  50%       { box-shadow: 0 0 26px #409cf0, inset 0 0 22px rgba(64,156,240,0.45); }
 }
 .boot-splash-orb-core {
   position: absolute; inset: 30px;
   clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
-  background: radial-gradient(circle, rgba(240,192,64,0.5) 0%, transparent 75%);
+  background: radial-gradient(circle, rgba(64,156,240,0.5) 0%, transparent 75%);
 }
 
 /* Ambient energy field — a slow, continuous rotating ring further out than
    the diamond itself, same "something is genuinely alive/working" language
-   as the main HUD's own .lira-diamond-energy-field (see diamond-core.css),
+   as the main HUD's own .hugo-diamond-energy-field (see diamond-core.css),
    scaled down to a single dashed ring rather than that element's full dual-
    breathing system since this only needs to read as "systems active" for a
    few seconds, not carry a whole idle personality. Only spins once revealed
@@ -97,7 +97,7 @@
 .boot-splash-orb-field {
   position: absolute; inset: -20px;
   border-radius: 50%;
-  border: 1px dashed rgba(240,192,64,0.25);
+  border: 1px dashed rgba(64,156,240,0.25);
   opacity: 0;
   transition: opacity 0.8s ease;
 }
@@ -121,12 +121,12 @@
 }
 .boot-splash-draw polygon {
   fill: none;
-  stroke: #f0c040;
+  stroke: #409cf0;
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-dasharray: 254;
   stroke-dashoffset: 254;
-  filter: drop-shadow(0 0 4px #f0c040);
+  filter: drop-shadow(0 0 4px #409cf0);
 }
 /* Choreography (bug fix — these used to overlap: the fade started at
    500ms while the line itself didn't finish drawing until 600ms, so the
@@ -194,11 +194,11 @@
 }
 .boot-splash-trace polygon {
   fill: none;
-  stroke: #f0c040;
+  stroke: #409cf0;
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-dasharray: 60 194;   /* ~254 total ≈ the diamond's own perimeter */
-  filter: drop-shadow(0 0 4px #f0c040);
+  filter: drop-shadow(0 0 4px #409cf0);
 }
 .boot-splash-orb.tracing .boot-splash-trace { opacity: 1; }
 .boot-splash-orb.tracing .boot-splash-trace polygon {
@@ -208,7 +208,7 @@
   to { stroke-dashoffset: -254; }
 }
 
-/* Beat 5: "L I R A" fades in below the orb once it's revealed, and stays
+/* Beat 5: "H U G O" fades in below the orb once it's revealed, and stays
    visible for as long as the orb does — i.e. for the entire real wait on
    jarvis_ready, not just the fixed intro. Keep it minimal: name only. */
 .boot-splash-name {
@@ -216,8 +216,8 @@
   font-family: var(--font);
   font-size: 0.85rem;
   letter-spacing: 0.5em;
-  color: #f0c040;
-  text-shadow: 0 0 10px rgba(240,192,64,0.55);
+  color: #409cf0;
+  text-shadow: 0 0 10px rgba(64,156,240,0.55);
   text-align: center;
   white-space: nowrap;
   opacity: 0;
@@ -234,7 +234,7 @@
   font-size: 0.6rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: rgba(240,192,64,0.6);
+  color: rgba(64,156,240,0.6);
   text-align: center;
   opacity: 0;
   transition: opacity 0.6s ease, color 0.3s ease;
@@ -270,14 +270,14 @@
 .boot-real-progress.visible { opacity: 1; }
 .boot-real-progress-track {
   width: 100%; height: 2px;
-  background: rgba(240,192,64,0.12);
+  background: rgba(64,156,240,0.12);
   overflow: hidden;
   border-radius: 1px;
 }
 .boot-real-progress-fill {
   width: 0%; height: 100%;
-  background: #f0c040;
-  box-shadow: 0 0 6px rgba(240,192,64,0.6);
+  background: #409cf0;
+  box-shadow: 0 0 6px rgba(64,156,240,0.6);
   transition: width 0.5s ease;
 }
 .boot-real-progress-row {
@@ -291,7 +291,7 @@
   font-size: 0.52rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(240,192,64,0.45);
+  color: rgba(64,156,240,0.45);
   text-align: center;
   min-height: 1em;
 }
@@ -303,7 +303,7 @@
   font-size: 0.6rem;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.05em;
-  color: #f0c040;
+  color: #409cf0;
   min-width: 2.4em;
 }
 
@@ -393,7 +393,7 @@
    height to make room — content is never covered or clipped by it, and
    nothing needs its own no-drag override just to remain reachable. The
    blanket `no-drag` rule below is still added, defensively, for any
-   interactive element that ever ends up here (e.g. the floating LIRA
+   interactive element that ever ends up here (e.g. the floating HUGO
    diamond's top-left/top-right safe zones sit at 80px, comfortably below
    this bar, but the rule costs nothing and covers every section, present
    and future). */
@@ -442,7 +442,7 @@ button, input, textarea, select, a[href], [role="button"] {
 }
 
 /* Layout placeholder only — same role as .mm-orb-slot (main-menu-orb.css),
-   see its own comment. #liraDiamond overlays this slot's rect while on
+   see its own comment. #hugoDiamond overlays this slot's rect while on
    Chat instead of a separate #chatOrbWrap element being swapped in. The
    110px breakpoint override lives in personality-nav.css, retargeted from
    .orb-wrap to .chat-orb-slot alongside this. */
@@ -452,7 +452,7 @@ button, input, textarea, select, a[href], [role="button"] {
 
 /* (.orb-shape/.orb-glow, the dead never-triggered .personality-shift
    liquify block, and everything else that used to live in this ORB
-   section moved to diamond-toggles.css/diamond-core.css as .lira-diamond
+   section moved to diamond-toggles.css/diamond-core.css as .hugo-diamond
    `.context-chat` variants, or were deleted as unreachable — see
-   #liraDiamond's own markup comment in index.html.) */
+   #hugoDiamond's own markup comment in index.html.) */
 

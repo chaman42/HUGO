@@ -5,7 +5,7 @@
 # never falls back to system/global pip. Every install also requires the
 # 'install_dependencies' permission (False by default).
 #
-# Trust gate (added 2026-08-10, same day as the deploy_lira_module() live
+# Trust gate (added 2026-08-10, same day as the deploy_hugo_module() live
 # verification — see that session's own notes): 'install_dependencies'
 # being on only proves JOAN is willing to let installs happen at all, not
 # that any SPECIFIC package an LLM picks is one she'd actually approve —
@@ -18,7 +18,7 @@
 # looks the package up via DocsBrowser.research_package() (PyPI/npm
 # metadata, gated by its own 'internet' permission separately), then
 # blocks a TaskEngine task and fires a notification carrying that
-# lookup + the package NAME, same 'LIRA mentions it next time we talk'
+# lookup + the package NAME, same 'HUGO mentions it next time we talk'
 # delivery core.notifications._deliver_pending_notifications already uses
 # for everything else. Joan's reply ('sí' / 'no' / 'sí, siempre') is
 # handled by core.actions._execute_pending_confirm's own
@@ -257,7 +257,7 @@ class DependencyManager(CodeEngineTool):
 
     def _request_install_approval(self, path: str, package: str) -> None:
         """An untrusted package never installs itself — this blocks a
-        TaskEngine task and fires a notification LIRA delivers verbatim
+        TaskEngine task and fires a notification HUGO delivers verbatim
         next time Joan talks to her (core.notifications.
         _deliver_pending_notifications), same as every other pending-input
         task. The notification's `data` payload is what lets
@@ -279,7 +279,7 @@ class DependencyManager(CodeEngineTool):
             task_id = task_engine.create_task(
                 f"Instalar paquete: {name}",
                 [f"Instalar {package} en {path}"],
-                priority=2, created_by="lira",
+                priority=2, created_by="hugo",
             )
             task_engine.block_task(
                 task_id,

@@ -1,5 +1,5 @@
 """Flask routes: manual sleep-session start/stop and status/summary/
-insights polling for NUCLEO LIRA's Estado/Pensamiento tabs."""
+insights polling for NUCLEO HUGO's Estado/Pensamiento tabs."""
 import logging
 import time
 
@@ -92,7 +92,7 @@ def api_sleep_status():
 @app.route("/api/sleep_summary")
 def api_sleep_summary():
     """Purpose-built summary of the last (or currently running)
-    continuous-sleep run — backs NÚCLEO LIRA's Estado "ÚLTIMO SUEÑO"
+    continuous-sleep run — backs NÚCLEO HUGO's Estado "ÚLTIMO SUEÑO"
     section (see core.sleep.get_sleep_summary()): when it happened, how
     many cycles, how long, and what it actually did (facts deleted/merged/
     promoted, insights generated, mind-map connections touched).
@@ -115,7 +115,7 @@ def api_sleep_summary():
 @app.route("/api/sleep_insights")
 def api_sleep_insights():
     """Pending questions + reflections generated during sleep — backs
-    NÚCLEO LIRA's Pensamiento tab ('PREGUNTAS DURANTE EL SUEÑO' /
+    NÚCLEO HUGO's Pensamiento tab ('PREGUNTAS DURANTE EL SUEÑO' /
     'REFLEXIONES DEL SUEÑO'). See core.sleep.get_sleep_insights_summary()."""
     try:
         import core.sleep as sleep_mod

@@ -36,11 +36,11 @@ function buildTrayMenu () {
   const mainWindow = winMod.getMainWindow()
   const winVisible = mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()
   return Menu.buildFromTemplate([
-    { label: winVisible ? 'Hide LIRA' : 'Show LIRA', click: toggleWindow },
+    { label: winVisible ? 'Hide HUGO' : 'Show HUGO', click: toggleWindow },
     { type: 'separator' },
     { label: isMuted ? 'Unmute'    : 'Mute',         click: toggleMuteFromTray },
     { type: 'separator' },
-    { label: 'Quit LIRA', click: () => app.quit() },
+    { label: 'Quit HUGO', click: () => app.quit() },
   ])
 }
 
@@ -48,7 +48,7 @@ function updateTray () {
   if (!tray) return
   // Switch icon and tooltip to reflect mute state
   tray.setImage(isMuted ? trayIconMute : trayIconNorm)
-  tray.setToolTip(isMuted ? 'LIRA — Muted' : 'LIRA')
+  tray.setToolTip(isMuted ? 'HUGO — Muted' : 'HUGO')
   tray.setContextMenu(buildTrayMenu())
 }
 
@@ -92,7 +92,7 @@ function setupTray () {
   trayIconMute.setTemplateImage(true)
 
   tray = new Tray(trayIconNorm)
-  tray.setToolTip('LIRA')
+  tray.setToolTip('HUGO')
 
   // Single-click the menu bar icon → toggle window visibility
   tray.on('click', toggleWindow)

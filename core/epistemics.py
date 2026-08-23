@@ -1,6 +1,6 @@
 # ═══════════════════════════════════════════════════════════════════════════
 # EPISTEMICS — Entity Pillars Phase 1: read-side unification of the three
-# tiers of "what LIRA knows about Joan" that already exist as separate
+# tiers of "what HUGO knows about Joan" that already exist as separate
 # stores, each grown independently for its own purpose:
 #
 #   KNOWN     — data/memory_shared.json / memory_<personality>.json facts
@@ -8,7 +8,7 @@
 #               _normalize_fact) — Joan said this himself.
 #   BELIEVED  — data/memory_shared.json facts with epistemic='inferred'
 #               (extracted by core/reflective.py from a pattern, not a
-#               direct statement), plus data/user_model.json — LIRA's own
+#               direct statement), plus data/user_model.json — HUGO's own
 #               synthesis of who Joan is (see core/memory_user_model.py).
 #   SUSPECTED — data/investigations.json hypotheses (see
 #               core/investigations.py) — explicit, confidence-scored, and
@@ -34,7 +34,7 @@ from core.memory_user_model import get_user_model
 
 # Baseline confidence per tier, before any per-item adjustment — a stated
 # fact Joan said outright is treated as ground truth; an inferred fact or
-# user-model claim is LIRA's own synthesis and starts lower; a hypothesis
+# user-model claim is HUGO's own synthesis and starts lower; a hypothesis
 # carries its own explicit confidence from core/investigations.py.
 _STATED_CONFIDENCE = 1.0
 _INFERRED_BASE_CONFIDENCE = 0.6
@@ -46,7 +46,7 @@ def confidence_of(fact: dict) -> float:
     hypotheses. 'stated' facts are ground truth (1.0) unless marked
     outdated (superseded, so no longer trusted at all). 'inferred' facts
     start at _INFERRED_BASE_CONFIDENCE and are nudged by 'weight' —
-    repeated reinforcement is LIRA's only signal that a pattern she noticed
+    repeated reinforcement is HUGO's only signal that a pattern she noticed
     keeps holding up (deliberately NOT 'importance', which measures
     salience — how much a fact matters if true — not how sure she is it IS
     true)."""
@@ -87,7 +87,7 @@ def get_belief_summary(query: str | None = None, max_per_tier: int = 3) -> dict:
     ]
 
     model = get_user_model()
-    for field in ("thinking_style", "work_style", "communication_preferences", "relationship_with_lira"):
+    for field in ("thinking_style", "work_style", "communication_preferences", "relationship_with_hugo"):
         text = model.get(field)
         if text and _matches(text, keywords):
             believed.append({"text": text, "confidence": _INFERRED_BASE_CONFIDENCE})
@@ -105,7 +105,7 @@ def get_belief_summary(query: str | None = None, max_per_tier: int = 3) -> dict:
 
 
 def format_epistemic_block(query: str | None = None, max_per_tier: int = 2) -> str:
-    """Compact prompt-facing block distinguishing what LIRA knows/believes/
+    """Compact prompt-facing block distinguishing what HUGO knows/believes/
     suspects about *query* (or, if omitted, in general). Returns '' when
     there's nothing to say in any tier — never injects an empty section."""
     summary = get_belief_summary(query, max_per_tier)

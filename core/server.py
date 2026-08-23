@@ -20,18 +20,6 @@ _BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 # Path to the device whitelist shared with launcher.py
 _ALLOWED_DEVICES_FILE = os.path.join(_BASE_DIR, "data", "allowed_devices.json")
 
-# Path to the HUD's Conceptuales list — this file is now the source of truth
-# (see /api/concepts below); ui/index.html only keeps localStorage as an
-# offline fallback, it no longer owns the data.
-_CONCEPTS_FILE = os.path.join(_BASE_DIR, "data", "concepts.json")
-
-# Create concepts.json on first run so GET /api/concepts always has a file to
-# read instead of needing a "does it exist" branch on every request.
-if not os.path.exists(_CONCEPTS_FILE):
-    os.makedirs(os.path.dirname(_CONCEPTS_FILE), exist_ok=True)
-    with open(_CONCEPTS_FILE, "w", encoding="utf-8") as _f:
-        json.dump({"concepts": []}, _f, ensure_ascii=False, indent=2)
-
 app = Flask(
     __name__,
     static_folder=os.path.join(_BASE_DIR, "ui"),
@@ -120,7 +108,7 @@ def set_ready(ready: bool = True) -> None:
         except Exception:
             pass
 
-        # The frontend applies its own default theme (LIRA) at page load, but
+        # The frontend applies its own default theme (HUGO) at page load, but
         # that's a guess made before this socket ever connects — if the user
         # had switched personality in a previous session, or this fires before
         # the frontend's own init runs, it can end up showing the wrong one
@@ -209,8 +197,8 @@ def emit_partial_transcript(text: str) -> None:
 
 
 def emit_diamond_move(region: str) -> None:
-    """Broadcast a 'diamond_move' event so the floating LIRA diamond
-    (ui/index.html's #liraDiamond) animates to the requested general area.
+    """Broadcast a 'diamond_move' event so the floating HUGO diamond
+    (ui/index.html's #hugoDiamond) animates to the requested general area.
 
     Called by core.intent_ui._detect_diamond_move()'s call site in
     _dispatch_command_impl right after detecting a move phrase ('muévete',
@@ -229,7 +217,7 @@ def emit_diamond_move(region: str) -> None:
 
 
 def emit_sleep_phase_update(data: dict) -> None:
-    """Broadcast a 'sleep_phase_update' event so NÚCLEO LIRA's Estado tab
+    """Broadcast a 'sleep_phase_update' event so NÚCLEO HUGO's Estado tab
     can update its "ÚLTIMO SUEÑO" section in near-real-time instead of
     waiting for its own ~2.5s poll of GET /api/sleep/status.
 
@@ -253,7 +241,7 @@ def emit_sleep_phase_update(data: dict) -> None:
 
 def emit_show_panel(panel_data: dict) -> None:
     """Broadcast a contextual-panel event so the main menu can animate in a
-    visual panel (weather, time, ...) while LIRA speaks about that topic.
+    visual panel (weather, time, ...) while HUGO speaks about that topic.
 
     Called by core.session._maybe_emit_panel() right after intent
     detection, before the reply is generated — the frontend times the
@@ -273,7 +261,7 @@ def emit_show_panel(panel_data: dict) -> None:
         pass
 
 
-def emit_lira_thinking(data: dict) -> None:
+def emit_hugo_thinking(data: dict) -> None:
     """Broadcast a completed thinking block so the CORE app's Pensamiento
     tab can show it live, the moment it's available.
 
@@ -285,7 +273,7 @@ def emit_lira_thinking(data: dict) -> None:
     never blocks dispatch_command.
     """
     try:
-        socketio.emit("lira_thinking", data)
+        socketio.emit("hugo_thinking", data)
     except Exception:
         pass
 
@@ -294,17 +282,14 @@ def emit_response_timing(data: dict) -> None:
     """Chat response-latency display (ui/js/chat-render.js) — 'LLM: Xs ·
     VOZ: Xs' shown faintly below each assistant reply.
 
-    Fired TWICE per turn, independently, each time with whichever field is
-    newly known — never bundled into one call — because TTS can take
-    dramatically longer than the LLM call to actually start (XTTS v2 on
-    CPU: ~15s+ to first audio, vs. the LLM's ~1-2s to first token), so
-    waiting to report both together would sit on the LLM number for no
-    reason:
-      - {'llm_latency': X} — core.commands._dispatch_command_impl, right
-        after the reply text is finalized (time to first Groq token).
-      - {'tts_latency': Y} — core.voice._emit_tts_first_audio, right when
-        audio genuinely starts playing (time from reply-finalized to
-        first audio, whichever engine/fallback ended up speaking it).
+    Only 'llm_latency' is actually reported now — {'llm_latency': X} from
+    core.commands._dispatch_command_impl, right after the reply text is
+    finalized (time to first Groq token). A 'tts_latency' half used to be
+    reported too (core.voice._emit_tts_first_audio, fired when Kokoro/XTTS
+    audio genuinely started playing), fired independently since TTS could
+    take dramatically longer than the LLM call to start — removed along
+    with those two engines; `say` has no comparable "first audio" signal
+    worth reporting (see core.voice._speak_say_blocking's own comment).
 
     The frontend has no per-message id to correlate against — turns are
     processed one at a time in the common case (see
@@ -323,7 +308,7 @@ def emit_response_timing(data: dict) -> None:
 
 # ---------------------------------------------------------------------------
 # User activity — frontend HUD events (navigate / typing / opening / idle)
-# so LIRA can act as a co-pilot noticing what Joan is doing in the interface
+# so HUGO can act as a co-pilot noticing what Joan is doing in the interface
 # itself, not just what he says out loud (see ui/index.html's _emitUserActivity
 # and core.commands.on_user_activity / _build_system_prompt's ACTIVIDAD
 # ACTUAL block). Storage lives here (alongside the SocketIO connection that
@@ -383,16 +368,16 @@ def get_user_activity() -> dict:
 
 
 # ---------------------------------------------------------------------------
-# HUD context — precise, full-detail state: exactly which armor or concept
-# is on screen right now, and (for armor) which section of it, reported by
-# ui/index.html's _emitHudContext() on every meaningful state change
-# (opening an armor/concept, scrolling within one, navigating away).
-# Distinct from user_activity above: that's a lightweight "what's
-# happening" signal for co-pilot commentary; this carries the FULL object
-# (armor specs/innovations/limitations, concept description) so
-# core.personalities.base._build_system_prompt's PANTALLA ACTUAL block can inject
-# exact facts LIRA can answer from directly — see that block and
-# ui/index.html's hud_context emit call sites.
+# HUD context — precise, full-detail state about exactly what's on screen
+# right now, reported by ui/index.html's _emitHudContext() on every
+# meaningful state change. Distinct from user_activity above: that's a
+# lightweight "what's happening" signal for co-pilot commentary; this
+# carries the FULL object so core.personalities.base._build_system_prompt's
+# PANTALLA ACTUAL block can inject exact facts HUGO can answer from
+# directly — see that block and ui/index.html's hud_context emit call
+# sites. No section currently emits this event (Conceptuales, the last one
+# that did, was removed) — the channel is kept for whichever section needs
+# it next.
 # ---------------------------------------------------------------------------
 
 _hud_context_lock = threading.Lock()
@@ -401,17 +386,10 @@ _hud_context: dict = {"type": None, "updated_at": 0.0}
 
 @socketio.on("hud_context")
 def _on_hud_context(data):
-    """Frontend precise-context event — one of armor_detail / armor_section /
-    concept_detail / idle. Stores the event as-is (flat — 'type', plus
-    whatever other keys that event type sends, e.g. armor_detail's own
-    'model'/'name'/'data'), read by core.personalities.base._build_system_prompt via
-    get_hud_context(). An 'armor_section' event while an 'armor_detail'
-    context is already active is merged in as top-level 'focused_section'
-    rather than replacing the whole context — it only reports which section
-    is scrolled to, and losing the full armor object
-    (specs/innovations/limitations) every time Joan scrolls would defeat
-    the point of this event. Never raises back to the client; malformed
-    payloads are just dropped.
+    """Frontend precise-context event. Stores the event as-is (flat —
+    'type', plus whatever other keys that event type sends), read by
+    core.personalities.base._build_system_prompt via get_hud_context().
+    Never raises back to the client; malformed payloads are just dropped.
     """
     try:
         if not isinstance(data, dict):
@@ -420,11 +398,8 @@ def _on_hud_context(data):
         if not ctx_type:
             return
         with _hud_context_lock:
-            if ctx_type == "armor_section" and _hud_context.get("type") == "armor_detail":
-                _hud_context["focused_section"] = data.get("section")
-            else:
-                _hud_context.clear()
-                _hud_context.update(data)
+            _hud_context.clear()
+            _hud_context.update(data)
             _hud_context["updated_at"] = time.time()
     except Exception:
         logger.debug("hud_context handler failed (non-critical)", exc_info=True)
@@ -479,16 +454,13 @@ import core.routes_control       # noqa: E402,F401
 import core.routes_memory        # noqa: E402,F401
 import core.routes_sleep         # noqa: E402,F401
 import core.estudio_routes       # noqa: E402,F401
-import core.bughunter_routes     # noqa: E402,F401
 import core.routes_notifications # noqa: E402,F401
-import core.design_routes        # noqa: E402,F401
 import core.routes_situation     # noqa: E402,F401
 import core.routes_judgment      # noqa: E402,F401
 import core.routes_initiative    # noqa: E402,F401
 import core.routes_spontaneity   # noqa: E402,F401
 import core.routes_social        # noqa: E402,F401
-import core.routes_armor         # noqa: E402,F401
-import core.routes_lira_mobile   # noqa: E402,F401
+import core.routes_hugo_mobile   # noqa: E402,F401
 
 
 # ---------------------------------------------------------------------------
@@ -506,7 +478,7 @@ _ROLE_MAP = {
     # reminders, and now initiative/spontaneity deliveries) — without this
     # mapping the record falls through to the "system" default below and
     # gets routed to the maintenance panel instead of the chat log, so
-    # every unprompted line LIRA says was invisible in the chat section.
+    # every unprompted line HUGO says was invisible in the chat section.
     "core.background_loops": "jarvis",
 }
 

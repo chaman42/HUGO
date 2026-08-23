@@ -4,7 +4,7 @@
 # core/commands.py (pure refactor, no behavior change).
 #
 # Three-level action philosophy (see core/commands.py's own module comment
-# for the full picture) — every handler here returns LIRA's FINAL spoken
+# for the full picture) — every handler here returns HUGO's FINAL spoken
 # reply directly, not a raw result for _format_response()/Groq to phrase:
 #   Level 1 (execute immediately)   — _execute_volume_control,
 #     _execute_open_app, _execute_calendar_write, _execute_reminder_create,
@@ -49,7 +49,7 @@ _NO_GROQ_INTENTS = {
 # pending_confirm is deliberately NOT in this set (bug fix — it used to be):
 # _execute_pending_confirm's replies were fixed deterministic strings
 # ("Hecho.", "Guardado en Estudio.") spoken completely verbatim, unlike
-# every other action here, which at least confirms in LIRA's own template
+# every other action here, which at least confirms in HUGO's own template
 # phrasing. Routing it through the normal result -> _format_response()
 # path instead (same as the `else` branch below) means every confirmation
 # now gets phrased naturally in context, same treatment
@@ -63,7 +63,7 @@ _NO_GROQ_INTENTS = {
 
 
 def _execute_volume_control(parameters: dict) -> str:
-    """Runs the requested volume action via core.tools and returns LIRA's
+    """Runs the requested volume action via core.tools and returns HUGO's
     final spoken reply. Every core.tools volume call already fails
     gracefully (None/False, never a raised exception, verified against a
     real Mac where the numeric level silently refuses to change on some
@@ -110,7 +110,7 @@ def _execute_volume_control(parameters: dict) -> str:
 
 
 def _execute_open_app(parameters: dict) -> str:
-    """Opens an app via core.tools.open_app and returns LIRA's final spoken
+    """Opens an app via core.tools.open_app and returns HUGO's final spoken
     reply. A False return (not installed, typo, anything else) becomes a
     natural 'no la encuentro' line — never a crash."""
     name = (parameters.get("name") or "").strip()
@@ -126,7 +126,7 @@ def _execute_open_app(parameters: dict) -> str:
 
 def _execute_calendar_read(parameters: dict) -> str:
     """Returns a compact RAW text summary of the requested range's
-    events — NOT LIRA's final reply (calendar_read isn't in
+    events — NOT HUGO's final reply (calendar_read isn't in
     _NO_GROQ_INTENTS; _format_response()/Groq phrases this naturally
     afterward, same treatment as get_time/get_date above)."""
     range_ = parameters.get("range", "today")
@@ -373,7 +373,7 @@ def _execute_install_package_confirm(data: dict, parameters: dict) -> str:
     raw_transcript = parameters.get("raw_transcript", "")
 
     def _reply(result: str, fallback: str) -> str:
-        """Phrases `result` through the same 'raw fact -> LIRA's own voice'
+        """Phrases `result` through the same 'raw fact -> HUGO's own voice'
         helper every other tool result already uses (core.response.
         _format_response, Groq-based) instead of a hand-written per-
         personality template. `fallback` only ever speaks if that call
@@ -447,7 +447,7 @@ def _generate_investigation_title(topic: str) -> str | None:
     from core.sleep_llm import _ollama_generate
     system = (
         "Generas títulos breves para investigaciones que Joan le pide a "
-        "LIRA. Responde EXCLUSIVAMENTE con el título — sin comillas, sin "
+        "HUGO. Responde EXCLUSIVAMENTE con el título — sin comillas, sin "
         "puntuación final, sin explicación — máximo 8 palabras."
     )
     text = _ollama_generate(system, f"Tema: {topic}", max_tokens=30)

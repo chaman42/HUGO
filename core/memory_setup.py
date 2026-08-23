@@ -47,7 +47,7 @@ _migrate_legacy_memory()
 # LAYER 3 — Instructions memory (data/memory_instructions.json)
 #
 # Static behavioral rules: capabilities, limitations, roadmap. Structure:
-# {"global": [...], "lira": [...]}.
+# {"global": [...], "hugo": [...]}.
 # Human-editable, NEVER written by _extract_and_save_memory(). Hot-reloadable
 # via reload_instructions() / POST /api/reload_instructions — no jarvis.py
 # restart needed for edits to take effect.

@@ -1,7 +1,7 @@
 'use strict'
 
 // ---------------------------------------------------------------------------
-// LIRA — Electron preload script
+// HUGO — Electron preload script
 //
 // Runs in the renderer process (the HUD page) with access to Node APIs before
 // the web content loads.  Only the explicitly exposed surface crosses the

@@ -259,7 +259,7 @@ class ToolOrchestrator(CodeEngineTool):
         since `starting_hash`, per spec's exact prompt. Only 'alta'
         (high) confidence inferences are saved (CodeMemory.
         remember_preference) — a guess the model itself isn't sure about
-        has no business shaping how LIRA edits code next time. Best-effort
+        has no business shaping how HUGO edits code next time. Best-effort
         and entirely non-fatal: any failure here just means no new
         preference was learned this session, never affects the goal's
         own success/failure."""

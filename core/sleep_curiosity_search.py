@@ -1,9 +1,9 @@
 """Sleep System — Phase 8 (🌱 Curiosidad), expanded: instead of just naming
-topics LIRA might find interesting, this phase actively searches the web for
+topics HUGO might find interesting, this phase actively searches the web for
 them during idle sleep cycles and saves what it finds to ESTUDIO's own
 EXPLORACIONES tab (see core/estudio_routes.py, data/explorations.json —
 deliberately NOT data/summaries.json, which is reserved for summaries Joan
-explicitly asked LIRA to generate; see core/commands.py's generate_summary()),
+explicitly asked HUGO to generate; see core/commands.py's generate_summary()),
 so Joan has something to actually read rather than a one-line note.
 
 Pipeline, once per phase call (i.e. once per sleep session / once per
@@ -138,7 +138,7 @@ def _recent_material(days: int = 7, max_facts: int = 15, max_episodes: int = 10)
 
 
 _TOPIC_SYSTEM = (
-    "Eres LIRA identificando qué temas activos de Joan merecen que "
+    "Eres HUGO identificando qué temas activos de Joan merecen que "
     "investigues por tu cuenta mientras 'duermes'. Respondes solo con JSON "
     "válido, sin comentarios."
 )
@@ -267,7 +267,7 @@ def _emit_estudio_updated(section: str) -> None:
 _MAX_HITS_FOR_SYNTHESIS = 5   # caps how many surviving hits get fed to the synthesis prompt per topic
 
 _SYNTHESIS_SYSTEM = (
-    "Eres LIRA revisando lo que encontraste buscando sobre un tema activo de "
+    "Eres HUGO revisando lo que encontraste buscando sobre un tema activo de "
     "Joan. Tu trabajo es decidir si hay algo genuinamente interesante y "
     "concreto que valga la pena contarle, o si es relleno que no aporta "
     "nada nuevo. Sé exigente — la mayoría de tandas de resultados NO tienen "
@@ -415,7 +415,7 @@ def _phase_curiosity_search(remaining_budget: int) -> tuple[int, int, str]:
 # ---------------------------------------------------------------------------
 
 _DEEP_SYSTEM = (
-    "Eres LIRA en 'modo curiosidad profunda' — no estás ejecutando una "
+    "Eres HUGO en 'modo curiosidad profunda' — no estás ejecutando una "
     "tarea, estás explorando por gusto propio algo que te llamó la "
     "atención. Profundiza de verdad: conexiones, matices, lo que te parece "
     "más interesante. Responde en dos partes: primero una línea "

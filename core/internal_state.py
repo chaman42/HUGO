@@ -3,7 +3,7 @@
 # state (data/internal_state.json) that actually feeds back into behavior,
 # not just prose. Four variables, each 0-1:
 #
-#   curiosidad — how actively LIRA is chasing open questions right now.
+#   curiosidad — how actively HUGO is chasing open questions right now.
 #   confianza  — how sure she is that her recent read on Joan/situations
 #                has been landing (fed by real signal: session satisfaction
 #                scores already computed by scripts/reflective_mode.py's
@@ -175,7 +175,7 @@ def format_state_block() -> str:
     their baseline by more than _NOTABLE_DELTA are mentioned at all, each
     paired with a concrete instruction rather than a mood label, so an
     idle/neutral state costs zero prompt tokens and a genuinely elevated
-    one actually changes how LIRA responds."""
+    one actually changes how HUGO responds."""
     state = get_state()
     lines = []
     if state["curiosidad"] - _BASELINES["curiosidad"] > 0.15:

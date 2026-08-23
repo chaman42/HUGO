@@ -2,11 +2,11 @@
 /* The chat orb's decorative layers (.orb-facet-svg/.orb-ring/.orb-spinner/
    .orb-core/.orb-wave/.bar/.orb-gem, plus their gem-sparkle/wave-bar
    keyframes) all moved to diamond-toggles.css/diamond-core.css as
-   .lira-diamond `.context-chat` variants — #chatOrbWrap and its whole
+   .hugo-diamond `.context-chat` variants — #chatOrbWrap and its whole
    decorative subtree no longer exist (see #chatOrbSlot's own comment in
-   main-menu-orb.css); #liraDiamond is the only diamond element now. */
+   main-menu-orb.css); #hugoDiamond is the only diamond element now. */
 
-/* personality-owned: the name label ("L I R A") — Rajdhani (--mm-font-display),
+/* personality-owned: the name label ("H U G O") — Rajdhani (--mm-font-display),
    matching the Main Menu's own .mm-name (main-menu-orb.css) now instead of
    inheriting body's plain monospace system font. Same identity face
    wherever her name appears prominently, not just on Main Menu. */
@@ -141,7 +141,7 @@ body.speaking .status-label { color: var(--accent); }
 /* Bubble panel treatment shared by every non-error message type — angular
    clip-path, per-type background/border set individually below since the
    colors differ per type but the shape/padding is identical. */
-.msg-user, .msg-lira {
+.msg-user, .msg-hugo {
   padding: 8px 12px;
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
 }
@@ -209,19 +209,19 @@ body.speaking .status-label { color: var(--accent); }
 }
 .msg-user .msg-text { color: rgba(255,255,255,0.9); }
 
-/* Chat premium pass — LIRA's assistant bubble: Rajdhani label in her own
+/* Chat premium pass — HUGO's assistant bubble: Rajdhani label in her own
    color, flat Inter body text. Only the label carries color, per spec; no
    radial-gradient glow wash on the body itself. */
-.msg-lira .msg-label {
+.msg-hugo .msg-label {
   font-family: var(--mm-font-display);
   font-weight: 600;
   font-size: 11px;
   letter-spacing: 0.2em;
 }
-.msg-lira .msg-text { color: rgba(255,255,255,0.85); }
+.msg-hugo .msg-text { color: rgba(255,255,255,0.85); }
 
-.msg-lira { background: rgba(240,192,64,0.05);  border: 0.5px solid rgba(240,192,64,0.2);  }
-.msg-lira .msg-label { color: #f0c040; }
+.msg-hugo { background: rgba(240,192,64,0.05);  border: 0.5px solid rgba(240,192,64,0.2);  }
+.msg-hugo .msg-label { color: #f0c040; }
 
 /* .msg-system is currently unreachable — addMessage() has no 'system' TYPES
    entry, system messages are routed to addMaintMessage() (Sistema panel)
@@ -230,7 +230,7 @@ body.speaking .status-label { color: var(--accent); }
    it visually. */
 
 /* Chat premium pass — error: a flat single log-style line, NOT a bubble
-   (deliberately excluded from the .msg-user/.msg-lira bubble-panel
+   (deliberately excluded from the .msg-user/.msg-hugo bubble-panel
    selector above), matching the Sistema panel's own error-entry treatment
    for consistency across the app. */
 /* Console-family touch: a faint tint behind the border, same "tone-coded

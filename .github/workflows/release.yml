@@ -1,4 +1,4 @@
-# Automated release pipeline for LIRA (JarvisLite Electron app)
+# Automated release pipeline for HUGO (JarvisLite Electron app)
 #
 # Triggers on every push to main. Bumps the patch version, builds a universal
 # macOS DMG + ZIP, commits the version change back to main (with [skip ci] so
@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   release:
-    name: Build and release LIRA
+    name: Build and release HUGO
     runs-on: macos-latest   # universal build requires macOS runner
 
     steps:
@@ -63,13 +63,13 @@ jobs:
           echo "Bumped to v${NEW_VERSION}"
 
       # ── Step 5: Build universal macOS app ─────────────────────────────────
-      # Produces electron/dist/LIRA-<version>-universal.dmg,
-      #          electron/dist/LIRA-<version>-universal-mac.zip, and
+      # Produces electron/dist/HUGO-<version>-universal.dmg,
+      #          electron/dist/HUGO-<version>-universal-mac.zip, and
       #          electron/dist/latest-mac.yml (used by electron-updater).
       # CSC_IDENTITY_AUTO_DISCOVERY=false disables code-signing entirely — no
       # certificate or Apple ID is required; Gatekeeper will show a warning on
       # first launch (same behaviour as the current local build).
-      - name: Build LIRA (universal macOS)
+      - name: Build HUGO (universal macOS)
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -96,12 +96,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          name: LIRA v${{ steps.version.outputs.version }}
+          name: HUGO v${{ steps.version.outputs.version }}
           draft: false
           prerelease: false
           files: |
-            electron/dist/LIRA-*-universal.dmg
-            electron/dist/LIRA-*-universal-mac.zip
+            electron/dist/HUGO-*-universal.dmg
+            electron/dist/HUGO-*-universal-mac.zip
             electron/dist/latest-mac.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

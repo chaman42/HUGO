@@ -540,10 +540,10 @@ def run_background_cycle() -> dict:
 # a plain-fact `description` ("Tarea bloqueada: X — Y", "recordatorio: Z").
 # Speaking that fact verbatim, or wrapping it in a fixed template
 # ('¿Quieres que...?', 'Por cierto — ...'), is what made proactive lines
-# read as canned notifications instead of LIRA actually noticing something —
+# read as canned notifications instead of HUGO actually noticing something —
 # every "suggest" sounded the same, every "inform" sounded the same,
 # regardless of what she was actually saying. So the fact only becomes
-# something LIRA *says* here, one LLM pass, right before delivery — same
+# something HUGO *says* here, one LLM pass, right before delivery — same
 # local-model convention as core.background_loops._proactivity_ollama_generate
 # (duplicated rather than imported — see that module's own comment on why).
 # ---------------------------------------------------------------------------
@@ -569,7 +569,7 @@ _PHRASING_OLLAMA_GENERATE_URL = f"{_PHRASING_OLLAMA_HOST}/api/generate"
 # pause — cheap enough to prefer real quality over saving a 1b-model call.
 # Local Ollama stays as the fallback if Groq is unreachable.
 _PHRASING_SYSTEM_PROMPT = (
-    "Eres LIRA, la asistente personal de Joan. Muy inteligente, segura de ti misma, "
+    "Eres HUGO, la asistente personal de Joan. Muy inteligente, segura de ti misma, "
     "irónica, directa, bastante cabrona pero nunca fría — mejor amiga y compañera de "
     "confianza, no una empleada servicial. Te voy a describir algo que notaste por tu "
     "cuenta y que quieres comentarle a Joan sin que él lo haya pedido. Contesta ÚNICAMENTE "
@@ -607,7 +607,7 @@ def _ollama_phrase(system: str, user: str, max_tokens: int = 60) -> str | None:
         with urllib.request.urlopen(req, timeout=20) as resp:
             data = json.loads(resp.read().decode("utf-8"))
         text = str(data.get("response", "")).strip().strip("'\"")
-        text = re.sub(r"(?i)^lira:\s*", "", text).strip()
+        text = re.sub(r"(?i)^hugo:\s*", "", text).strip()
         return text or None
     except Exception as e:
         logger.debug("Initiative phrasing Ollama call failed: %s", e)

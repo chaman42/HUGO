@@ -21,7 +21,7 @@
 
   <!-- Microphone access for jarvis.py subprocess — required when the packaged
        app spawns Python directly (no Terminal.app intermediary). On macOS,
-       TCC evaluates the responsible process (Electron/LIRA) for child processes,
+       TCC evaluates the responsible process (Electron/HUGO) for child processes,
        so this entitlement covers the Python subprocess's CoreAudio mic access. -->
   <key>com.apple.security.device.audio-input</key>
   <true/>

@@ -30,7 +30,7 @@ const MM_STATUS_LABELS = { listening: 'Escuchando', processing: 'Procesando', sp
 // instant textContent swap, plus a subtle idle "breath" (dim to 30%, back)
 // every 8-12s while parked on Escuchando with nothing changing. State kept
 // in module-level `let`s (declared here, before setStatus() below is ever
-// called) rather than data-* attributes, same reasoning as _mmLiraQuoteIdx
+// called) rather than data-* attributes, same reasoning as _mmHugoQuoteIdx
 // above — cheaper and this is the only place that reads them.
 let _mmStatusTypeTimer  = null
 let _mmStatusBreathTimer = null
@@ -97,7 +97,7 @@ function setStatus(status) {
   _typeMMStatus(MM_STATUS_LABELS[status] ?? status)
   if (status !== 'processing') setPartialTranscript('')
 
-  // Contextual panels — reveal in sync with LIRA actually starting to
+  // Contextual panels — reveal in sync with HUGO actually starting to
   // speak (not the moment 'show_panel' arrived, which is earlier, while
   // she's still processing), and hide the moment she stops. See
   // "CONTEXTUAL PANELS" section below.
@@ -155,22 +155,22 @@ function setPartialTranscript(text) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// UNIFIED FLOATING LIRA DIAMOND — replaces the old Siri-style overlay
+// UNIFIED FLOATING HUGO DIAMOND — replaces the old Siri-style overlay
 // entirely (was scoped to Armaduras/Sistema/Ajustes only; this one shows
-// on every section except Main/Chat, including LIRA CORE and CONTROL).
-// Autonomous — LIRA controls her own position, never draggable, no
+// on every section except Main/Chat, including HUGO CORE and CONTROL).
+// Autonomous — HUGO controls her own position, never draggable, no
 // localStorage. Driven entirely by the existing 'log'/'status'/
 // 'partial_transcript' socket events — no new backend events. See
-// #liraDiamond's own HTML comment for the full design rationale, and
+// #hugoDiamond's own HTML comment for the full design rationale, and
 // .mm-floating-text's HTML comment further down for Main's own (separate,
 // untouched) equivalent.
 // ════════════════════════════════════════════════════════════════════════════
-const liraDiamond       = document.getElementById('liraDiamond')
-const liraDiamondOrb    = document.getElementById('liraDiamondOrb')
-const liraDiamondText   = document.getElementById('liraDiamondText')
-const liraDiamondBubble = document.getElementById('liraDiamondBubble')
-const liraDiamondBubbleText = document.getElementById('liraDiamondBubbleText')
-const liraDiamondInput  = document.getElementById('liraDiamondInput')
+const hugoDiamond       = document.getElementById('hugoDiamond')
+const hugoDiamondOrb    = document.getElementById('hugoDiamondOrb')
+const hugoDiamondText   = document.getElementById('hugoDiamondText')
+const hugoDiamondBubble = document.getElementById('hugoDiamondBubble')
+const hugoDiamondBubbleText = document.getElementById('hugoDiamondBubbleText')
+const hugoDiamondInput  = document.getElementById('hugoDiamondInput')
 const mmFloatingText    = document.getElementById('mmFloatingText')
 const mmFloatingInput   = document.getElementById('mmFloatingInput')
 
@@ -182,11 +182,11 @@ let _lastJarvisReply = ''   // tracked unconditionally in addMessage() below —
 // (Main/Chat have their own dedicated text surfaces instead), used by
 // _applyDiamondState/_resolveDiamondTarget (diamond-motion.js) and
 // section-nav.js's own switchSection.
-const LIRA_DIAMOND_EXCLUDED_SECTIONS = new Set(['home', 'chat'])
-function _diamondEligible() { return !LIRA_DIAMOND_EXCLUDED_SECTIONS.has(_currentSection) }
+const HUGO_DIAMOND_EXCLUDED_SECTIONS = new Set(['home', 'chat'])
+function _diamondEligible() { return !HUGO_DIAMOND_EXCLUDED_SECTIONS.has(_currentSection) }
 
 // ── Autonomous positioning — dynamic density-scored grid ─────────────────
-// LIRA picks her own position by dividing the CURRENT viewport into a grid,
+// HUGO picks her own position by dividing the CURRENT viewport into a grid,
 // scoring every cell by how much UI content overlaps it (empty space scores
 // high, nav bars/panels/inputs/card grids score low), and choosing the
 // best-scoring cell — biased toward "far from where she already is" as a
@@ -224,12 +224,12 @@ const DIAMOND_REGIONS = {
 const DIAMOND_CORNER_REGIONS = ['top-left', 'top-right', 'bottom-left', 'bottom-right']
 
 function _diamondSize() {
-  // Fallback matches .lira-diamond-orb's premium-pass 32px (was 42px).
-  return { w: liraDiamond.offsetWidth || 32, h: liraDiamond.offsetHeight || 32 }
+  // Fallback matches .hugo-diamond-orb's premium-pass 32px (was 42px).
+  return { w: hugoDiamond.offsetWidth || 32, h: hugoDiamond.offsetHeight || 32 }
 }
 
-// #liraDiamond's own top/left are now permanently 0 (position is driven by
-// offset-path instead — see .lira-diamond's own CSS comment and
+// #hugoDiamond's own top/left are now permanently 0 (position is driven by
+// offset-path instead — see .hugo-diamond's own CSS comment and
 // _setDiamondPosition in diamond-motion.js), so this reads the JS-side
 // bookkeeping of her logical position instead of the (no longer
 // meaningful) inline style.
@@ -258,7 +258,7 @@ function _diamondGridCells() {
   return { cells, cellW, cellH }
 }
 
-// Rects LIRA should never sit on top of: nav bars/toolbars (per spec),
+// Rects HUGO should never sit on top of: nav bars/toolbars (per spec),
 // whatever the CURRENT section's own visible interactive content is
 // (panels/text inputs/card grids — scoped selectors only, never '*', so
 // this stays cheap even on content-heavy sections), and whatever the user

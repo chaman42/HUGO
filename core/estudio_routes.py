@@ -25,10 +25,10 @@ Incubación phase (core/sleep_phases_incubation.py):
         "sub_questions": list[str], "cycles_processed": int,
         "conclusions": str, "confidence": float (0-1),
     }
-summaries.json — ONLY summaries Joan explicitly asked LIRA to generate
+summaries.json — ONLY summaries Joan explicitly asked HUGO to generate
 ("hazme un resumen de X" etc., core/commands.py's generate_summary()):
     {"title": str, "date": str, "type": "conversación"|"tema"|"diario"|"semanal", "excerpt": str}
-explorations.json — LIRA's OWN autonomous sleep-time discoveries, never
+explorations.json — HUGO's OWN autonomous sleep-time discoveries, never
 user-requested; kept deliberately separate from summaries.json above so
 RESÚMENES only ever shows what Joan actually asked for. Written by
 core/sleep_curiosity_search.py's expanded Phase 8 (active web search

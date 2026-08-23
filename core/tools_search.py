@@ -88,7 +88,7 @@ SERPER_URL     = "https://google.serper.dev/search"
 DUCKDUCKGO_URL = "https://api.duckduckgo.com/"
 
 # Domains treated as authoritative — ranked first and tagged [FUENTE FIABLE]
-# instead of [FUENTE] when injected into LIRA's prompt (see format_search_results).
+# instead of [FUENTE] when injected into HUGO's prompt (see format_search_results).
 TRUSTED_SOURCES: list[str] = [
     # News / general reference
     "bbc.com", "reuters.com", "elpais.com", "nationalgeographic.com", "rae.es",

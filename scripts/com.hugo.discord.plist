@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.lira.discord</string>
+    <string>com.hugo.discord</string>
     <key>ProgramArguments</key>
     <array>
         <string>/PATH/TO/REPO/venv/bin/python3</string>

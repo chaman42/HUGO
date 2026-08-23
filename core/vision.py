@@ -1,4 +1,4 @@
-# VISION — describes an attached image so LIRA can react to what's in it.
+# VISION — describes an attached image so HUGO can react to what's in it.
 # Same cloud-primary/local-fallback shape as core.code_engine.LLMRouter
 # (DeepSeek -> Ollama qwen2.5-coder for code), just for image understanding:
 # a free vision model via OpenRouter tried first, falling back to a local
@@ -6,7 +6,7 @@
 # is unreachable/unconfigured/errors. Callers get back plain descriptive
 # text, which core.commands folds into user_content as extra context for
 # the normal Groq personality reply — this module never talks to Groq or
-# decides what LIRA says, it only describes what's in the image.
+# decides what HUGO says, it only describes what's in the image.
 #
 # OpenRouter, not Gemini direct — Google AI Studio's own API key signup
 # hit a hard age-verification/regional block on Joan's account (nothing
@@ -73,7 +73,7 @@ _DEFAULT_QUESTION = "Describe esta imagen en detalle, en español."
 # Ollama fallback always asks in English regardless of what the user typed
 # or what `question` the caller passed — core.commands' Groq call downstream
 # is the multilingual, personality-aware one; it can paraphrase an English
-# description into Spanish in LIRA's own voice just fine. OpenRouter
+# description into Spanish in HUGO's own voice just fine. OpenRouter
 # (_openrouter below) has no such restriction and uses the real `question`
 # as given.
 _OLLAMA_QUESTION = "Describe this image in detail — objects, colors, setting, any visible text."
@@ -157,7 +157,7 @@ class VisionRouter:
                 # not a secret, same spirit as this codebase's other
                 # public-facing identifiers (e.g. DISCORD_JOAN_ID).
                 "HTTP-Referer": "https://github.com/chaman42/JarvisLite",
-                "X-Title": "LIRA",
+                "X-Title": "HUGO",
             },
         )
         with urllib.request.urlopen(req, timeout=30) as resp:

@@ -1,8 +1,8 @@
 # JarvisLite Architecture
 
 Quick orientation for working in this repo without having to explore it from
-scratch. JarvisLite is "LIRA" — a voice assistant with three switchable
-personalities (Jarvis / Friday / LIRA), Vosk speech recognition, Kokoro/macOS
+scratch. JarvisLite is "HUGO" — a voice assistant with three switchable
+personalities (Jarvis / Friday / HUGO), Vosk speech recognition, Kokoro/macOS
 TTS, a Flask+SocketIO web HUD, and an Electron desktop shell.
 
 ## Process layout
@@ -45,7 +45,7 @@ file's own module docstring).
 | `intent.py` | Local-regex intent detection (no Groq call): time/date, volume, open-app, Calendar read/write/confirm, listen-mode switch, diamond-move commands, web-search gating, tone detection, implicit-context inference. | `_detect_intent()`, `_detect_tone()`, `_infer_implicit_context()`, `_parse_event_date()`/`_parse_event_time()` |
 | `server.py` | Flask + SocketIO app (port 8080). Every HTTP/socket endpoint the frontend calls. | `emit_status()`, `emit_diamond_move()`, route handlers under `/api/*` |
 | `listener.py` | Vosk mic capture loop, wake-word detection, personality-name routing, conversation mode. | `listen()`, `_match_wake_word()`, `_run_dispatch()` |
-| `voice.py` | TTS output — Kokoro (per-personality voices) with macOS `say` fallback, breath-pause insertion, cooldown after speaking. | `speak_kokoro()`/`speak_kokoro_lira()`/`speak_kokoro_friday()`, `speak()` |
+| `voice.py` | TTS output — macOS `say` (the only engine; Kokoro/XTTS were removed), breath-pause insertion, cooldown after speaking. | `speak()` |
 | `tools.py` | Live data only — time/date/location/weather/volume/apps/Calendar/web search/math. Never returns cached or trained-knowledge data. | `get_weather()`, `get_location()`, `search_web()`, `evaluate_math()` |
 | `sleep.py` | The Sleep System: 8-phase autonomous maintenance (memory cleanup, fact promotion, insight generation, mind-map updates). Dependency-light on purpose (no `core.commands`/`core.voice`) so it can run standalone via `launchd`. | `run_continuous_sleep()`, `get_sleep_summary()`, `get_status()` |
 | `reflective.py` | Lightweight idle-time consolidation pass, shared by both the "app open" idle trigger and the standalone `launchd` job. | `run_reflective_session()` |
@@ -115,8 +115,8 @@ from having run the assistant.
 
 ## Running/restarting the app during development
 
-**The real app is the Electron shell — `LIRA.app`** (a copy lives at both
-`~/Desktop/LIRA.app` and `/Applications/LIRA.app`; either is fine, they're
+**The real app is the Electron shell — `HUGO.app`** (a copy lives at both
+`~/Desktop/HUGO.app` and `/Applications/HUGO.app`; either is fine, they're
 the same build). It has the correct gold-diamond icon and is what spawns
 `launcher.py` → `jarvis.py` as child processes on open.
 
@@ -125,11 +125,11 @@ Safari "Add to Dock" web-app shortcut pointed at `localhost:8079`, from
 an early dev workflow, with a generic/wrong icon and no relation to the
 real Electron build. It caused real confusion (two similarly-purposed
 apps, one broken-looking) and was removed. If something like it
-reappears, delete it — `LIRA.app` is the only app that should exist for
+reappears, delete it — `HUGO.app` is the only app that should exist for
 this project.
 
 **Editing `ui/` files does not update a window that's already open.**
-`LIRA.app`'s window loads `http://localhost:8079` once at launch and
+`HUGO.app`'s window loads `http://localhost:8079` once at launch and
 then behaves like any browser tab — it keeps running whatever JS/CSS it
 already fetched, same as a page you haven't refreshed. The *server*
 serves new files immediately (confirm with
@@ -143,9 +143,9 @@ but the *running window* won't reflect them until it actually reloads:
   keystroke-injection (`osascript`/System Events sending Cmd+R will
   fail with "not permitted to send keystrokes" otherwise): fully
   restart the process —
-  `pkill -f "LIRA.app/Contents/MacOS/LIRA"` (this also kills
+  `pkill -f "HUGO.app/Contents/MacOS/HUGO"` (this also kills
   `launcher.py`/`jarvis.py`, its children) then
-  `open ~/Desktop/LIRA.app` (or the `/Applications` copy) to relaunch
+  `open ~/Desktop/HUGO.app` (or the `/Applications` copy) to relaunch
   everything fresh. Wait ~20s for `jarvis.py` to report ready in
   `logs/launcher.log` before assuming something's broken.
 

@@ -1,4 +1,4 @@
-"""Schema/mind-map generation skill — thin LiraSkill wrapper over
+"""Schema/mind-map generation skill — thin HugoSkill wrapper over
 core.commands.generate_schema (ESTUDIO -> ESQUEMAS; makes its own Groq
 call and persists the result). commands imported lazily inside execute(),
 not at module scope, so importing this skill at loader-startup doesn't
@@ -9,10 +9,10 @@ imports (see e.g. core/intent.py's module comment).
 `context` may carry {"schema_type": "outline" | "mapa conceptual" |
 "estructura", "conversation_context": str}, mirroring generate_schema()'s
 own parameters."""
-from skills import LiraSkill
+from skills import HugoSkill
 
 
-class SchemaGeneratorSkill(LiraSkill):
+class SchemaGeneratorSkill(HugoSkill):
     name = "schema_generator"
     flag = "skill_schemas"
     description = "Genera esquemas y mapas conceptuales para ESTUDIO -> ESQUEMAS."

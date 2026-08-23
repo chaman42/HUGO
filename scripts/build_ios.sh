@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# build_ios.sh — build LIRA's Capacitor-wrapped frontend into a sideloadable
+# build_ios.sh — build HUGO's Capacitor-wrapped frontend into a sideloadable
 # .ipa (for SideStore) from the current ui/ source.
 #
 # Pipeline: npx cap sync ios -> xcodebuild archive -> xcodebuild -exportArchive
-# Output:   ios/App/ipa/LIRA.ipa
+# Output:   ios/App/ipa/HUGO.ipa
 #
 # NOTE ON PROJECT LAYOUT: this Capacitor version (7.x) generates the iOS
 # platform using Swift Package Manager, not CocoaPods — there is no
@@ -25,10 +25,10 @@ REPO="$HOME/Desktop/JarvisLite"
 IOS_DIR="$REPO/ios/App"
 PROJECT="$IOS_DIR/App.xcodeproj"
 SCHEME="App"
-ARCHIVE_PATH="$IOS_DIR/LIRA.xcarchive"
+ARCHIVE_PATH="$IOS_DIR/HUGO.xcarchive"
 EXPORT_PATH="$IOS_DIR/ipa"
 EXPORT_OPTIONS="$REPO/ios/ExportOptions.plist"
-IPA_OUT="$EXPORT_PATH/LIRA.ipa"
+IPA_OUT="$EXPORT_PATH/HUGO.ipa"
 
 export GIT_DIR="$REPO/.git"
 export GIT_WORK_TREE="$REPO"
@@ -103,5 +103,5 @@ xcodebuild -exportArchive \
     || fail "xcodebuild -exportArchive failed — see $BUILD_LOG for the full log (often a signing/provisioning-profile issue: open ios/App/App.xcworkspace or App.xcodeproj in Xcode once, sign in with your Apple ID under Signing & Capabilities, and register this device)"
 
 [ -f "$IPA_OUT" ] || fail "export reported success but $IPA_OUT is missing"
-log "LIRA.ipa ready at $IPA_OUT"
+log "HUGO.ipa ready at $IPA_OUT"
 echo "$IPA_OUT"

@@ -1,4 +1,4 @@
-/* diamond-toggles.css — Lira floating diamond intro styles plus settings toggle switches and test-mode UI. */
+/* diamond-toggles.css — Hugo floating diamond intro styles plus settings toggle switches and test-mode UI. */
 /* Feature toggles — same .info-row rhythm (label left, control right,
    hairline divider) so the list reads as part of the same panel; the
    control is a skinned switch instead of a static value. See
@@ -63,9 +63,6 @@
   box-shadow: 0 0 6px rgba(63,169,245,0.6);
 }
 .toggle-switch:disabled { opacity: 0.4; cursor: default; }
-
-/* MOTOR DE VOZ (XTTS / KOKORO engine toggle) moved to its own premium
-   redesign in ui/css/components.css — see that file. */
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MODO TEST — dedicated angular toggle (see #testModeToggle's own HTML
@@ -208,12 +205,12 @@
 .offline-banner.show { display: block; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   UNIFIED FLOATING LIRA DIAMOND — single persistent point of interaction
-   with LIRA whenever NOT on Main or Chat (both have their own equivalents
+   UNIFIED FLOATING HUGO DIAMOND — single persistent point of interaction
+   with HUGO whenever NOT on Main or Chat (both have their own equivalents
    — Main's floating text+input, Chat's full log+input). Replaces the old
    Siri-style overlay entirely (was scoped to only Armaduras/Sistema/
-   Ajustes; this shows on every other section, including LIRA CORE/
-   CONTROL). Autonomous — LIRA controls her own position, the user cannot
+   Ajustes; this shows on every other section, including HUGO CORE/
+   CONTROL). Autonomous — HUGO controls her own position, the user cannot
    drag her (see _applyDiamondState/_bestIdlePosition in the script); while
    idle she picks the lowest-density corner of a density-scored grid
    computed fresh from the current viewport + DOM (see
@@ -223,7 +220,7 @@
    8600: above normal section content, below modals/flashes/boot overlay
    (9xxx).
 ═══════════════════════════════════════════════════════════════════════════ */
-.lira-diamond {
+.hugo-diamond {
   position: fixed;
   /* top/left are now PERMANENTLY 0 — never touched again after this rule.
      Bug fix (round 3 — "still resizes before it moves", "moves so
@@ -265,7 +262,7 @@
     transform       0.42s cubic-bezier(0.23, 1, 0.32, 1);
   transform: scale(var(--diamond-scale, 1));
 }
-.lira-diamond.visible {
+.hugo-diamond.visible {
   opacity: 1;
   pointer-events: auto;
 }
@@ -282,10 +279,10 @@
    diamond (--diamond-scale e.g. ~3.4) would otherwise visibly SNAP down
    to floating-size for the animation's 0.35s before jumping back up once
    it ends and this class is removed. */
-.lira-diamond.arrived {
-  animation: lira-diamond-arrival-bounce 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 1;
+.hugo-diamond.arrived {
+  animation: hugo-diamond-arrival-bounce 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 1;
 }
-@keyframes lira-diamond-arrival-bounce {
+@keyframes hugo-diamond-arrival-bounce {
   0%   { transform: scale(var(--diamond-scale, 1)); }
   100% { transform: scale(calc(var(--diamond-scale, 1) * 1.045)); }
 }
@@ -295,12 +292,12 @@
    language as the main menu's own panels: rgba(0,4,10,0.88) + blur(16px),
    0.5px accent-blue border, 6px-cut clip-path corners instead of
    border-radius. Text materializes organically, word by word, via
-   _showDiamondText() → _organicReveal() (see .lira-organic-word's own CSS
+   _showDiamondText() → _organicReveal() (see .hugo-organic-word's own CSS
    comment, untouched by this pass) — not a plain textContent swap, and
-   deliberately NOT the character-by-character _typewriterReveal() LIRA
-   CORE's Pensamiento tab uses (a system panel, out of scope for LIRA's-
+   deliberately NOT the character-by-character _typewriterReveal() HUGO
+   CORE's Pensamiento tab uses (a system panel, out of scope for HUGO's-
    own-animation changes). */
-.lira-diamond-text {
+.hugo-diamond-text {
   max-width: 280px;
   margin-bottom: 12px;
   padding: 9px 18px;
@@ -318,14 +315,14 @@
   pointer-events: none;
   transition: opacity 0.4s ease;
 }
-.lira-diamond-text.visible { opacity: 1; }
-.lira-diamond-text:empty { display: none; }
+.hugo-diamond-text.visible { opacity: 1; }
+.hugo-diamond-text:empty { display: none; }
 
 /* ── Organic word-by-word text reveal/dissolve ────────────────────────────
-   Shared by every LIRA-own response text surface — .lira-diamond-text
-   (above), .mm-floating-text (Main Menu) and .lira-diamond-bubble-text
+   Shared by every HUGO-own response text surface — .hugo-diamond-text
+   (above), .mm-floating-text (Main Menu) and .hugo-diamond-bubble-text
    (the click-to-expand bubble) — via _organicReveal()/_organicDissolve()
-   in the script. Deliberately NOT used by _typewriterReveal() (LIRA CORE's
+   in the script. Deliberately NOT used by _typewriterReveal() (HUGO CORE's
    Pensamiento tab, a diagnostic system panel, out of scope here).
 
    Reveal: each word gets its own <span>, staggered by animation-delay, and
@@ -339,35 +336,35 @@
    Dissolve: reads as "dissipating energy" rather than a flat fade — scales
    UP slightly while blurring and drifting further, rather than just
    fading to 0 in place. */
-.lira-organic-word {
+.hugo-organic-word {
   display: inline-block;
   opacity: 0;
   transform: translateY(6px);
   filter: blur(4px);
-  animation: lira-word-in 0.5s cubic-bezier(0.22,0.61,0.36,1) both;
+  animation: hugo-word-in 0.5s cubic-bezier(0.22,0.61,0.36,1) both;
 }
-@keyframes lira-word-in {
+@keyframes hugo-word-in {
   0%   { opacity: 0;    transform: translateY(6px);  filter: blur(4px); }
   60%  { opacity: 0.85; transform: translateY(-1px); filter: blur(1px); }
   100% { opacity: 1;    transform: translateY(0);     filter: blur(0); }
 }
-.lira-organic-word.lira-dissolving {
-  animation: lira-word-out 0.55s cubic-bezier(0.55,0,0.85,0.3) forwards;
+.hugo-organic-word.hugo-dissolving {
+  animation: hugo-word-out 0.55s cubic-bezier(0.55,0,0.85,0.3) forwards;
 }
-@keyframes lira-word-out {
+@keyframes hugo-word-out {
   0%   { opacity: 1; transform: translateY(0)     scale(1);    filter: blur(0); }
   100% { opacity: 0; transform: translateY(-10px) scale(1.15); filter: blur(5px); }
 }
 
 /* The diamond itself, fixed gold regardless of active personality — same
-   "always LIRA's diamond" rule the boot overlay follows. .lira-diamond-orb
+   "always HUGO's diamond" rule the boot overlay follows. .hugo-diamond-orb
    is an UNCLIPPED positioning/click-target wrapper only — the actual
-   geometry (clip-path, background, border) lives on the .lira-diamond-shape
+   geometry (clip-path, background, border) lives on the .hugo-diamond-shape
    child instead, same "wrapper vs. shape" split as .orb-wrap/.orb-shape
    elsewhere in this file. That split exists specifically so
-   .lira-diamond-glow (a sibling of .lira-diamond-shape, see its own CSS
+   .hugo-diamond-glow (a sibling of .hugo-diamond-shape, see its own CSS
    block) can bloom BEYOND the diamond's silhouette — if the clip-path were
-   on .lira-diamond-orb itself, it would clip the glow to the same diamond
+   on .hugo-diamond-orb itself, it would clip the glow to the same diamond
    outline too, and the halo would never actually be visible past her
    edges. Precise geometry: an exact 45°-rotated square (clip-path touches
    every edge at 0/50/100), not the old 5%-inset polygon, for sharper
@@ -375,27 +372,27 @@
    toggled by _applyDiamondState() — see setStatus()'s own hook for when
    each fires. Not draggable — cursor: pointer, just a click target for the
    response bubble (see _toggleDiamondBubble).
-   Premium pass: 42px -> 32px idle (see .lira-diamond.speaking
-   .lira-diamond-orb below for the 40px speaking target — a state-level
-   scale on the orb wrapper, same pattern .lira-diamond.wake already uses
+   Premium pass: 42px -> 32px idle (see .hugo-diamond.speaking
+   .hugo-diamond-orb below for the 40px speaking target — a state-level
+   scale on the orb wrapper, same pattern .hugo-diamond.wake already uses
    on the whole widget, NOT a retuned keyframe peak; the existing speaking
    ripple keyframe is untouched and composes on top of it). The old flat
    radial-gradient fill +
-   ::before diagonal highlight are GONE — .lira-diamond-facet-svg (new,
+   ::before diagonal highlight are GONE — .hugo-diamond-facet-svg (new,
    below) is the same real 4-facet SVG used on the main-menu orb and is now
-   what's actually visible as the colored diamond body. .lira-diamond-shape
+   what's actually visible as the colored diamond body. .hugo-diamond-shape
    itself becomes background:transparent and keeps only its border/
    box-shadow — every existing state animation (idle breathe's clip-path
    wobble, wake/speaking's border-color pulse, personality-shift's hue
    ripple) still runs on it exactly as before, so it now reads as a
    reactive outline ring layered on top of the facets rather than a flat
    fill — the wobble/pulse effects are unchanged, just applied to a border
-   instead of a border+fill. .lira-diamond-facet-svg shares the SAME
+   instead of a border+fill. .hugo-diamond-facet-svg shares the SAME
    animation names (added via compound selectors throughout this block) so
    its clip-path/transform stay pixel-locked to the ring underneath it. */
-/* transform here (not on .lira-diamond-shape/-facet-svg) is the "diamond
-   scales up to 40px" state target — .lira-diamond.speaking sets scale(1.25)
-   below (40/32px), same pattern .lira-diamond.wake already uses on the
+/* transform here (not on .hugo-diamond-shape/-facet-svg) is the "diamond
+   scales up to 40px" state target — .hugo-diamond.speaking sets scale(1.25)
+   below (40/32px), same pattern .hugo-diamond.wake already uses on the
    whole widget, just scoped to the orb only so the text bubble/click
    popup don't grow too. The existing ripple keyframes on the children
    underneath are UNCHANGED and compose multiplicatively on top of this —
@@ -405,20 +402,20 @@
    spring easing") — reuses the same overshoot bezier the diamond's own
    position moves used to use, so leaving 'speaking' settles back to 32px
    like a spring, not a snap. */
-.lira-diamond-orb {
+.hugo-diamond-orb {
   position: relative;
   width: 32px; height: 32px;
   cursor: pointer;
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.lira-diamond.speaking .lira-diamond-orb {
+.hugo-diamond.speaking .hugo-diamond-orb {
   transform: scale(1.25);
 }
 /* New facet layer — real 4-facet SVG (top/left/right/bottom fills +
    top-left specular stroke + inner radial glow), identical geometry to the
-   main-menu orb's own .mm-orb-facet-svg. Sibling of .lira-diamond-shape,
+   main-menu orb's own .mm-orb-facet-svg. Sibling of .hugo-diamond-shape,
    painted first (DOM order) so the border ring above stays on top of it. */
-.lira-diamond-facet-svg {
+.hugo-diamond-facet-svg {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   pointer-events: none;
@@ -427,7 +424,7 @@
      matches the old .mm-orb-facet-svg so that breathing scales from center. */
   transform-origin: center;
 }
-.lira-diamond-shape {
+.hugo-diamond-shape {
   position: absolute; inset: 0;
   /* 5%-inset polygon — matches .mm-orb-shape/.orb-shape exactly (both big
      docking targets), not a full-bleed 0/50/100 diamond. A geometry
@@ -438,11 +435,11 @@
      facet-SVG fill on the other. */
   clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%);
   background: transparent;
-  border: 1px solid rgba(240,192,64,0.8);
+  border: 1px solid rgba(64,156,240,0.8);
   box-shadow: 0 2px 8px rgba(0,0,0,0.4);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
 }
-.lira-diamond-orb:hover .lira-diamond-shape { border-color: #f0c040; }
+.hugo-diamond-orb:hover .hugo-diamond-shape { border-color: #409cf0; }
 
 /* Idle — organic breathing, not a mechanical pulse: irregular keyframe
    spacing (0/17/41/63/88/100, not evenly-spaced quarters) with a DIFFERENT
@@ -456,14 +453,14 @@
    property rather than transform/opacity, which is why it's used only
    here and nowhere else non-negotiable. Amplitude stays tiny (per-point
    drift ≤1% of the shape) — "present but not distracting," per spec.
-   Glow now lives entirely on the separate .lira-diamond-glow layer (see
+   Glow now lives entirely on the separate .hugo-diamond-glow layer (see
    its own CSS block) — border-color/box-shadow are no longer part of
    this loop at all. */
-.lira-diamond.idle .lira-diamond-shape,
-.lira-diamond.idle .lira-diamond-facet-svg {
-  animation: lira-diamond-breathe 5.4s infinite;
+.hugo-diamond.idle .hugo-diamond-shape,
+.hugo-diamond.idle .hugo-diamond-facet-svg {
+  animation: hugo-diamond-breathe 5.4s infinite;
 }
-@keyframes lira-diamond-breathe {
+@keyframes hugo-diamond-breathe {
   0%   { transform: scale(1);      clip-path: polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%); animation-timing-function: cubic-bezier(0.42,0,0.58,1); }
   17%  { transform: scale(1.012);  clip-path: polygon(51% 6%, 94% 49%, 50% 94%, 6% 51%); animation-timing-function: cubic-bezier(0.30,0.10,0.60,0.90); }
   41%  { transform: scale(1.004);  clip-path: polygon(49% 5%, 95% 51%, 51% 95%, 5% 49%); animation-timing-function: cubic-bezier(0.50,0,0.40,1); }
@@ -473,7 +470,7 @@
 }
 
 /* Wake word detected — transient attention state (see
-   LIRA_DIAMOND_WAKE_HOLD_MS): glides to bottom-center, grows slightly
+   HUGO_DIAMOND_WAKE_HOLD_MS): glides to bottom-center, grows slightly
    (via _glideDiamondTo's scale param — see _triggerDiamondWake in
    diamond-motion.js — not a CSS rule here, since --diamond-scale is the
    ONE mechanism controlling her whole-widget size now, whatever the
@@ -481,16 +478,16 @@
    idle's breathe to draw the eye. Settles into 'processing' if a real
    command follows, or back to 'idle' at its corner if it was a false
    alarm. */
-.lira-diamond.wake .lira-diamond-shape {
-  animation: lira-diamond-wake-pulse 0.6s ease-in-out infinite;
+.hugo-diamond.wake .hugo-diamond-shape {
+  animation: hugo-diamond-wake-pulse 0.6s ease-in-out infinite;
 }
-@keyframes lira-diamond-wake-pulse {
+@keyframes hugo-diamond-wake-pulse {
   0%, 100% {
-    border-color: rgba(240,192,64,0.85);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 8px rgba(240,192,64,0.5);
+    border-color: rgba(64,156,240,0.85);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 8px rgba(64,156,240,0.5);
   }
   50% {
-    border-color: #ffd76a;
+    border-color: #6ab7ff;
     box-shadow: 0 2px 10px rgba(0,0,0,0.45), 0 0 16px rgba(255,215,110,0.7);
   }
 }
@@ -500,12 +497,12 @@
    equivalent now that they're gone; also gives the floating diamond a
    "resting but actively listening" look she never had on her own before.
    Same moderate always-on pulse in every context. */
-.lira-diamond.listening .lira-diamond-shape {
-  animation: lira-diamond-listen-pulse 2.5s ease-in-out infinite;
+.hugo-diamond.listening .hugo-diamond-shape {
+  animation: hugo-diamond-listen-pulse 2.5s ease-in-out infinite;
 }
-@keyframes lira-diamond-listen-pulse {
-  0%, 100% { box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 8px rgba(240,192,64,0.35); }
-  50%      { box-shadow: 0 2px 10px rgba(0,0,0,0.45), 0 0 16px rgba(240,192,64,0.6); }
+@keyframes hugo-diamond-listen-pulse {
+  0%, 100% { box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 8px rgba(64,156,240,0.35); }
+  50%      { box-shadow: 0 2px 10px rgba(0,0,0,0.45), 0 0 16px rgba(64,156,240,0.6); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -513,7 +510,7 @@
    formerly separate #mmOrbWrap/#chatOrbWrap elements entirely, now sibling
    layers inside THIS element shown only while docked onto that section (see
    _resolveDiamondTarget() in section-nav.js, which toggles context-main/
-   context-chat on #liraDiamond alongside every glide). Absolute-px values
+   context-chat on #hugoDiamond alongside every glide). Absolute-px values
    here are recomputed proportionally against her own 32px base size (not
    copied verbatim from the old ~120px/148px designs) since she now reaches
    Main's/Chat's actual size via transform:scale() (--diamond-scale) rather
@@ -528,8 +525,8 @@
 /* Gem markers at the diamond's 4 points — shown while docked onto either
    section (formerly .mm-orb-gem/.orb-gem), hidden while floating (she
    never carried gems on her own, by existing design). Siblings of
-   .lira-diamond-shape, not children, so the clip-path never clips them. */
-.lira-diamond-gem {
+   .hugo-diamond-shape, not children, so the clip-path never clips them. */
+.hugo-diamond-gem {
   position: absolute;
   width: 2px; height: 2px;
   background: var(--p-color);
@@ -539,25 +536,25 @@
   pointer-events: none;
   transition: opacity 0.2s ease;
 }
-.lira-diamond.context-main .lira-diamond-gem,
-.lira-diamond.context-chat .lira-diamond-gem {
+.hugo-diamond.context-main .hugo-diamond-gem,
+.hugo-diamond.context-chat .hugo-diamond-gem {
   opacity: 1;
   animation: gem-sparkle 2.6s ease-in-out infinite;
 }
-.lira-diamond-gem.top    { top: -1px;    left: 50%; transform: translateX(-50%) rotate(45deg); }
-.lira-diamond-gem.right  { top: 50%;     right: -1px; transform: translateY(-50%) rotate(45deg); }
-.lira-diamond-gem.bottom { bottom: -1px; left: 50%; transform: translateX(-50%) rotate(45deg); }
-.lira-diamond-gem.left   { top: 50%;     left: -1px; transform: translateY(-50%) rotate(45deg); }
+.hugo-diamond-gem.top    { top: -1px;    left: 50%; transform: translateX(-50%) rotate(45deg); }
+.hugo-diamond-gem.right  { top: 50%;     right: -1px; transform: translateY(-50%) rotate(45deg); }
+.hugo-diamond-gem.bottom { bottom: -1px; left: 50%; transform: translateX(-50%) rotate(45deg); }
+.hugo-diamond-gem.left   { top: 50%;     left: -1px; transform: translateY(-50%) rotate(45deg); }
 @keyframes gem-sparkle {
   0%, 100% { box-shadow: 0 0 2px var(--p-color), 0 0 4px var(--p-glow); }
   50%       { box-shadow: 0 0 4px var(--p-color), 0 0 8px var(--p-glow); }
 }
 
-/* Idle particle dust (.lira-diamond-particle-N, see diamond-core.css) is
+/* Idle particle dust (.hugo-diamond-particle-N, see diamond-core.css) is
    floating-context only — Main gets its own richer rAF-driven field
-   instead (.lira-diamond-particles below), Chat gets neither. */
-.lira-diamond.context-main .lira-diamond-particle,
-.lira-diamond.context-chat .lira-diamond-particle {
+   instead (.hugo-diamond-particles below), Chat gets neither. */
+.hugo-diamond.context-main .hugo-diamond-particle,
+.hugo-diamond.context-chat .hugo-diamond-particle {
   display: none;
 }
 

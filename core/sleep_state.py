@@ -24,7 +24,7 @@ def _p(rel: str) -> str:
 load_dotenv(_p(".env"))
 
 MEMORY_SHARED_PATH       = _p("data/memory_shared.json")
-MEMORY_LIRA_PATH         = _p("data/memory_lira.json")
+MEMORY_HUGO_PATH         = _p("data/memory_hugo.json")
 EPISODES_PATH            = _p("data/episodes.json")
 # Same path core/reflective.py's own CONNECTIONS_PATH points at — duplicated
 # here rather than imported (see module docstring: dependency isolation).
@@ -90,7 +90,7 @@ PRIORITY_ASSESSMENT_MAX_TOKENS = 200
 # Phase 0 — 🧠 Mantenimiento de Memoria. Runs BEFORE all other phases, on
 # every session (auto or manual), unconditionally — never part of
 # _assess_priority()'s reordering (see run_sleep_session). Reviews
-# memory_shared.json / memory_lira.json for lifespan-expired facts,
+# memory_shared.json / memory_hugo.json for lifespan-expired facts,
 # near-duplicates to merge, facts mixing two distinct things to split,
 # misclassified category/lifespan, and vague repeated facts that deserve
 # temporal generalization — see _phase_memory_maintenance.

@@ -17,14 +17,14 @@ const state = require('./state')
 // ---------------------------------------------------------------------------
 const NOTIFY_INJECTOR = `
 (function () {
-  if (window.__liraNotifyPatched) return;
-  window.__liraNotifyPatched = true;
+  if (window.__hugoNotifyPatched) return;
+  window.__hugoNotifyPatched = true;
   var _orig = window.addMessage;
   if (typeof _orig !== 'function') return;
   window.addMessage = function (type, message) {
     if (type === 'jarvis' && message &&
         window.electronAPI && window.electronAPI.notifyResponse) {
-      var p = (typeof currentPersonality !== 'undefined') ? currentPersonality : 'lira';
+      var p = (typeof currentPersonality !== 'undefined') ? currentPersonality : 'hugo';
       window.electronAPI.notifyResponse(p, message);
     }
     return _orig.apply(this, arguments);
@@ -33,7 +33,7 @@ const NOTIFY_INJECTOR = `
 `
 
 // ---------------------------------------------------------------------------
-// Window state persistence — ~/Library/Application Support/LIRA/window-state.json
+// Window state persistence — ~/Library/Application Support/HUGO/window-state.json
 // Saves and restores window position and size between sessions.
 // ---------------------------------------------------------------------------
 const WIN_STATE_FILE = 'window-state.json'
@@ -60,7 +60,7 @@ function saveWindowState (win) {
       JSON.stringify({ x, y, width, height })
     )
   } catch (err) {
-    console.error('[LIRA] Could not save window state:', err.message)
+    console.error('[HUGO] Could not save window state:', err.message)
   }
 }
 
@@ -80,8 +80,8 @@ function showStartupError (message, onRetry) {
   const buttons = onRetry ? ['Reintentar', 'Salir'] : ['Entendido']
   dialog.showMessageBox({
     type:     'error',
-    title:    'LIRA',
-    message:  'No se pudo iniciar LIRA',
+    title:    'HUGO',
+    message:  'No se pudo iniciar HUGO',
     detail:   message,
     buttons,
     defaultId: 0,
@@ -104,9 +104,29 @@ function createWindow (url) {
   const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize
   const winW  = saved?.width  ?? DEFAULT_WIDTH
   const winH  = saved?.height ?? DEFAULT_HEIGHT
-  // When no saved position exists, center on the primary display
-  const winX  = saved?.x ?? Math.floor((sw - winW) / 2)
-  const winY  = saved?.y ?? Math.floor((sh - winH) / 2)
+
+  // A saved x/y was trusted unconditionally here, with no check that it's
+  // still on a display that's actually connected right now — e.g. saved
+  // while a second monitor was attached, then that monitor unplugged (or
+  // never present on this machine at all). Electron does NOT clamp window
+  // position to visible bounds on its own, so the window opened fully
+  // off-screen with no visible symptom other than "nothing appears" —
+  // looked identical to a boot/render failure. Validate the saved position
+  // actually intersects some connected display before trusting it; fall
+  // back to centered-on-primary otherwise, same as the no-saved-state path.
+  let winX = saved?.x
+  let winY = saved?.y
+  if (winX != null && winY != null) {
+    const onScreen = screen.getAllDisplays().some(d => {
+      const b = d.workArea
+      return winX + winW > b.x && winX < b.x + b.width &&
+             winY + winH > b.y && winY < b.y + b.height
+    })
+    if (!onScreen) { winX = null; winY = null }
+  }
+  // When no saved position exists (or it was rejected above), center on the primary display
+  winX = winX ?? Math.floor((sw - winW) / 2)
+  winY = winY ?? Math.floor((sh - winH) / 2)
 
   mainWindow = new BrowserWindow({
     width:           winW,
@@ -160,7 +180,7 @@ function createWindow (url) {
   // Standard macOS app behavior — the red button closes the WINDOW, not the
   // app; the backend (launcher.py + jarvis.py) and the menu-bar tray keep
   // running exactly as they already do while the window is hidden via the
-  // tray's own "Hide LIRA" (see toggleWindow()) or Cmd+Shift+Space. Same
+  // tray's own "Hide HUGO" (see toggleWindow()) or Cmd+Shift+Space. Same
   // hide + tray-menu-refresh as those paths, so all three are indistinguishable
   // once hidden. Actually quitting is still Cmd+Q or Tray › Quit — both go
   // through the SAME graceful before-quit handler as before, unaffected by

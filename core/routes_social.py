@@ -2,11 +2,11 @@
 (who's currently detected), GET /api/social/people (all known people +
 trust levels), POST /api/social/people (Joan manually registers someone),
 POST /api/social/people/<id>/trust (Joan updates trust — the only place
-trust_level ever changes, never auto-elevated by LIRA; also marks the
+trust_level ever changes, never auto-elevated by HUGO; also marks the
 person trust_confirmed), GET /api/social/people/<id> (person detail +
 interaction history), PATCH /api/social/people/<id> (edit name/
-relationship_to_joan/knows_lira), DELETE /api/social/people/<id> (forget
-person). Backs the Núcleo LIRA "Personas" tab. See core/social.py's own
+relationship_to_joan/knows_hugo), DELETE /api/social/people/<id> (forget
+person). Backs the Núcleo HUGO "Personas" tab. See core/social.py's own
 module docstring."""
 import logging
 from dataclasses import asdict
@@ -44,11 +44,11 @@ _VALID_RELATIONSHIPS = {"friend", "family", "colleague", "stranger"}   # 'self' 
 
 @app.route("/api/social/people", methods=["POST"])
 def api_social_person_create():
-    """Joan manually registering someone LIRA hasn't (yet) identified on
+    """Joan manually registering someone HUGO hasn't (yet) identified on
     her own — the Personas tab's 'Añadir persona'. Created-by-Joan means
     reviewed-by-Joan by definition, so trust_confirmed starts True (see
     Person.trust_confirmed's own docstring in core/social.py) — unlike a
-    person LIRA creates herself (currently only via the Discord branch of
+    person HUGO creates herself (currently only via the Discord branch of
     _match_context), which starts False until Joan looks at it here."""
     try:
         body = request.get_json(silent=True) or {}
@@ -65,7 +65,7 @@ def api_social_person_create():
             return jsonify({"ok": False, "error": "trust_level must be a number"}), 400
         trust = max(0.0, min(1.0, float(trust)))
 
-        knows_lira = bool(body.get("knows_lira", False))
+        knows_hugo = bool(body.get("knows_hugo", False))
         now = social._now_iso()
 
         with social._lock:
@@ -73,7 +73,7 @@ def api_social_person_create():
             person_id = social._next_person_id_locked(data)
             data["people"][person_id] = {
                 "id": person_id, "name": name, "relationship_to_joan": relationship_to_joan,
-                "trust_level": trust, "knows_lira": knows_lira, "trust_confirmed": True,
+                "trust_level": trust, "knows_hugo": knows_hugo, "trust_confirmed": True,
                 "voice_profile_id": None, "linguistic_profile": {},
                 "first_seen": now, "last_seen": now, "interaction_count": 0,
                 "discord_id": None,
@@ -113,7 +113,7 @@ def api_social_person_detail(person_id):
 def api_social_person_trust(person_id):
     """Joan-only, explicit action — the ONLY place a trust_level ever
     changes (spec: 'Trust level is set by Joan — never auto-elevated by
-    LIRA'). No caller-identity check here beyond this being a
+    HUGO'). No caller-identity check here beyond this being a
     Joan-facing HUD/launcher API route (same trust boundary as every other
     /api/* route in this app, none of which are exposed to Discord or
     other untrusted callers). Joan's own trust_level is fixed at 1.0 —
@@ -152,7 +152,7 @@ def api_social_person_trust(person_id):
 @app.route("/api/social/people/<person_id>", methods=["PATCH"])
 def api_social_person_edit(person_id):
     """Joan-only — edits the fields the trust route (above) deliberately
-    doesn't touch: name, relationship_to_joan, knows_lira. Refuses 'joan'
+    doesn't touch: name, relationship_to_joan, knows_hugo. Refuses 'joan'
     entirely, same as the trust/delete routes — her record stays exactly
     as seeded (relationship_to_joan='self' isn't a value this route would
     ever accept anyway, see _VALID_RELATIONSHIPS above). Every field is
@@ -172,8 +172,8 @@ def api_social_person_edit(person_id):
             if rel not in _VALID_RELATIONSHIPS:
                 return jsonify({"ok": False, "error": f"relationship_to_joan must be one of {sorted(_VALID_RELATIONSHIPS)}"}), 400
             updates["relationship_to_joan"] = rel
-        if "knows_lira" in body:
-            updates["knows_lira"] = bool(body.get("knows_lira"))
+        if "knows_hugo" in body:
+            updates["knows_hugo"] = bool(body.get("knows_hugo"))
         if not updates:
             return jsonify({"ok": False, "error": "no editable fields provided"}), 400
 

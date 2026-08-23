@@ -1,7 +1,7 @@
 'use strict'
 
 // ---------------------------------------------------------------------------
-// LIRA — Electron main process entry point
+// HUGO — Electron main process entry point
 //
 // Responsibilities:
 //   1. Probe Tailscale → fall back to localhost and spawn launcher.py locally
@@ -48,7 +48,7 @@ const LOCALHOST_URL  = 'http://localhost:8079'
 const UPDATE_POLL_INTERVAL = 3_000  // ms between /api/health checks for a pending relaunch
 
 // ---------------------------------------------------------------------------
-// Single-instance lock — if a second LIRA process is launched (e.g. double-
+// Single-instance lock — if a second HUGO process is launched (e.g. double-
 // clicking the app icon), focus the existing window and exit the new process.
 // ---------------------------------------------------------------------------
 const _gotSingleInstanceLock = app.requestSingleInstanceLock()
@@ -70,9 +70,9 @@ app.on('second-instance', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Global keyboard shortcut — Cmd+Shift+Space activates LIRA from any app.
+// Global keyboard shortcut — Cmd+Shift+Space activates HUGO from any app.
 // TODO: make the accelerator configurable via settings panel
-//       (persist to ~/Library/Application Support/LIRA/settings.json).
+//       (persist to ~/Library/Application Support/HUGO/settings.json).
 // ---------------------------------------------------------------------------
 function setupGlobalShortcut () {
   const accelerator = 'CommandOrControl+Shift+Space'
@@ -90,15 +90,15 @@ function setupGlobalShortcut () {
     trayMod.updateTray()
   })
   if (!ok) {
-    console.warn('[LIRA] Could not register global shortcut', accelerator,
+    console.warn('[HUGO] Could not register global shortcut', accelerator,
       '— another app may be using it.')
   } else {
-    console.log('[LIRA] Global shortcut registered:', accelerator)
+    console.log('[HUGO] Global shortcut registered:', accelerator)
   }
 }
 
 // ---------------------------------------------------------------------------
-// Auto-relaunch after an in-app update ("Actualizar LIRA" in System Info).
+// Auto-relaunch after an in-app update ("Actualizar HUGO" in System Info).
 // Same reasoning as the mute-state poll in tray.js — SocketIO events from
 // launcher.py reach the renderer, not this main process — so this polls
 // launcher.py's /api/health for the pending_relaunch flag that api_update()
@@ -107,7 +107,7 @@ function setupGlobalShortcut () {
 // (_relaunchAfterQuit + app.quit(), handled in the before-quit handler
 // below) rather than a second parallel shutdown routine, then relaunches
 // with AUTOSTART_ARG so the fresh instance starts jarvis.py immediately —
-// see backend_process.js's startLauncher() and launcher.py's LIRA_AUTOSTART check.
+// see backend_process.js's startLauncher() and launcher.py's HUGO_AUTOSTART check.
 // ---------------------------------------------------------------------------
 let _relaunchTriggered = false
 
@@ -127,7 +127,7 @@ function setupUpdateRelaunchPoll () {
               if (pending_relaunch && !_relaunchTriggered) {
                 _relaunchTriggered  = true
                 _relaunchAfterQuit  = true
-                console.log('[LIRA] Update completed — relaunching to pick it up…')
+                console.log('[HUGO] Update completed — relaunching to pick it up…')
                 app.quit()
               }
             } catch (_) {}
@@ -160,7 +160,7 @@ ipcMain.on('jarvis-response', (event, { personality, text } = {}) => {
 
   if (!Notification.isSupported()) return
 
-  const title = String(personality || 'lira').toUpperCase()
+  const title = String(personality || 'hugo').toUpperCase()
   const n = new Notification({ title, body, silent: true })
   n.on('click', () => {
     // Bring window to front — unhide if necessary (e.g. user clicked red X)
@@ -182,7 +182,7 @@ ipcMain.on('jarvis-response', (event, { personality, text } = {}) => {
 // Runs the probe → spawn → poll sequence. Called once on launch and again
 // each time the user clicks "Reintentar" on the loading window, so on
 // failure it reports into the loading window instead of quitting the app —
-// the user should never have to reopen LIRA just because the backend was
+// the user should never have to reopen HUGO just because the backend was
 // slow once (Vosk + Kokoro pre-warm can take 30-60s on a cold first launch).
 let bootInProgress = false
 async function bootBackend () {
@@ -202,15 +202,15 @@ async function bootBackend () {
   const isRetry = !!(mainWindowBefore && !mainWindowBefore.isDestroyed())
   try {
     // 1. Try the Tailscale backend first; fall back to a local launch
-    console.log('[LIRA] Probing Tailscale backend at', TAILSCALE_URL, '…')
+    console.log('[HUGO] Probing Tailscale backend at', TAILSCALE_URL, '…')
     const tailscaleOk = await backend.probe(TAILSCALE_URL)
 
     if (tailscaleOk) {
       state.setBackendUrl(TAILSCALE_URL)
-      console.log('[LIRA] Tailscale backend reachable — using', state.getBackendUrl())
+      console.log('[HUGO] Tailscale backend reachable — using', state.getBackendUrl())
     } else {
       state.setBackendUrl(LOCALHOST_URL)
-      console.log('[LIRA] Tailscale unreachable — launching backend locally')
+      console.log('[HUGO] Tailscale unreachable — launching backend locally')
 
       const root = backend.findProjectRoot()
       if (!root) {
@@ -233,9 +233,9 @@ async function bootBackend () {
     } catch (err) {
       // Bounce dock icon on error — the only time we ever call app.dock.bounce()
       if (app.dock) app.dock.bounce('critical')
-      console.error('[LIRA] Backend did not become ready in time:', err.message)
+      console.error('[HUGO] Backend did not become ready in time:', err.message)
       winMod.showStartupError(
-        'LIRA está tardando más de lo esperado en iniciar.\n\n' +
+        'HUGO está tardando más de lo esperado en iniciar.\n\n' +
         'Puedes esperar un poco más o reintentarlo.',
         bootBackend,
       )
@@ -250,7 +250,7 @@ async function bootBackend () {
     //    loading window) — or, on a retry from within an already-open HUD,
     //    just reload the existing window into the fresh backend instead.
     if (isRetry) {
-      console.log('[LIRA] Retry: reloading existing HUD window instead of creating a duplicate.')
+      console.log('[HUGO] Retry: reloading existing HUD window instead of creating a duplicate.')
       mainWindowBefore.loadURL(state.getBackendUrl())
     } else {
       winMod.createWindow(state.getBackendUrl())
@@ -260,13 +260,13 @@ async function bootBackend () {
       // 4. Menu bar tray icon (always-on — survives window hide/close on macOS)
       trayMod.setupTray()
 
-      // 5. Global hotkey: Cmd+Shift+Space activates LIRA from any app
+      // 5. Global hotkey: Cmd+Shift+Space activates HUGO from any app
       setupGlobalShortcut()
 
       // 6. Set up auto-updater (packaged builds only — avoids spurious errors in dev)
       if (app.isPackaged) setupUpdater()
 
-      // 7. Poll for a completed in-app update ("Actualizar LIRA") so this
+      // 7. Poll for a completed in-app update ("Actualizar HUGO") so this
       //    process can relaunch itself automatically
       setupUpdateRelaunchPoll()
     }
@@ -295,7 +295,7 @@ let restartInProgress = false
 ipcMain.on('restart-backend', () => {
   if (restartInProgress || bootInProgress) return
   restartInProgress = true
-  console.log('[LIRA] restart-backend requested — killing backend and rebooting.')
+  console.log('[HUGO] restart-backend requested — killing backend and rebooting.')
   backend.killBackend(() => {
     backend.killProcessesOnPorts([8079, 8080], () => {
       backend.resetForRestart()

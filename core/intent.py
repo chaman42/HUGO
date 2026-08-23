@@ -266,13 +266,13 @@ _INTENT_REMINDER_CREATE_RE = re.compile(
 # *_propose handlers, which stash it in _pending_action below rather than
 # doing anything yet) instead of executing directly like their Level 1
 # counterparts above. Deliberately narrow/conservative patterns — false
-# positives here mean LIRA interrupting a normal conversation with an
+# positives here mean HUGO interrupting a normal conversation with an
 # unwanted proposal, which is worse than occasionally missing one.
 # ---------------------------------------------------------------------------
 
 # 'no me olvides que...' / 'tengo que acordarme de...' — note this is
 # DIFFERENT from _INTENT_REMINDER_CREATE_RE above ('recuérdame que...' is a
-# direct order to LIRA; these two are the user thinking out loud, which is
+# direct order to HUGO; these two are the user thinking out loud, which is
 # exactly what Level 3 covers).
 _INTENT_REMINDER_IMPLIED_RE = re.compile(
     r"\bno\s+me\s+olvides\s+(?:de\s+)?que\s+(.+)|\btengo\s+que\s+acordarme\s+de\s+(.+)",
@@ -281,7 +281,7 @@ _INTENT_REMINDER_IMPLIED_RE = re.compile(
 
 # 'tengo que ir a X mañana a las Y' — only proposed if a date actually
 # parses out of the sentence (see _detect_intent below); otherwise it's too
-# vague to prepare anything concrete and LIRA should say nothing rather
+# vague to prepare anything concrete and HUGO should say nothing rather
 # than guess. 'a(?:l)?' covers both 'ir a la playa' and the contracted
 # 'ir al dentista' (a + el -> al).
 _INTENT_CALENDAR_IMPLIED_GO_RE = re.compile(r"\btengo\s+que\s+ir\s+a(?:l)?\s+(.+)", re.IGNORECASE)
@@ -455,11 +455,11 @@ _NEGATIVE_RE = re.compile(
     re.IGNORECASE,
 )
 
-# A leading vocative naming LIRA ('lira, hazme un resumen de X') is
+# A leading vocative naming HUGO ('hugo, hazme un resumen de X') is
 # completely natural — typed chat has no wake-word boundary to strip it at,
 # and even voice conversation mode often has the user address her by name
 # mid-sentence. Every START-anchored (^) pattern below (_INTENT_SUMMARY_RE,
-# _INTENT_SCHEMA_*_RE) would otherwise silently miss on 'lira hazme un
+# _INTENT_SCHEMA_*_RE) would otherwise silently miss on 'hugo hazme un
 # resumen de X' — it doesn't start with 'hazme' once you count the name —
 # and fall through to a normal conversational Groq reply that has no idea a
 # summary/schema/investigation was ever supposed to happen, yet cheerfully
@@ -468,7 +468,7 @@ _NEGATIVE_RE = re.compile(
 # Stripped once, up front, so every check below — including the
 # pending-action affirmative/negative check just above — sees the same
 # clean transcript.
-_LEADING_VOCATIVE_RE = re.compile(r"^\s*lira\s*[,;:]?\s+", re.IGNORECASE)
+_LEADING_VOCATIVE_RE = re.compile(r"^\s*hugo\s*[,;:]?\s+", re.IGNORECASE)
 
 
 def _detect_intent(transcript: str) -> dict:
@@ -622,36 +622,3 @@ def _detect_intent(transcript: str) -> dict:
     if _EXPLICIT_SEARCH_REQUEST_RE.search(transcript) or _CURRENT_INFO_KEYWORD_RE.search(transcript):
         return {"intent": "web_search", "parameters": {}}
     return {"intent": "unknown", "parameters": {}}
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# DESIGN MODE — Armor Design Studio (Diseño → Armaduras). 'desarrolla esto' /
-# 'no sé cómo seguir' / 'toma el control' / 'qué harías tú aquí' — the phrases
-# that hand a design zone over to LIRA so she proposes the decision instead
-# of just asking clarifying questions. Not routed through _detect_intent()
-# above: the design workspace's chat panel (ui/js/design-studio.js) talks to
-# its own endpoint (core/design_routes.py's POST /api/designs/chat), which
-# calls is_design_takeover() directly on each message rather than going
-# through the full voice-assistant dispatch pipeline — the workspace already
-# knows which zone/design is active, context _detect_intent has no access
-# to. Kept here anyway (not in design_routes.py) since it's classification,
-# same category as every other _INTENT_*_RE above.
-# ═══════════════════════════════════════════════════════════════════════════
-_DESIGN_TAKEOVER_RE = re.compile(
-    r"\bdesarrolla(?:me)?\s+esto\b|"
-    r"\bno\s+s[eé]\s+c[oó]mo\s+seguir\b|"
-    r"\btoma\s+(?:el\s+)?control\b|"
-    r"\bqu[eé]\s+har[ií]as\s+t[uú]\s+aqu[ií]\b|"
-    r"\bqu[eé]\s+har[ií]as\s+t[uú]\b|"
-    r"\bpropon\s+(?:algo|una?\s+idea)\b|"
-    r"\bt[uú]\s+decides\b",
-    re.IGNORECASE,
-)
-
-
-def is_design_takeover(text: str) -> bool:
-    """True if `text` (one message from the design workspace's chat panel)
-    is asking LIRA to take over the current zone's design decisions rather
-    than just answer/clarify. See core.commands.handle_design_mode, which
-    branches its system prompt on this."""
-    return bool(_DESIGN_TAKEOVER_RE.search(text or ""))

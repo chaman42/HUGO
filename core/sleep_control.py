@@ -14,7 +14,7 @@
 # and a single terminate() unconditionally stops it regardless of what
 # phase it's mid-call on.
 #
-# _continuous_sleep_proc is the ONLY authority in this app on "is LIRA
+# _continuous_sleep_proc is the ONLY authority in this app on "is HUGO
 # sleeping right now" — core/server.py's status endpoint calls
 # is_continuous_sleep_running() rather than re-deriving this itself.
 #
@@ -45,7 +45,7 @@ _continuous_sleep_proc: subprocess.Popen | None = None
 
 # Set by notify_user_interaction() the instant it actually interrupts a
 # running sleep — read-and-cleared exactly once by
-# core.personalities.base._build_system_prompt() so LIRA's very next reply
+# core.personalities.base._build_system_prompt() so HUGO's very next reply
 # can acknowledge just having woken up, in character, without this leaking
 # into any later reply.
 _just_woke_from_sleep: bool = False
@@ -53,7 +53,7 @@ _just_woke_from_sleep: bool = False
 
 def is_continuous_sleep_running() -> bool:
     """True if a continuous-sleep child process is currently alive. Single
-    source of truth for "is LIRA sleeping right now" in this process."""
+    source of truth for "is HUGO sleeping right now" in this process."""
     with _continuous_sleep_lock:
         proc = _continuous_sleep_proc
     return proc is not None and proc.poll() is None

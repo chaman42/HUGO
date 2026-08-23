@@ -67,26 +67,26 @@ function _cycleChunks(el, chunks, onAllDone) {
 // paces itself via _cycleChunks() above and glides back the moment its own
 // last chunk finishes, without waiting on this fixed hold at all — each
 // chunk already got its own full reading time on the way there. ──
-const LIRA_DIAMOND_TEXT_HOLD_MS = 3000
+const HUGO_DIAMOND_TEXT_HOLD_MS = 3000
 let _diamondTextHideTimer  = null
-let _diamondChunkCancel    = null   // non-null while a multi-chunk cycle owns liraDiamondText's lifecycle
+let _diamondChunkCancel    = null   // non-null while a multi-chunk cycle owns hugoDiamondText's lifecycle
 
 function _showDiamondText(text) {
   clearTimeout(_diamondTextHideTimer)
   if (_diamondChunkCancel) { _diamondChunkCancel(); _diamondChunkCancel = null }
-  liraDiamondText.classList.remove('visible')
-  void liraDiamondText.offsetWidth   // force reflow so the fade-in replays even if already visible
-  liraDiamondText.classList.add('visible')
+  hugoDiamondText.classList.remove('visible')
+  void hugoDiamondText.offsetWidth   // force reflow so the fade-in replays even if already visible
+  hugoDiamondText.classList.add('visible')
 
   const chunks = _splitIntoChunks(text)
   if (chunks.length <= 1) {
-    _organicReveal(liraDiamondText, text)
+    _organicReveal(hugoDiamondText, text)
     return
   }
-  _diamondChunkCancel = _cycleChunks(liraDiamondText, chunks, () => {
+  _diamondChunkCancel = _cycleChunks(hugoDiamondText, chunks, () => {
     _diamondChunkCancel = null
-    liraDiamondText.classList.remove('visible')
-    liraDiamondText.innerHTML = ''
+    hugoDiamondText.classList.remove('visible')
+    hugoDiamondText.innerHTML = ''
     // Glide back to the corner now — unless a NEW turn already started
     // while this was still cycling (setStatus's own sync already moved
     // the diamond for it; don't yank it back mid-turn).
@@ -97,83 +97,83 @@ function _scheduleDiamondTextHide() {
   clearTimeout(_diamondTextHideTimer)
   if (_diamondChunkCancel) return   // a multi-chunk cycle owns the lifecycle now — let it finish at its own pace
   _diamondTextHideTimer = setTimeout(() => {
-    _organicDissolve(liraDiamondText, () => {
-      liraDiamondText.classList.remove('visible')
-      liraDiamondText.innerHTML = ''
+    _organicDissolve(hugoDiamondText, () => {
+      hugoDiamondText.classList.remove('visible')
+      hugoDiamondText.innerHTML = ''
     })
     // Glide back to the corner now — unless a NEW turn already started
     // during the hold (setStatus's own sync already moved the diamond to
     // 'processing'/'speaking' for it; don't yank it back mid-turn).
     if (currentStatus !== 'processing' && currentStatus !== 'speaking') _applyDiamondState('idle')
-  }, LIRA_DIAMOND_TEXT_HOLD_MS)
+  }, HUGO_DIAMOND_TEXT_HOLD_MS)
 }
 
 // ── Click-to-expand bubble ──────────────────────────────────────────────
-const LIRA_DIAMOND_BUBBLE_TIMEOUT_MS = 8000
+const HUGO_DIAMOND_BUBBLE_TIMEOUT_MS = 8000
 let _diamondBubbleTimer = null
 
 // Grows away from whichever screen edge the (autonomously positioned, so
 // varies by state/section) diamond is currently closest to, so the bubble
 // never opens off-screen.
 function _positionDiamondBubble() {
-  const rect     = liraDiamond.getBoundingClientRect()
+  const rect     = hugoDiamond.getBoundingClientRect()
   const growLeft = rect.left > window.innerWidth  / 2
   const growUp   = rect.top  > window.innerHeight / 2
-  liraDiamondBubble.style.right  = growLeft ? '0'    : 'auto'
-  liraDiamondBubble.style.left   = growLeft ? 'auto' : '0'
-  liraDiamondBubble.style.bottom = growUp   ? 'calc(100% + 14px)' : 'auto'
-  liraDiamondBubble.style.top    = growUp   ? 'auto' : 'calc(100% + 14px)'
+  hugoDiamondBubble.style.right  = growLeft ? '0'    : 'auto'
+  hugoDiamondBubble.style.left   = growLeft ? 'auto' : '0'
+  hugoDiamondBubble.style.bottom = growUp   ? 'calc(100% + 14px)' : 'auto'
+  hugoDiamondBubble.style.top    = growUp   ? 'auto' : 'calc(100% + 14px)'
 }
 
 function _resetDiamondBubbleTimer() {
   clearTimeout(_diamondBubbleTimer)
-  _diamondBubbleTimer = setTimeout(_closeDiamondBubble, LIRA_DIAMOND_BUBBLE_TIMEOUT_MS)
+  _diamondBubbleTimer = setTimeout(_closeDiamondBubble, HUGO_DIAMOND_BUBBLE_TIMEOUT_MS)
 }
 function _openDiamondBubble() {
   // _organicReveal('') on an empty _lastJarvisReply still ends up with
   // el genuinely empty (innerHTML cleared, no spans appended), so
-  // .lira-diamond-bubble-text:empty::before's placeholder still applies.
-  _organicReveal(liraDiamondBubbleText, _lastJarvisReply)
+  // .hugo-diamond-bubble-text:empty::before's placeholder still applies.
+  _organicReveal(hugoDiamondBubbleText, _lastJarvisReply)
   _positionDiamondBubble()
-  liraDiamond.classList.add('open')
+  hugoDiamond.classList.add('open')
   _resetDiamondBubbleTimer()
 }
 function _closeDiamondBubble() {
-  liraDiamond.classList.remove('open')
+  hugoDiamond.classList.remove('open')
   clearTimeout(_diamondBubbleTimer)
 }
 function _toggleDiamondBubble() {
-  if (liraDiamond.classList.contains('open')) _closeDiamondBubble()
+  if (hugoDiamond.classList.contains('open')) _closeDiamondBubble()
   else _openDiamondBubble()
 }
 
-liraDiamondInput.addEventListener('input', _resetDiamondBubbleTimer)
-liraDiamondInput.addEventListener('keydown', e => {
+hugoDiamondInput.addEventListener('input', _resetDiamondBubbleTimer)
+hugoDiamondInput.addEventListener('keydown', e => {
   _resetDiamondBubbleTimer()
-  if (e.key === 'Enter') sendTextCommand(liraDiamondInput)
+  if (e.key === 'Enter') sendTextCommand(hugoDiamondInput)
 })
 
 // Tap outside the bubble closes it (per spec) — capture phase so this
 // still sees the click even if something inside a section stops
 // propagation. Only closes the BUBBLE, not the diamond itself.
 document.addEventListener('click', (e) => {
-  if (!liraDiamond.classList.contains('open')) return
-  if (liraDiamond.contains(e.target)) return
+  if (!hugoDiamond.classList.contains('open')) return
+  if (hugoDiamond.contains(e.target)) return
   _closeDiamondBubble()
 }, { capture: true })
 
 // ── Click to open/close the bubble — not draggable (see the top of this
-// section: LIRA controls her own position autonomously). ─────────────────
-liraDiamondOrb.addEventListener('click', () => _toggleDiamondBubble())
+// section: HUGO controls her own position autonomously). ─────────────────
+hugoDiamondOrb.addEventListener('click', () => _toggleDiamondBubble())
 
 
 // ── Main menu floating text ──────────────────────────────────────────────
 // Hold duration for the user's own brief echo, and the fallback hold for a
-// single-chunk (short) reply from LIRA once she stops speaking (see
+// single-chunk (short) reply from HUGO once she stops speaking (see
 // setStatus's speaking→not-speaking transition below, which arms this
 // timer at that point — so a short reply stays up for the full time she's
 // actually speaking, not just a fixed few seconds from when the text first
-// arrived). A multi-chunk (long) reply from LIRA instead paces itself via
+// arrived). A multi-chunk (long) reply from HUGO instead paces itself via
 // _cycleChunks() — see _showMMFloatingText below — and never reaches this
 // timer at all, same split as the floating diamond's own text above.
 const MM_FLOATING_TEXT_HOLD_MS = 4000
@@ -187,7 +187,7 @@ function _showMMFloatingText(text, isUserEcho) {
   mmFloatingText.classList.remove('visible')
   void mmFloatingText.offsetWidth
   mmFloatingText.classList.add('visible')
-  // Organic word-by-word reveal (and chunk pacing) is specifically LIRA's
+  // Organic word-by-word reveal (and chunk pacing) is specifically HUGO's
   // own response text (per spec) — the user's own brief echo alongside it
   // stays a plain, instant set + the existing container-level opacity
   // fade, unchanged.
@@ -227,7 +227,7 @@ const APP_LAUNCHER_APPS = [
   {
     id:     'core',
     icon:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L20 12 L12 21 L4 12 Z"/><path d="M12 3 V21 M4 12 H20"/></svg>',
-    label:  'NÚCLEO LIRA',
+    label:  'NÚCLEO HUGO',
     action: () => switchSection('core'),
   },
   {
@@ -241,12 +241,6 @@ const APP_LAUNCHER_APPS = [
     icon:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5 C10.2 5 7.3 4.5 4 5 V18 C7.3 17.5 10.2 18 12 19.5 C13.8 18 16.7 17.5 20 18 V5 C16.7 4.5 13.8 5 12 6.5 Z"/><path d="M12 6.5 V19.5"/></svg>',
     label:  'ESTUDIO',
     action: () => switchSection('estudio'),
-  },
-  {
-    id:     'bughunter',
-    icon:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9 V7 a3 3 0 0 1 6 0 v2"/><rect x="7" y="9" width="10" height="10" rx="4"/><line x1="12" y1="9" x2="12" y2="19"/><line x1="7" y1="12" x2="3" y2="10"/><line x1="7" y1="16" x2="3" y2="18"/><line x1="17" y1="12" x2="21" y2="10"/><line x1="17" y1="16" x2="21" y2="18"/><line x1="9" y1="6" x2="7" y2="4"/><line x1="15" y1="6" x2="17" y2="4"/></svg>',
-    label:  'BUG HUNTER',
-    action: () => switchSection('bughunter'),
   },
   // Add new apps here — one line each: { id, icon (SVG string), label, action }
 ]
@@ -299,7 +293,7 @@ document.addEventListener('click', (e) => {
 }, { capture: true })
 
 // ════════════════════════════════════════════════════════════════════════════
-// LIRA CORE — Estado / Pensamiento / Memoria / Mapa. Reached only via the
+// HUGO CORE — Estado / Pensamiento / Memoria / Mapa. Reached only via the
 // app launcher (switchSection('core')). Own independent sub-tab state
 // (_currentCoreSub), separate from Armor Bay's _currentSub even though
 // both reuse .armor-subtabs/.armor-subtab's generic CSS.
@@ -329,6 +323,5 @@ document.querySelectorAll('#section-core .armor-subtab').forEach(btn => {
 
 document.getElementById('coreClose').addEventListener('click', () => switchSection('home'))
 document.getElementById('controlClose').addEventListener('click', () => switchSection('home'))
-document.getElementById('bughunterClose').addEventListener('click', () => switchSection('home'))
 
 // ── Estado ────────────────────────────────────────────────────────────────

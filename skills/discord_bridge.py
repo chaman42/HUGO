@@ -7,14 +7,14 @@ Discord gateway connection already runs as its own always-on launchd agent
 see core/server.py's own comment on why core.server.start() never starts it
 either. Doing so here would open a second Gateway connection on the same
 bot token and answer every DM twice."""
-from skills import LiraSkill
+from skills import HugoSkill
 from core import discord_bridge
 
 
-class DiscordBridgeSkill(LiraSkill):
+class DiscordBridgeSkill(HugoSkill):
     name = "discord_bridge"
     flag = "skill_discord"
-    description = "Consulta quién está autorizado a hablar con LIRA por Discord."
+    description = "Consulta quién está autorizado a hablar con HUGO por Discord."
     triggers = ["quién está autorizado en discord", "autorizados de discord"]
 
     def execute(self, query: str, context: dict) -> str:

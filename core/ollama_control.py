@@ -219,7 +219,7 @@ def kill_orphaned_continuous_sleep_processes() -> int:
     launch.
 
     Real incident this fixes: core.sleep_control's sweep only runs once, at
-    jarvis.py's own startup — while LIRA stays closed, nothing ever
+    jarvis.py's own startup — while HUGO stays closed, nothing ever
     triggers it again. Orphaned continuous-sleep children (parent jarvis.py
     already dead) accumulated for over a day, and each one made
     scripts/ollama_guard.py's own _any_sleep_process_alive() check treat

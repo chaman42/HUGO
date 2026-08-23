@@ -26,7 +26,7 @@
 /* ── Large personality orb slot — 120px desktop, clamp()'d down for smaller
      viewports per spec (80px <500px / 100px 500-900px / 120px 900px+,
      approximated continuously so there's no visible snap at the
-     breakpoints). Pure layout placeholder now: LIRA herself (#liraDiamond,
+     breakpoints). Pure layout placeholder now: HUGO herself (#hugoDiamond,
      see diamond-toggles.css/diamond-core.css) is the only diamond element
      that exists — she overlays this slot's own rect (via
      _resolveDiamondTarget() in section-nav.js) instead of a second element
@@ -42,12 +42,12 @@
    .mm-edge-readouts, see that block below. Removed rather than left as an
    orphaned rule.) */
 
-/* Personality name — Rajdhani 700, LIRA's own identity mark rather than the
+/* Personality name — Rajdhani 700, HUGO's own identity mark rather than the
    Inter/JetBrains Mono system-chrome pairing used everywhere else in this
    section (see --mm-font-display). Geometric but with more character than
    Inter — deliberately not on the strict 11/14/18/28/48 scale (32px is a
    one-off for this single title). color stays var(--p-color) rather than a
-   hardcoded gold, even though LIRA is now the only personality — #f0c040 is
+   hardcoded gold, even though HUGO is now the only personality — #409cf0 is
    simply what --p-color resolves to. position:relative + the ::after
    beneath it fake a soft contact-shadow so the label reads as floating
    just above the panel surface rather than sitting flush on it. */
@@ -80,7 +80,7 @@
   .mm-name { font-size: 20px; letter-spacing: 0.35em; }
 }
 
-/* Status (Escuchando / Procesando / Hablando) — also Rajdhani (LIRA's own
+/* Status (Escuchando / Procesando / Hablando) — also Rajdhani (HUGO's own
    face, paired with .mm-name), not the mono system-chrome font used by
    every other label in this section — this one line is part of her
    identity cluster, not system telemetry. Base color is the spec's
@@ -154,7 +154,7 @@ body.speaking   .mm-status-dot { animation: none; opacity: 1; } /* steady — no
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CONTEXTUAL PANELS — weather/time/... side panels that slide in beside the
-   orb while LIRA speaks about that topic. See core/commands.py's
+   orb while HUGO speaks about that topic. See core/commands.py's
    _maybe_emit_panel() (backend trigger, via the 'show_panel' socket event
    emitted through core/server.py's emit_show_panel()) and the "CONTEXTUAL
    PANELS" section in the script below (frontend: PANEL_RENDERERS registry +

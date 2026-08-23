@@ -40,10 +40,10 @@ def emit_build_ios_progress(stage: str, label: str) -> None:
 def api_update():
     """Run scripts/rebuild_app.sh synchronously — git pull, bump+push a
     Service Worker cache-bust commit, rebuild, reinstall
-    /Applications/LIRA.app — and report whether it actually completed.
+    /Applications/HUGO.app — and report whether it actually completed.
 
-    Backs the "Actualizar LIRA" button in the System Info panel. Sets
-    LIRA_FORCE_UPDATE=1 so rebuild_app.sh's "skip if LIRA is running" guard
+    Backs the "Actualizar HUGO" button in the System Info panel. Sets
+    HUGO_FORCE_UPDATE=1 so rebuild_app.sh's "skip if HUGO is running" guard
     (meant for the unattended 6-hourly LaunchAgent) doesn't apply here — this
     call is always made from inside the very session being updated, which is
     exactly the explicit, user-initiated case that guard is meant to exempt.
@@ -56,7 +56,7 @@ def api_update():
     when the user has re-confirmed through the frontend's second "a Claude
     Code session is active, force anyway?" dialog (see ui/app.js) after a
     first attempt was skipped by rebuild_app.sh's Claude Code guard. Passed
-    through as LIRA_SKIP_CLAUDE_GUARD=1, the one thing that lets that guard
+    through as HUGO_SKIP_CLAUDE_GUARD=1, the one thing that lets that guard
     proceed instead of no-op'ing — see its comment in rebuild_app.sh for
     the data-loss risk this is knowingly overriding.
 
@@ -87,9 +87,9 @@ def api_update():
     lines: list[str] = []
     stage = "downloading"
 
-    env = {**os.environ, "LIRA_FORCE_UPDATE": "1"}
+    env = {**os.environ, "HUGO_FORCE_UPDATE": "1"}
     if skip_claude_guard:
-        env["LIRA_SKIP_CLAUDE_GUARD"] = "1"
+        env["HUGO_SKIP_CLAUDE_GUARD"] = "1"
 
     try:
         proc = subprocess.Popen(
@@ -125,7 +125,7 @@ def api_update():
             elif stage == "compiling" and "Installing to" in line:
                 stage = "installing"
                 emit_update_progress(stage, "Instalando...")
-            elif stage == "installing" and "LIRA actualizada correctamente" in line:
+            elif stage == "installing" and "HUGO actualizada correctamente" in line:
                 stage = "restarting"
                 emit_update_progress(stage, "Reiniciando...")
 
@@ -149,7 +149,7 @@ def api_update():
     if output:
         logger.info("rebuild_app.sh output:\n%s", output)
 
-    if returncode == 0 and "LIRA actualizada correctamente" in output:
+    if returncode == 0 and "HUGO actualizada correctamente" in output:
         if stage != "restarting":
             emit_update_progress("restarting", "Reiniciando...")
         pm._pending_relaunch = True

@@ -75,7 +75,7 @@ function _resolveDiamondTarget(name) {
 // bottom/right/auto-toggling version of this code silently SNAPPED
 // instead of gliding on whichever axis flipped which side was "active".
 // Anchoring everything to top+left in pixels makes every move a pure
-// length→length interpolation, which .lira-diamond's transition (500ms,
+// length→length interpolation, which .hugo-diamond's transition (500ms,
 // cubic-bezier(0.23, 1, 0.32, 1) — see its own CSS comment) can always
 // animate.
 let _diamondMoving        = false   // true while a move's CSS transition is in flight
@@ -85,7 +85,7 @@ let _diamondMoveFallbackTimer = null
 let _diamondPositionSetAt = Date.now()   // last time a REAL position change was applied — anti-annoyance cooldown clock (see _diamondAmbientMoveAllowed)
 
 // Logical top-left corner of her (unscaled, base-size) box — top/left in
-// the CSS are now permanently 0 (see .lira-diamond's own comment); this is
+// the CSS are now permanently 0 (see .hugo-diamond's own comment); this is
 // the JS-side bookkeeping of "where does she logically live right now",
 // updated the instant a move STARTS (not when it visually finishes,
 // matching the old top/left-based code's exact semantics — a CSS
@@ -110,12 +110,12 @@ function _onDiamondMoveSettled() {
   }
   _playDiamondArrivalBounce()
 }
-liraDiamond.addEventListener('transitionend', ev => {
+hugoDiamond.addEventListener('transitionend', ev => {
   // 'transform' alongside offset-distance since scale (--diamond-scale)
   // rides the exact same transition — a scale-only move (rare; scale
   // changes normally accompany a position change) still needs to settle
   // off its own real transition end, not just the 700ms fallback.
-  if (ev.target === liraDiamond && (ev.propertyName === 'offset-distance' || ev.propertyName === 'transform')) _onDiamondMoveSettled()
+  if (ev.target === hugoDiamond && (ev.propertyName === 'offset-distance' || ev.propertyName === 'transform')) _onDiamondMoveSettled()
 })
 
 // Builds a single genuine SVG quadratic-bezier curve (not the old two-
@@ -149,7 +149,7 @@ function _setDiamondPosition(top, left, scale = 1) {
     _diamondQueuedMove = { top, left, scale }
     return
   }
-  const currentScale = parseFloat(liraDiamond.style.getPropertyValue('--diamond-scale')) || 1
+  const currentScale = parseFloat(hugoDiamond.style.getPropertyValue('--diamond-scale')) || 1
   if (_diamondCurTop === top && _diamondCurLeft === left && currentScale === scale) return
 
   const { w, h } = _diamondSize()
@@ -169,13 +169,13 @@ function _setDiamondPosition(top, left, scale = 1) {
   // 0%->100% along it — same warp-then-transition technique already used
   // elsewhere in this app for "start a fresh animation from an exact
   // point without any of it visibly happening first".
-  liraDiamond.style.transition = 'none'
-  liraDiamond.style.offsetPath = path
-  liraDiamond.style.offsetDistance = '0%'
-  void liraDiamond.offsetWidth   // force the rewind to actually apply before...
-  liraDiamond.style.transition = ''   // ...restoring it so the traversal below animates normally
-  liraDiamond.style.offsetDistance = '100%'
-  liraDiamond.style.setProperty('--diamond-scale', scale)
+  hugoDiamond.style.transition = 'none'
+  hugoDiamond.style.offsetPath = path
+  hugoDiamond.style.offsetDistance = '0%'
+  void hugoDiamond.offsetWidth   // force the rewind to actually apply before...
+  hugoDiamond.style.transition = ''   // ...restoring it so the traversal below animates normally
+  hugoDiamond.style.offsetDistance = '100%'
+  hugoDiamond.style.setProperty('--diamond-scale', scale)
 
   // Fallback safety net — if transitionend never fires for some reason
   // (e.g. the element becomes momentarily unrenderable), this guarantees
@@ -193,19 +193,19 @@ function _setDiamondPosition(top, left, scale = 1) {
 // before settling exactly there at 100% — that spike IS the "spring".
 // Deliberately a temporary class + keyframe animation rather than a second
 // permanent transform owner: every element here already has its own
-// state-driven transform (.lira-diamond.wake, .lira-diamond-orb/-glow's
+// state-driven transform (.hugo-diamond.wake, .hugo-diamond-orb/-glow's
 // per-state scale rules) — once this animation ends (see the
-// 'animationend' listener below) and the class is removed, .lira-diamond's
+// 'animationend' listener below) and the class is removed, .hugo-diamond's
 // own EXISTING transform transition (same spring curve, already used for
 // the wake-state grow) smoothly glides back down to whatever the current
 // state's resting scale actually is, so this never fights or overrides it.
 function _playDiamondArrivalBounce() {
-  liraDiamond.classList.remove('arrived')
-  void liraDiamond.offsetWidth   // force reflow so re-adding immediately restarts the animation
-  liraDiamond.classList.add('arrived')
+  hugoDiamond.classList.remove('arrived')
+  void hugoDiamond.offsetWidth   // force reflow so re-adding immediately restarts the animation
+  hugoDiamond.classList.add('arrived')
 }
-liraDiamond.addEventListener('animationend', ev => {
-  if (ev.animationName === 'lira-diamond-arrival-bounce') liraDiamond.classList.remove('arrived')
+hugoDiamond.addEventListener('animationend', ev => {
+  if (ev.animationName === 'hugo-diamond-arrival-bounce') hugoDiamond.classList.remove('arrived')
 })
 
 // _glideDiamondTo used to bow long moves through a hard-cornered TWO-LEG
@@ -226,7 +226,7 @@ function _glideDiamondTo(top, left, scale = 1) {
 // triggered idle re-homes) ─────────────────────────────────────────────
 // State transitions (wake/processing/speaking/idle-after-speaking),
 // section changes, and user-commanded moves are NEVER gated by this —
-// per spec, the cooldown only applies to LIRA's own passive drifting, and
+// per spec, the cooldown only applies to HUGO's own passive drifting, and
 // explicitly does not apply "when triggered by state change". 8s alone
 // satisfies both stated rules ("never more than once every 8s" and "if
 // she's been somewhere less than 5s, don't move her again", since 8 > 5).
@@ -240,7 +240,7 @@ function _diamondUserIsTyping() {
 
 function _diamondAmbientMoveAllowed() {
   if (!_diamondEligible()) return false
-  if (_liraDiamondState !== 'idle') return false          // wake/processing/speaking own their own position already
+  if (_hugoDiamondState !== 'idle') return false          // wake/processing/speaking own their own position already
   if (Date.now() - _diamondPositionSetAt < DIAMOND_AMBIENT_COOLDOWN_MS) return false
   if (_diamondUserIsTyping()) return false                // "never move during active conversation"
   return true
@@ -293,10 +293,10 @@ const _diamondMutationObserver = new MutationObserver(() => {
 // while docked, section-nav.js's own _resolveDiamondTarget/_glideDiamondTo
 // call owns her position/scale entirely, and a state change alone must
 // never yank her out of the dock.
-let _liraDiamondState = 'idle'
+let _hugoDiamondState = 'idle'
 
 function _applyDiamondState(state) {
-  if (state === _liraDiamondState) {
+  if (state === _hugoDiamondState) {
     // Already in this state — 'idle' still re-homes to the CURRENT best
     // spot, since _currentSection (and the DOM around her) can change
     // while status stays 'listening' the whole time (see switchSection's
@@ -304,9 +304,9 @@ function _applyDiamondState(state) {
     if (state === 'idle' && _diamondEligible()) { const { top, left } = _bestIdlePosition(); _glideDiamondTo(top, left, 1) }
     return
   }
-  _liraDiamondState = state
-  liraDiamond.classList.remove('idle', 'wake', 'listening', 'processing', 'speaking')
-  liraDiamond.classList.add(state)
+  _hugoDiamondState = state
+  hugoDiamond.classList.remove('idle', 'wake', 'listening', 'processing', 'speaking')
+  hugoDiamond.classList.add(state)
 
   if (!_diamondEligible()) return
 
@@ -315,7 +315,7 @@ function _applyDiamondState(state) {
     _glideDiamondTo(top, left, 1)
   } else if (state === 'wake') {
     const { top, left } = _bestAttentionPosition()
-    _glideDiamondTo(top, left, 1.15)   // whole-widget grow, formerly a CSS rule on .lira-diamond.wake — now just another scale target
+    _glideDiamondTo(top, left, 1.15)   // whole-widget grow, formerly a CSS rule on .hugo-diamond.wake — now just another scale target
   } else if (state === 'speaking') {
     const { top, left } = _bestAttentionPosition()
     _glideDiamondTo(top, left, 1)
@@ -328,7 +328,7 @@ function _applyDiamondState(state) {
 // position, _applyDiamondState('processing') is a no-op move) or, if
 // nothing followed within the hold window (false alarm / cooldown-ignored
 // trigger), quietly returns to 'idle' at its best corner.
-const LIRA_DIAMOND_WAKE_HOLD_MS = 3000
+const HUGO_DIAMOND_WAKE_HOLD_MS = 3000
 let _diamondWakeTimer = null
 
 function _triggerDiamondWake() {
@@ -337,7 +337,7 @@ function _triggerDiamondWake() {
   _applyDiamondState('wake')
   _diamondWakeTimer = setTimeout(() => {
     if (currentStatus !== 'processing' && currentStatus !== 'speaking') _applyDiamondState('idle')
-  }, LIRA_DIAMOND_WAKE_HOLD_MS)
+  }, HUGO_DIAMOND_WAKE_HOLD_MS)
 }
 
 // Initial position/context/visibility, before any status/section event has
@@ -349,21 +349,21 @@ function _triggerDiamondWake() {
 // leaving her invisible (opacity:0, never toggled) until the user
 // navigated away from and back to Main at least once.
 {
-  liraDiamond.classList.toggle('context-main', _currentSection === 'home')
-  liraDiamond.classList.toggle('context-chat', _currentSection === 'chat')
-  liraDiamond.classList.add('visible')
+  hugoDiamond.classList.toggle('context-main', _currentSection === 'home')
+  hugoDiamond.classList.toggle('context-chat', _currentSection === 'chat')
+  hugoDiamond.classList.add('visible')
   const { top, left, scale } = _resolveDiamondTarget(_currentSection)
   _setDiamondPosition(top, left, scale)
 }
 
-// ── Organic reveal/dissolve — see .lira-organic-word's own CSS comment for
+// ── Organic reveal/dissolve — see .hugo-organic-word's own CSS comment for
 // the full rationale and why this is separate from _typewriterReveal().
-// Shared by every LIRA-own response text surface (_showDiamondText below,
+// Shared by every HUGO-own response text surface (_showDiamondText below,
 // _showMMFloatingText, _openDiamondBubble). ──
 function _organicReveal(el, text) {
   el.innerHTML = ''
   // Bug fix: whitespace segments used to get wrapped in their OWN
-  // .lira-organic-word span (display:inline-block) same as real words —
+  // .hugo-organic-word span (display:inline-block) same as real words —
   // but a display:inline-block element whose entire content is a single
   // whitespace character has that whitespace collapsed to zero width by
   // the browser's normal text-layout rules (leading/trailing whitespace
@@ -382,7 +382,7 @@ function _organicReveal(el, text) {
       return
     }
     const span = document.createElement('span')
-    span.className = 'lira-organic-word'
+    span.className = 'hugo-organic-word'
     span.textContent = part
     span.style.animationDelay = `${wordIndex * 45}ms`
     el.appendChild(span)
@@ -395,12 +395,12 @@ function _organicReveal(el, text) {
 // genuinely finishes (via 'animationend', never a hardcoded setTimeout
 // that could drift out of sync with the CSS duration/stagger above).
 function _organicDissolve(el, onDone) {
-  const words = el.querySelectorAll('.lira-organic-word')
+  const words = el.querySelectorAll('.hugo-organic-word')
   if (!words.length) { if (onDone) onDone(); return }
   let remaining = words.length
   words.forEach((span, i) => {
     span.style.animationDelay = `${i * 20}ms`
-    span.classList.add('lira-dissolving')
+    span.classList.add('hugo-dissolving')
     span.addEventListener('animationend', () => {
       remaining--
       if (remaining <= 0 && onDone) onDone()

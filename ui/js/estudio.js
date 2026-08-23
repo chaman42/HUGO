@@ -3,7 +3,7 @@
 // Exploraciones cards (#estudioDetail is shared between both — see
 // _openEstudioInvestigacionDetail / _openEstudioExploracionDetail).
 // Reached only via the app launcher (switchSection('estudio') — see
-// APP_LAUNCHER_APPS in diamond-text-launcher.js), same as NÚCLEO LIRA/
+// APP_LAUNCHER_APPS in diamond-text-launcher.js), same as NÚCLEO HUGO/
 // CONTROL. Backed by a single GET /api/estudio call (core/estudio_routes.py)
 // covering all 6 subsections in one round trip.
 
@@ -11,7 +11,7 @@ let _currentEstudioSub = 'investigacion'
 let _estudioData = { investigations: [], summaries: [], explorations: [], schemas: [], ideas: [], documents: [] }
 let _estudioLoaded = false
 
-// LIRA's own type tags for autonomous sleep-time discoveries (see
+// HUGO's own type tags for autonomous sleep-time discoveries (see
 // core/sleep_curiosity_search.py) — kept out of RESÚMENES (Joan-requested
 // summaries only) and shown in EXPLORACIONES instead.
 const ESTUDIO_EXPLORATION_TYPES = ['curiosidad', 'exploración profunda']
@@ -64,7 +64,7 @@ document.querySelectorAll('#section-estudio .armor-subtabs .armor-subtab').forEa
 })
 document.getElementById('estudioClose').addEventListener('click', () => switchSection('home'))
 
-// ── Live refresh — LIRA just saved a new summary/schema (core/commands.py's
+// ── Live refresh — HUGO just saved a new summary/schema (core/commands.py's
 // generate_summary()/generate_schema(), see core/routes_control.py-style
 // socket emits) via the 'estudio_updated' event; reload all 5 subsections
 // (_loadEstudioData already re-renders whichever tab is currently open) so
@@ -89,7 +89,7 @@ function _renderEstudioInvestigaciones() {
   if (!list) return
   const items = _estudioData.investigations
   if (!items.length) {
-    list.innerHTML = '<div class="estudio-empty">Sin investigaciones aún. LIRA comenzará a investigar cuando le asignes un objetivo.</div>'
+    list.innerHTML = '<div class="estudio-empty">Sin investigaciones aún. HUGO comenzará a investigar cuando le asignes un objetivo.</div>'
     return
   }
   list.innerHTML = items.map((inv, i) => {
@@ -118,7 +118,7 @@ function _renderEstudioInvestigaciones() {
 }
 
 // Confidence threshold splitting a hypothesis into "lo que tiene más
-// claro" vs "aún no está segura" — same 0.6 cut LIRA's own incubation
+// claro" vs "aún no está segura" — same 0.6 cut HUGO's own incubation
 // phase (core/sleep_phases_incubation.py) already treats as a meaningful
 // hypothesis, just surfaced visually here rather than left as a bare %.
 const ESTUDIO_CONFIDENT_THRESHOLD = 0.6
@@ -224,7 +224,7 @@ function _openEstudioInvestigacionDetail(inv) {
             <ul class="estudio-inv-open-list">${subQuestions.map(q => `<li>${esc(q)}</li>`).join('')}</ul>
           </div>` : ''}
 
-          ${nothingYet ? '<div class="estudio-detail-body">Aún sin resultados — LIRA todavía no ha empezado a razonar sobre esto.</div>' : ''}
+          ${nothingYet ? '<div class="estudio-detail-body">Aún sin resultados — HUGO todavía no ha empezado a razonar sobre esto.</div>' : ''}
         </div>
 
         <div class="estudio-console-rail">
@@ -252,7 +252,7 @@ document.getElementById('estudioDetailClose').addEventListener('click', _closeEs
 
 // ── 2. RESÚMENES — Joan-requested summaries only. Backend (data/summaries.
 // json, written exclusively by core/commands.py's generate_summary()) no
-// longer contains LIRA's own autonomous 'curiosidad'/'exploración profunda'
+// longer contains HUGO's own autonomous 'curiosidad'/'exploración profunda'
 // finds — those live in data/explorations.json (see EXPLORACIONES below) —
 // this filter is just a defensive belt-and-suspenders in case anything
 // ever lands here with one of those types. ─────────────────────────────────
@@ -261,7 +261,7 @@ function _renderEstudioResumenes() {
   if (!list) return
   const items = _estudioData.summaries.filter(s => !ESTUDIO_EXPLORATION_TYPES.includes(s.type))
   if (!items.length) {
-    list.innerHTML = '<div class="estudio-empty">LIRA generará resúmenes automáticamente con el tiempo.</div>'
+    list.innerHTML = '<div class="estudio-empty">HUGO generará resúmenes automáticamente con el tiempo.</div>'
     return
   }
   list.innerHTML = items.map((s, i) => `
@@ -405,7 +405,7 @@ function _renderEstudioEsquemas() {
   if (!list) return
   const items = _estudioData.schemas
   if (!items.length) {
-    list.innerHTML = '<div class="estudio-empty">Los esquemas aparecerán cuando LIRA organice información compleja.</div>'
+    list.innerHTML = '<div class="estudio-empty">Los esquemas aparecerán cuando HUGO organice información compleja.</div>'
     return
   }
   list.innerHTML = items.map((sc, i) => {
@@ -531,7 +531,7 @@ function _openEstudioEsquemaDetail(sc) {
   detail.classList.add('open')
 }
 
-// ── EXPLORACIONES — data/explorations.json. LIRA's own autonomous
+// ── EXPLORACIONES — data/explorations.json. HUGO's own autonomous
 // sleep-time discoveries (Curiosidad's active web search + "curiosidad
 // profunda" deep-dive — see core/sleep_curiosity_search.py), never
 // user-requested. Most recent first — the raw array itself is append-only,
@@ -545,7 +545,7 @@ function _renderEstudioExploraciones() {
     .map((ex, i) => ({ ...ex, _idx: i }))
     .reverse()
   if (!items.length) {
-    list.innerHTML = '<div class="estudio-empty">LIRA guardará aquí lo que encuentre explorando por su cuenta durante el sueño.</div>'
+    list.innerHTML = '<div class="estudio-empty">HUGO guardará aquí lo que encuentre explorando por su cuenta durante el sueño.</div>'
     return
   }
   list.innerHTML = items.map(ex => `
@@ -664,7 +664,7 @@ function _renderEstudioIdeas() {
   if (!list) return
   const items = _estudioData.ideas   // already sorted by relevance descending — see core/estudio_routes.py
   if (!items.length) {
-    list.innerHTML = '<div class="estudio-empty">LIRA generará ideas durante los ciclos de sueño.</div>'
+    list.innerHTML = '<div class="estudio-empty">HUGO generará ideas durante los ciclos de sueño.</div>'
     return
   }
   list.innerHTML = items.map(idea => `
@@ -687,7 +687,7 @@ function _renderEstudioDocumentos() {
   if (!list) return
   const items = _estudioData.documents
   if (!items.length) {
-    list.innerHTML = '<div class="estudio-empty">Los documentos que LIRA genere aparecerán aquí.</div>'
+    list.innerHTML = '<div class="estudio-empty">Los documentos que HUGO genere aparecerán aquí.</div>'
     return
   }
   list.innerHTML = items.map(doc => `

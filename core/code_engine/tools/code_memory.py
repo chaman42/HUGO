@@ -1,6 +1,6 @@
 # CODE MEMORY — cross-project/cross-session learning, persisted to
 # data/code_engine_memory.json. Completely separate from
-# data/memory_lira.json (LIRA's own conversational memory) — different
+# data/memory_hugo.json (HUGO's own conversational memory) — different
 # file, different purpose, this module never touches that one.
 #
 # Auto-triggers (wired at their own call sites, not here):

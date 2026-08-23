@@ -1,7 +1,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
 # SITUATION — Proactive Intelligence Phase 2: situation awareness.
 #
-# Phase 1 (see data/proactive_intelligence_audit.json) made LIRA remember and
+# Phase 1 (see data/proactive_intelligence_audit.json) made HUGO remember and
 # react. This phase makes her OBSERVE: a running snapshot of "what's going on
 # right now" (data/situation.json), built from signals that already exist
 # elsewhere in this codebase (session history, tasks.json, episodes.json,

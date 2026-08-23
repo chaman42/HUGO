@@ -105,7 +105,7 @@ def get_active_investigations() -> list[dict]:
 def get_investigations_for_context(limit: int = 5) -> list[dict]:
     """Investigations worth surfacing in the system prompt UNPROMPTED (see
     core/personalities/base.py's INVESTIGACIONES block) — so Joan can ask
-    'qué has encontrado?' (or any other phrasing) and LIRA already has the
+    'qué has encontrado?' (or any other phrasing) and HUGO already has the
     state in context, rather than needing a dedicated regex intent to
     recognize a fixed command. Active/incubando investigations always come
     first (still in progress, always worth surfacing); lista_para_revision/

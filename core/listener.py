@@ -65,17 +65,17 @@ _INTERRUPT_CHECK_DURATION_SECS = 2.0
 # ---------------------------------------------------------------------------
 # Conversational intelligence — Phase 1: post-response context window.
 #
-# When Lira actually speaks (core.commands._say_for calls note_response()
+# When Hugo actually speaks (core.commands._say_for calls note_response()
 # on every reply), the next _CONTEXT_WINDOW_SECS seconds of speech are
 # eligible to be treated as a continuation of the exchange without the wake
 # word being said again (e.g. "Ahora mismo no puedo" right after a reply).
 # core.social_reasoning.should_continue() still gates each one — this window
-# only controls whether the wake word is REQUIRED, not whether Lira responds.
+# only controls whether the wake word is REQUIRED, not whether Hugo responds.
 #
 # Every dispatch this module triggers — wake word or context-window
 # continuation alike — flows into core.commands.dispatch_command(), which
 # runs it through TWO social reasoning gates in sequence before generating a
-# reply: Phase 1 (is_addressed/should_continue, above) filters "was Lira's
+# reply: Phase 1 (is_addressed/should_continue, above) filters "was Hugo's
 # name actually meant for her", then Phase 2
 # (core.social_reasoning.should_intervene) makes the broader "does it
 # actually make sense to speak right now" call — same INTERVENIR/SILENCIO
@@ -94,7 +94,7 @@ _response_lock = threading.Lock()
 
 # ---------------------------------------------------------------------------
 # Conversational intelligence — Phase 3: proactive contextual intervention
-# WITHOUT a wake word at all — Lira commenting unprompted on what she just
+# WITHOUT a wake word at all — Hugo commenting unprompted on what she just
 # overheard, like a person present in the room.
 #
 # Every finalized Vosk segment, in either listen mode and regardless of
@@ -119,7 +119,7 @@ _PASSIVE_CHECK_INTERVAL_SECS = 30.0   # how often the buffer is handed off for a
 
 
 def note_response(personality: str) -> None:
-    """Called by core.commands._say_for every time Lira actually speaks."""
+    """Called by core.commands._say_for every time Hugo actually speaks."""
     global _last_response_mono, _last_response_personality
     with _response_lock:
         _last_response_mono = time.monotonic()
@@ -383,7 +383,7 @@ def _get_models():
                 # log.  A socket emit is deferred to the listen loop where the
                 # server is guaranteed to be running.
                 logger.warning(
-                    "Vosk EN model unavailable (%s) — English-accented 'LIRA' detection may be unreliable.", e
+                    "Vosk EN model unavailable (%s) — English-accented 'HUGO' detection may be unreliable.", e
                 )
     models_ready.set()
     return _model_es, _model_en if _en_available else None
@@ -444,7 +444,7 @@ def listen(stop_event):
     if not _en_available:
         logger.warning(
             "English wake-word model is not available. "
-            "English-accented 'LIRA' detection relies on the Spanish recognizer only and may be less reliable."
+            "English-accented 'HUGO' detection relies on the Spanish recognizer only and may be less reliable."
         )
         try:
             import core.server as _srv_warn
@@ -452,7 +452,7 @@ def listen(stop_event):
                 "type": "system",
                 "message": (
                     "Aviso: modelo EN no disponible — "
-                    "la detección de 'LIRA' en inglés puede ser menos fiable."
+                    "la detección de 'HUGO' en inglés puede ser menos fiable."
                 ),
             })
         except Exception:
@@ -572,7 +572,7 @@ def listen(stop_event):
     # cross-thread trigger flow. _enroll_awaiting_prompt is True between
     # (a) the enrollment starting or a sample finishing and (b) the
     # resulting TTS prompt actually finishing — audio is NOT accumulated
-    # during that window, so LIRA's own prompt voice never contaminates the
+    # during that window, so HUGO's own prompt voice never contaminates the
     # next sample.
     _enroll_active           = False
     _enroll_awaiting_prompt  = False
@@ -646,7 +646,7 @@ def listen(stop_event):
             # still being spoken. Only clear the mute here as a fallback for
             # the case TTS never fired at all (empty reply / exception before
             # speak); otherwise let the real playback-driven unmute do it, or
-            # LIRA hears and reacts to her own voice.
+            # HUGO hears and reacts to her own voice.
             if not voice.tts_pending():
                 set_auto_muted(False)
 
@@ -1292,7 +1292,7 @@ def listen(stop_event):
                 # commands.notify_user_interaction's own docstring) only
                 # stops once the wake word is actually recognized — but a
                 # sleep-driven Ollama burst can raise the mic's noise floor
-                # enough that a normal-volume "Lira" never clears the
+                # enough that a normal-volume "Hugo" never clears the
                 # wake-word confidence threshold, so sleep never gets the
                 # stop signal and the noise never lets up (bug reported
                 # 2026-08-19: "have to speak too loud" traced to exactly
@@ -1385,7 +1385,7 @@ def listen(stop_event):
 
                 # ── Wake word detection ──────────────────────────────────────
                 # EN: stricter threshold (_EN_CONF_THRESHOLD=0.85) than the
-                # Spanish recognizer, since "lira" is more prone to false
+                # Spanish recognizer, since "hugo" is more prone to false
                 # positives against ordinary English words at a lower bar.
                 wake = _scan_result(es_json) or _scan_result(
                     en_json,
@@ -1393,7 +1393,7 @@ def listen(stop_event):
                 )
                 if not wake:
                     # ── Post-response context window ─────────────────────────
-                    # No wake word here, but if Lira just responded within the
+                    # No wake word here, but if Hugo just responded within the
                     # last _CONTEXT_WINDOW_SECS, this finalized segment may be a
                     # continuation of that exchange (e.g. "Ahora mismo no
                     # puedo"). Open a normal collection window using the last

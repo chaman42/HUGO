@@ -1,7 +1,7 @@
 """
 launcher.py — JarvisLite process controller entry point.
 
-Normally spawned as a child process of the LIRA Electron app (electron/main.js
+Normally spawned as a child process of the HUGO Electron app (electron/main.js
 startLauncher()), which already runs in a proper Aqua/WindowServer session —
 no Terminal.app window is ever opened. Can also be run standalone for
 development:
@@ -55,9 +55,9 @@ if __name__ == "__main__":
 
     # jarvis.py normally starts via electron/main.js's autoStartJarvis(),
     # which POSTs /api/start the moment this launcher reports healthy — no
-    # user interaction on a normal launch. LIRA_AUTOSTART=1 is a separate,
+    # user interaction on a normal launch. HUGO_AUTOSTART=1 is a separate,
     # slightly earlier path: set by electron/main.js only on the relaunch it
-    # performs right after a successful "Actualizar LIRA" (see api_update()
+    # performs right after a successful "Actualizar HUGO" (see api_update()
     # and its _pending_relaunch flag above), for that single launch only —
     # it shaves the extra health-check round trip off that specific case.
     # Redundant with the POST in practice (api_start() is idempotent) but
@@ -65,8 +65,8 @@ if __name__ == "__main__":
     # below starts blocking, so the health endpoint is up immediately
     # regardless of how long jarvis.py takes to boot — main.js's own
     # boot-timeout logic doesn't need to know anything changed.
-    if os.environ.get("LIRA_AUTOSTART") == "1":
-        logger.info("LIRA_AUTOSTART=1 — starting jarvis.py automatically (post-update relaunch).")
+    if os.environ.get("HUGO_AUTOSTART") == "1":
+        logger.info("HUGO_AUTOSTART=1 — starting jarvis.py automatically (post-update relaunch).")
         threading.Thread(target=pm._start_jarvis, daemon=True, name="autostart").start()
 
     socketio.run(

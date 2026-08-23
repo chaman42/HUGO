@@ -27,7 +27,7 @@ from core import memory
 #      and cost API credits on questions answerable from training data.
 #
 # This deliberately does NOT try to regex-detect "a specific event that
-# postdates training cutoff" or "LIRA genuinely doesn't know" (task
+# postdates training cutoff" or "HUGO genuinely doesn't know" (task
 # categories 2 and 3) — both are semantic judgment calls that would need
 # another LLM call to classify, defeating the point of preserving credits.
 # They're left to fall through to intent="unknown" and answered from
@@ -47,13 +47,13 @@ _CURRENT_INFO_KEYWORD_RE = re.compile(
 # Overlap guard: "hoy"/"ahora" alone can't tell a genuine search need apart
 # from a weather/location question (no dedicated intent category — those
 # are answered from the live data already injected into every system
-# prompt) or a question about the user's own armor/project context (already
-# injected into LIRA's prompt separately) — both explicitly listed as
+# prompt) or a question about the user's own saved-concept context (already
+# injected into HUGO's prompt separately) — both explicitly listed as
 # "never search" cases. Reused by _web_search_confidence() below.
 _WEB_SEARCH_EXCLUDE_RE = re.compile(
     r"\b(clima|tiempo\s+hace|pron[oó]stico|temperatura|lluvia|"
     r"d[oó]nde\s+estoy|mi\s+ubicaci[oó]n|d[oó]nde\s+est[aá]|"
-    r"armadura|coraza|armor[ií]a|mi\s+proyecto|concepto\s+guardado)\b",
+    r"mi\s+proyecto|concepto\s+guardado)\b",
     re.IGNORECASE,
 )
 
@@ -65,7 +65,7 @@ def _web_search_confidence(transcript: str) -> float:
     regex — this is the second, independent gate: below 0.8 the caller
     skips the search entirely (logs "[SEARCH SKIPPED]") even though the
     regex matched, catching the cases where a bare keyword like "hoy"
-    overlapped with weather/location/armor context instead of a genuine
+    overlapped with weather/location/concept context instead of a genuine
     current-info need."""
     if _WEB_SEARCH_EXCLUDE_RE.search(transcript):
         return 0.0
@@ -87,7 +87,7 @@ def _web_search_confidence(transcript: str) -> float:
 _SEARCH_FILLER_RE = re.compile(
     r"\b(busca(?:me)?(?:\s+en\s+internet)?|puedes\s+buscar(?:\s+en\s+internet)?|"
     r"consulta\s+en\s+internet|mira\s+en\s+internet|investiga\s+en\s+internet|"
-    r"b[uú]scalo|por\s+favor|oye|lira)\b",
+    r"b[uú]scalo|por\s+favor|oye|hugo)\b",
     re.IGNORECASE,
 )
 
@@ -105,7 +105,7 @@ def _clean_search_query(transcript: str) -> str:
 # Tone detection — simple heuristic classifier, run on the raw transcript
 # before dispatching to the LLM. Not a hard behavioral gate, just a nudge:
 # the detected tone is injected into the system prompt (see
-# _build_system_prompt's tone parameter) so LIRA can be gentler with a
+# _build_system_prompt's tone parameter) so HUGO can be gentler with a
 # tired user or more energetic with an excited one, without a separate
 # LLM call to classify it (would cost latency/credits for no real benefit).
 # ---------------------------------------------------------------------------
@@ -150,7 +150,7 @@ def _detect_tone(text: str) -> str:
 # Combines time of day, recent recurring topics, detected tone and memory
 # facts into a short, honestly-hedged note (never asserted as fact) — see
 # _build_system_prompt's CONTEXTO IMPLÍCITO block. Deliberately brief: this
-# is meant to nudge LIRA to read between the lines, not to hand her a
+# is meant to nudge HUGO to read between the lines, not to hand her a
 # fabricated psychological profile.
 # ---------------------------------------------------------------------------
 
@@ -213,7 +213,7 @@ def _infer_implicit_context(transcript: str, tone: str, relevant_facts: list[dic
 # ---------------------------------------------------------------------------
 # Contextual panels — 'show_panel' socket event (see core/server.py's
 # emit_show_panel()) that lets the main menu animate in a visual side panel
-# (weather, time, ...) while LIRA speaks about that topic.
+# (weather, time, ...) while HUGO speaks about that topic.
 #
 # Purely additive: _maybe_emit_panel() (see core/session.py) never changes
 # what she actually says or how. Weather questions still fall through

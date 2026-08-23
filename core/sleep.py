@@ -1,4 +1,4 @@
-"""LIRA's Sleep System — an 8-phase autonomous maintenance routine that runs
+"""HUGO's Sleep System — an 8-phase autonomous maintenance routine that runs
 during inactivity (20+ minutes idle) or on manual request ("Iniciar Sueño"
 in Ajustes). Deliberately dependency-light (json/os/re/datetime/logging +
 the groq SDK only — same discipline as core/reflective.py) so
@@ -30,7 +30,7 @@ Entry points:
     button's live polling.
   - get_unused_question()/mark_question_used(),
     get_unused_curiosity()/mark_curiosity_used() — for core/commands.py's
-    system-prompt injection (Phase 5/7's whole point: LIRA surfaces these
+    system-prompt injection (Phase 5/7's whole point: HUGO surfaces these
     naturally in conversation, not just files nobody reads).
 """
 import re
@@ -64,7 +64,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 _PRIORITY_SYSTEM = (
-    "Eres LIRA evaluando internamente qué mantenimiento necesitas. "
+    "Eres HUGO evaluando internamente qué mantenimiento necesitas. "
     "Respondes solo con una lista de números separados por comas, sin explicación."
 )
 

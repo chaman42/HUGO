@@ -17,7 +17,13 @@ logger = logging.getLogger(__name__)
 # False) with zero CPU/RAM impact — same contract the module had before
 # Phase 4, just now the default is on.
 # ---------------------------------------------------------------------------
-SPEAKER_VERIFICATION_ENABLED = True  # Phase 4 — voice fingerprinting enabled
+SPEAKER_VERIFICATION_ENABLED = False  # HUGO fork: disabled — voz_modelo/ and
+# self_voice_fingerprints.json (Joan's own biometric voice data) were never
+# copied/were wiped when this project split off from HUGO, so this was
+# already silently non-functional; also just not something HUGO needs by
+# default. Flip back to True (and re-enroll) if that changes — every
+# function below already fails soft to its documented "no signal" default
+# with this off, nothing else to touch.
 
 MODEL_SAVEDIR   = "data/models/spkrec-ecapa-voxceleb"
 MIN_DURATION    = 1.5   # seconds
@@ -457,7 +463,7 @@ def verify_speaker(file_path: str) -> bool:
 
 # ---------------------------------------------------------------------------
 # Self-voice fingerprinting — infrastructure for a future interrupt/barge-in
-# feature (LIRA needs to know "that's just my own voice coming back through
+# feature (HUGO needs to know "that's just my own voice coming back through
 # the mic" before the mic can safely stay live while she's talking). Not
 # wired into core/listener.py yet: the mic is currently hard-blocked during
 # her own TTS playback (core.listener.is_auto_muted/_auto_muted) — a much
@@ -474,14 +480,14 @@ def verify_speaker(file_path: str) -> bool:
 # whichever one is actually playing.
 # ---------------------------------------------------------------------------
 SELF_VOICE_FINGERPRINTS_PATH = "data/self_voice_fingerprints.json"
-SELF_VOICE_ENGINES = ("kokoro", "xtts", "say")
+SELF_VOICE_ENGINES = ("say",)   # Kokoro/XTTS removed — `say` is the only TTS engine now
 
 # A few short, phonetically varied phrases (not just one) per engine, same
 # "average out a single recording's noise" reasoning enroll_speaker() uses
 # for real human enrollment — a synthesized voice is far more consistent
 # sample-to-sample than a human one, but still varies some with content.
 _SELF_VOICE_ENROLL_PHRASES = (
-    "Hola, soy LIRA. Estoy lista para ayudarte.",
+    "Hola, soy HUGO. Estoy lista para ayudarte.",
     "Sistemas en orden, todo funciona correctamente.",
     "¿Necesitas que revise algo más antes de continuar?",
     "Analizando la solicitud, dame un momento.",
@@ -560,7 +566,7 @@ def enroll_self_voice(engine: str, wav_paths: list[str]) -> dict | None:
 
 
 def is_own_voice(file_path: str) -> float:
-    """Confidence (0.0-1.0) that file_path is LIRA's OWN synthesized voice
+    """Confidence (0.0-1.0) that file_path is HUGO's OWN synthesized voice
     (any enrolled engine) rather than a real person talking — the mirror
     image of identify_speaker()'s 'is this Joan' question. Checks every
     enrolled engine and returns the best match (whichever engine is
@@ -569,7 +575,7 @@ def is_own_voice(file_path: str) -> float:
     per-engine entries instead of the single Joan fingerprint. Returns 0.0
     if verification is disabled, the file is invalid, or nothing has been
     enrolled yet (fails safe: an unrecognized sound is never mistaken for
-    LIRA's own voice just because self-voice enrollment hasn't run).
+    HUGO's own voice just because self-voice enrollment hasn't run).
     Never raises."""
     if not SPEAKER_VERIFICATION_ENABLED:
         return 0.0
@@ -595,14 +601,13 @@ def is_own_voice(file_path: str) -> float:
 
 def enroll_all_self_voices() -> dict:
     """Synthesizes _SELF_VOICE_ENROLL_PHRASES through every TTS engine
-    (core.voice's Kokoro/say, core.tts_xtts's XTTS) and enrolls each as its
-    own self-voice fingerprint — the one-call entry point for building/
+    (core.voice's `say`, the only one left) and enrolls each as its own
+    self-voice fingerprint — the one-call entry point for building/
     refreshing this whole feature (e.g. after a voice/engine setting
-    changes). Best-effort per engine: one engine being unavailable (XTTS
-    not installed, no GPU, whatever) doesn't block the other two. Returns
-    {engine: bool} — whether each one enrolled successfully. Synchronous
-    and slow (real model inference x3 engines x3 phrases) — call from a
-    background thread or a one-off script, never from a request handler."""
+    changes). Returns {engine: bool} — whether each one enrolled
+    successfully. Synchronous and slow (real model inference x N phrases) —
+    call from a background thread or a one-off script, never from a request
+    handler."""
     import tempfile
     import numpy as np
 
@@ -614,18 +619,10 @@ def enroll_all_self_voices() -> dict:
                 pcm_bytes = None
                 mono_float = None
                 samplerate = None
-                if engine == "kokoro":
-                    from core import voice
-                    pcm_bytes = voice.synthesize_pcm48(phrase, voice=voice.KOKORO_VOICE_LIRA)
-                    samplerate = 48000
-                elif engine == "say":
+                if engine == "say":
                     from core import voice
                     pcm_bytes = voice.synthesize_pcm48_say(phrase)
                     samplerate = 48000
-                elif engine == "xtts":
-                    from core import tts_xtts
-                    mono_float = tts_xtts.synthesize_pcm(phrase, language="es")
-                    samplerate = tts_xtts.XTTS_SAMPLE_RATE
 
                 if pcm_bytes is not None:
                     pcm = np.frombuffer(pcm_bytes, dtype=np.int16).reshape(-1, 2)   # stereo, both channels identical

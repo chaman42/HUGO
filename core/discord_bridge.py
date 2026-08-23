@@ -1,10 +1,10 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# DISCORD BRIDGE — lets Joan DM LIRA directly from Discord. Routes DMs
+# DISCORD BRIDGE — lets Joan DM HUGO directly from Discord. Routes DMs
 # through the exact same LLM call core/commands.py's own dispatch pipeline
 # uses (core.groq_client._groq_complete — no duplicated call logic here),
-# built with LIRA's own system prompt (core/personalities/lira.py,
+# built with HUGO's own system prompt (core/personalities/hugo.py,
 # unmodified) plus a relevance-scored memory block pulled from
-# data/memory_lira.json / data/memory_shared.json via the existing
+# data/memory_hugo.json / data/memory_shared.json via the existing
 # core/memory.py helpers — the same Layer 1/2 facts
 # core/personalities/base.py's _build_system_prompt injects for the voice
 # assistant, just assembled standalone here rather than pulling in that
@@ -58,7 +58,7 @@ _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # `python core/discord_bridge.py` puts core/ (not the repo root) on
 # sys.path[0] — every lazy `from core import ...` below (groq_client,
-# memory, personalities.lira) would then fail with "No module named 'core'"
+# memory, personalities.hugo) would then fail with "No module named 'core'"
 # the moment a real message came in, since there's no package named `core`
 # visible from inside core/ itself. Only ever missing for this exact
 # direct-script invocation — `python -m core.discord_bridge` and the normal
@@ -297,25 +297,24 @@ def _reset_history_if_idle_locked(user_id: str) -> None:
 
 
 def _build_system_prompt(relevance_query: str) -> str:
-    """ADMIN ONLY. LIRA's own system prompt (core/personalities/lira.py,
+    """ADMIN ONLY. HUGO's own system prompt (core/personalities/hugo.py,
     verbatim — never rewritten here) plus a relevance-scored memory block,
     built with the exact same functions core/personalities/base.py's
     _build_system_prompt uses for its own Layer 1/2 section: pool Joan's
-    shared facts (data/memory_shared.json) with LIRA's own relationship
-    facts (data/memory_lira.json), score them against what was just said,
+    shared facts (data/memory_shared.json) with HUGO's own relationship
+    facts (data/memory_hugo.json), score them against what was just said,
     and format only what's actually relevant — never a flat dump. Also
-    pulls in the same episodic-memory and armor/concepts (core.memory_context)
-    blocks base.py's own prompt includes for personality=='lira' — this
-    bridge is always LIRA, so those always apply too; omitting them was a
-    gap, not a deliberate exclusion (unlike the voice/HUD-only layers below,
-    which genuinely don't apply here)."""
-    from core.personalities.lira import PERSONALITY as LIRA_PERSONALITY
+    pulls in the same episodic-memory block base.py's own prompt includes
+    for personality=='hugo' — this bridge is always HUGO, so that always
+    applies too; omitting it was a gap, not a deliberate exclusion (unlike
+    the voice/HUD-only layers below, which genuinely don't apply here)."""
+    from core.personalities.hugo import PERSONALITY as HUGO_PERSONALITY
     from core import memory, tools
 
-    base = LIRA_PERSONALITY["system"]
+    base = HUGO_PERSONALITY["system"]
     memory_chars = 0
 
-    pool = memory._load_shared_facts() + memory._load_personality_facts("lira")
+    pool = memory._load_shared_facts() + memory._load_personality_facts("hugo")
     relevant_facts = memory._select_relevant_facts(relevance_query, pool)
     relevant_block = memory._format_relevant_facts_block(relevant_facts)
     if relevant_block:
@@ -326,7 +325,7 @@ def _build_system_prompt(relevance_query: str) -> str:
         memory_chars += len(relevant_block)
         if relevant_facts:
             memory.mark_facts_used(
-                [memory.MEMORY_SHARED_PATH, memory._get_personality_memory_path("lira")],
+                [memory.MEMORY_SHARED_PATH, memory._get_personality_memory_path("hugo")],
                 {f["id"] for f in relevant_facts if f.get("id")},
             )
 
@@ -336,21 +335,6 @@ def _build_system_prompt(relevance_query: str) -> str:
     if episodes_block:
         base += "\n\nRECUERDOS RECIENTES:\n" + episodes_block
         memory_chars += len(episodes_block)
-
-    if memory._ARMOR_SUMMARY:
-        base += (
-            "\n\nARMADURAS CONOCIDAS (responde con estos datos exactos cuando te pregunten):\n"
-            + memory._ARMOR_SUMMARY
-        )
-        memory_chars += len(memory._ARMOR_SUMMARY)
-    with memory._concepts_lock:
-        concepts_summary = memory._CONCEPTS_SUMMARY
-    if concepts_summary:
-        base += (
-            "\n\nCONCEPTOS GUARDADOS (recuerda estos conceptos cuando el usuario pregunte por nombre):\n"
-            + concepts_summary
-        )
-        memory_chars += len(concepts_summary)
 
     logger.info("[DISCORD] Memory context loaded: %d chars", memory_chars)
 
@@ -366,7 +350,7 @@ def _build_system_prompt(relevance_query: str) -> str:
         "- Control del Mac (volumen, apps)\n"
         "- Apple Health\n"
         "- Clima (no aplica a una conversación remota)\n"
-        "- La interfaz visual de LIRA\n\n"
+        "- La interfaz visual de HUGO\n\n"
         "Sí tienes acceso a: conversación, memoria, búsqueda web, hora y fecha, "
         "calculadora, calendario (lectura).\n\n"
         "Si te piden algo fuera de tu alcance desde aquí, dilo en una frase y "
@@ -381,13 +365,13 @@ def _build_stranger_system_prompt() -> str:
     """Everyone below admin (role 'user'). No memory context, no
     core.memory import at all on this path — the spec's 'no personal
     facts, no shared context' requirement is enforced structurally, not
-    just by omission. Same base character (core/personalities/lira.py,
+    just by omission. Same base character (core/personalities/hugo.py,
     verbatim, same 'don't invent a new system prompt' rule as the admin
     path above), with an explicit instruction overriding that prompt's
     'you are Joan's assistant' framing so the model doesn't default to
     treating whoever it's talking to as Joan."""
-    from core.personalities.lira import PERSONALITY as LIRA_PERSONALITY
-    base = LIRA_PERSONALITY["system"]
+    from core.personalities.hugo import PERSONALITY as HUGO_PERSONALITY
+    base = HUGO_PERSONALITY["system"]
     base += (
         "\n\nEstás hablando por Discord con alguien que NO es Joan — una "
         "persona autorizada a hablar contigo, nada más. No conoces a esta "
@@ -445,7 +429,7 @@ def generate_reply(user_id: str, user_message: str, role: str) -> str:
         if memory_mod.is_feature_enabled("busqueda_web") and confidence >= 0.8:
             from core import response
             logger.info("[DISCORD] Web search routed (confidence=%.2f)", confidence)
-            reply = response._handle_web_search(user_message, "lira", tone=None)
+            reply = response._handle_web_search(user_message, "hugo", tone=None)
             _append_history(user_id, user_message, reply)
             return reply
 
@@ -521,11 +505,11 @@ def _sleep_command_reply() -> str:
 def _memory_command_reply() -> str:
     """!memory — ADMIN ONLY (same enforcement note as _sleep_command_reply
     above). Top 5 facts by importance, pooled from data/memory_shared.json
-    + data/memory_lira.json via the existing
+    + data/memory_hugo.json via the existing
     core.memory._load_shared_facts/_load_personality_facts loaders."""
     try:
         from core import memory
-        pool = memory._load_shared_facts() + memory._load_personality_facts("lira")
+        pool = memory._load_shared_facts() + memory._load_personality_facts("hugo")
     except Exception:
         logger.exception("[DISCORD] !memory failed")
         return "No he podido leer la memoria ahora mismo."
@@ -594,7 +578,7 @@ async def _handle_admin_pending_decision(client, approve: bool) -> str:
     request (get_last_pending/last_pending_id — see the module comment on
     AUTHORIZATION for why a bare !sí/!no needs no ID argument). On !sí,
     also generates and sends the real first reply to that person's
-    original message right away (spec: 'LIRA then responds to their
+    original message right away (spec: 'HUGO then responds to their
     original message') — as role='user', same as every reply to them from
     here on, never the admin/memory-aware prompt."""
     pending = get_last_pending()
@@ -705,7 +689,7 @@ async def _dispatch_special_command(client, user_id: str, role: str, content: st
 
 async def _send_chunked(channel, text: str) -> None:
     """discord.py raises on messages over _DISCORD_MSG_LIMIT chars — split
-    on that boundary rather than let a long LIRA reply or the !memory
+    on that boundary rather than let a long HUGO reply or the !memory
     listing crash the send. `channel` may be a DMChannel or a fetched
     discord.User (both expose .send())."""
     text = text or "…"
@@ -802,7 +786,7 @@ def _make_client(connector=None):
     # SSLCertVerificationError, while explicitly passing a certifi-backed
     # SSLContext through a custom aiohttp connector connected successfully
     # every time. This bug had been silently killing every gateway login
-    # attempt made by the com.lira.discord launchd agent (the always-on
+    # attempt made by the com.hugo.discord launchd agent (the always-on
     # process that is the actual, intended way this bridge runs — see
     # scripts/install_discord_launchd.sh); it went unnoticed because an
     # older long-lived gateway session from before this bug was introduced
@@ -911,7 +895,7 @@ def _make_client(connector=None):
             return   # permanent, silent — no reply, no re-notification, ever
 
         if role == "unknown":
-            # Never respond to them directly (spec: 'LIRA does NOT respond
+            # Never respond to them directly (spec: 'HUGO does NOT respond
             # to them'). Ping Joan once per unresolved ID; every DM after
             # that from the same unresolved ID is dropped silently by
             # note_pending_request's own spam guard.
@@ -969,9 +953,9 @@ def start_discord_bridge() -> threading.Thread | None:
     else:
         logger.info(f"[DISCORD] Joan ID loaded: {DISCORD_JOAN_ID}")
 
-    from core.personalities.lira import PERSONALITY as _LIRA_PERSONALITY
-    logger.info("[DISCORD] Personality source: core/personalities/lira.py — system[:100]=%r",
-                _LIRA_PERSONALITY["system"][:100])
+    from core.personalities.hugo import PERSONALITY as _HUGO_PERSONALITY
+    logger.info("[DISCORD] Personality source: core/personalities/hugo.py — system[:100]=%r",
+                _HUGO_PERSONALITY["system"][:100])
 
     async def _run_async() -> None:
         # Built HERE, inside a running loop (asyncio.run() below has
@@ -1004,7 +988,7 @@ if __name__ == "__main__":
     # source, token/Joan ID presence) as the embedded path (core/server.py)
     # gets. It used to call _make_client().run() directly here, which skipped
     # all of that logging for exactly the entry point the launchd agent
-    # (scripts/com.lira.discord.plist) actually runs — this was a real gap,
+    # (scripts/com.hugo.discord.plist) actually runs — this was a real gap,
     # not a deliberate difference between the two entry points.
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
     _thread_ = start_discord_bridge()

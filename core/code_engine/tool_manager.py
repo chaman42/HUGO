@@ -1,6 +1,6 @@
 # CODE ENGINE TOOL MANAGER — registry for Code Engine's OWN development
 # tools (project_analyzer/file_system/code_search/editor/git). Completely
-# independent from core.module_manager.ModuleManager, which manages LIRA's
+# independent from core.module_manager.ModuleManager, which manages HUGO's
 # own runnable skills/ capability modules — different registry, different
 # file (data/code_engine_permissions.json vs data/modules.json), different
 # purpose. Neither imports the other.

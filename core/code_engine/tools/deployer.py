@@ -1,8 +1,8 @@
 # DEPLOYER — Phase 5, the final stage of the auto-development loop:
 # build -> deploy -> health_check -> (rollback if needed), plus the
-# LIRA-module-specific path that closes the loop back into
+# HUGO-module-specific path that closes the loop back into
 # core.module_manager.ManagerModule's public interface (install/update/
-# rollback) — see deploy_lira_module()/update_lira_module()'s own
+# rollback) — see deploy_hugo_module()/update_hugo_module()'s own
 # docstrings for the exact safety gate.
 #
 # 'local' is the only deploy target actually implemented — a real remote/
@@ -12,7 +12,7 @@
 # reasoning as Phase 4's DocsBrowser reusing the existing search stack
 # instead of adding a new one). "Deploying locally" here means: build the
 # project, copy the resulting artifact into its own versioned directory
-# under DEPLOYMENTS_DIR, and record it — for a lira_module deploy, the
+# under DEPLOYMENTS_DIR, and record it — for a hugo_module deploy, the
 # real "deployment" is calling ModuleManager.install()/update(), which is
 # what actually makes the module live; the local artifact copy exists for
 # every deploy type so rollback_deploy() has something to restore either
@@ -39,8 +39,8 @@ _IGNORE_DIRS = {".git", "node_modules", "__pycache__", "venv", ".venv", "dist", 
 # Testing.run_all()'s own exact string for "this project has no detectable
 # test framework at all" (pytest/npm test) — see core.code_engine.tools.
 # testing.Testing._detect_test_command. Treated as a soft-pass rather than
-# a hard block in deploy_lira_module()'s safety gate: skills/ modules are
-# simple LiraSkill classes with no pytest suite today, and treating
+# a hard block in deploy_hugo_module()'s safety gate: skills/ modules are
+# simple HugoSkill classes with no pytest suite today, and treating
 # "no test framework" the same as "tests exist and failed" would make the
 # Phase 5 loop unable to ever deploy anything — see that method's own
 # docstring for the full reasoning.
@@ -49,7 +49,7 @@ _NO_TEST_FRAMEWORK_ERROR = "no se detectó un framework de pruebas (pytest/npm t
 
 class Deployer(CodeEngineTool):
     name = "deployer"
-    description = "Compila, empaqueta, despliega (local), verifica y revierte — incluye el cierre del ciclo con ModuleManager para módulos de LIRA."
+    description = "Compila, empaqueta, despliega (local), verifica y revierte — incluye el cierre del ciclo con ModuleManager para módulos de HUGO."
     version = "1.0"
 
     def __init__(self) -> None:
@@ -97,12 +97,12 @@ class Deployer(CodeEngineTool):
         allowed, _ = check_permission("read", project_path)
         if not allowed:
             return ""
-        # lira_module takes priority over every other signal: a manifest
+        # hugo_module takes priority over every other signal: a manifest
         # under skills/manifests/<name>/module.json is unambiguous, and a
         # plain requirements.txt/package.json inside JarvisLite's own repo
         # would otherwise misclassify it as a generic python_module. Strips
         # a '.py' suffix so this matches both a module FILE path
-        # ('skills/calculator.py', what deploy_lira_module() itself takes)
+        # ('skills/calculator.py', what deploy_hugo_module() itself takes)
         # and a bare module name/directory ('skills/calculator') —
         # manifest directories are named without the extension (see
         # skills/manifests/*).
@@ -110,7 +110,7 @@ class Deployer(CodeEngineTool):
         if base.endswith(".py"):
             base = base[:-3]
         if os.path.isfile(os.path.join("skills", "manifests", base, "module.json")):
-            return "lira_module"
+            return "hugo_module"
         if os.path.isfile(os.path.join(project_path, "Dockerfile")):
             return "docker"
         if os.path.isfile(os.path.join(project_path, "package.json")):
@@ -134,7 +134,7 @@ class Deployer(CodeEngineTool):
     def _py_compile_check(self, project_path: str) -> tuple:
         """py_compile every .py file — stdlib-only, no new dependency.
         Real signal (a syntax error fails this), not a rubber stamp.
-        `project_path` may be a single module FILE (deploy_lira_module()'s
+        `project_path` may be a single module FILE (deploy_hugo_module()'s
         own 'skills/<name>.py' shape — os.walk() on a bare file path
         yields nothing at all, which silently "passed" with zero files
         ever actually checked until this branch was added) or a directory
@@ -160,7 +160,7 @@ class Deployer(CodeEngineTool):
 
         deploy_type = self.detect_deploy_type(project_path)
 
-        if deploy_type in ("lira_module", "python_module"):
+        if deploy_type in ("hugo_module", "python_module"):
             ok, output = self._py_compile_check(project_path)
             return {"success": ok, "output": output, "artifact_path": project_path if ok else None}
 
@@ -185,7 +185,7 @@ class Deployer(CodeEngineTool):
             return {"success": result.returncode == 0, "output": output[-3000:], "artifact_path": artifact if result.returncode == 0 else None}
 
         if deploy_type == "docker":
-            tag = f"lira-deploy-{os.path.basename(os.path.normpath(project_path)).lower()}"
+            tag = f"hugo-deploy-{os.path.basename(os.path.normpath(project_path)).lower()}"
             try:
                 result = subprocess.run(
                     ["docker", "build", "-t", tag, "."], cwd=project_path, capture_output=True, text=True, timeout=600,
@@ -272,7 +272,7 @@ class Deployer(CodeEngineTool):
 
             started = time.monotonic()
             checks = []
-            if record["type"] == "lira_module" and record.get("module_name"):
+            if record["type"] == "hugo_module" and record.get("module_name"):
                 import core.module_manager as module_manager_mod
                 result = module_manager_mod.manager.health_check(record["module_name"])
                 checks.append({"name": "module_health", "ok": bool(result.get("ok")), "detail": result.get("error")})
@@ -313,7 +313,7 @@ class Deployer(CodeEngineTool):
                 if checkpointer:
                     ok = checkpointer.rollback(project_path, record["checkpoint_hash"], confirm=True) and ok
 
-            if record["type"] == "lira_module" and record.get("module_name"):
+            if record["type"] == "hugo_module" and record.get("module_name"):
                 self._resync_module_manager(record["module_name"])
 
             record["status"] = "rolled_back"
@@ -332,10 +332,10 @@ class Deployer(CodeEngineTool):
             data = self._load()
         return self._find(data, deploy_id)
 
-    # ── LIRA module-specific — closes the auto-development loop ─────────
+    # ── HUGO module-specific — closes the auto-development loop ─────────
 
     def _pre_deploy_gate(self, module_path: str, module_name: str) -> tuple:
-        """The three checks deploy_lira_module()/update_lira_module() both
+        """The three checks deploy_hugo_module()/update_hugo_module() both
         require before ever touching ModuleManager — see their own
         docstrings for what happens on failure. Returns (ok: bool,
         reason: str)."""
@@ -364,7 +364,7 @@ class Deployer(CodeEngineTool):
 
         return True, "ok"
 
-    def deploy_lira_module(self, module_path: str) -> bool:
+    def deploy_hugo_module(self, module_path: str) -> bool:
         """The final step of the auto-development loop (see this module's
         own header comment for the full pipeline). Requires, in order:
         Testing.run_all('skills') passes (or no framework is detected at
@@ -380,14 +380,14 @@ class Deployer(CodeEngineTool):
         module_name = os.path.splitext(os.path.basename(module_path))[0]
         allowed, reason = check_permission("deploy", "skills")
         if not allowed:
-            logger.warning("Deployer: denied deploy_lira_module(%s) (%s)", module_name, reason)
+            logger.warning("Deployer: denied deploy_hugo_module(%s) (%s)", module_name, reason)
             return False
 
         from core.code_engine.tool_manager import tool_manager
         checkpointer = tool_manager.get_tool("checkpoint_manager")
         starting_hash = ""
         if checkpointer:
-            snapshot = checkpointer.create("skills", f"pre-deploy: {module_name}", reason="antes de deploy_lira_module")
+            snapshot = checkpointer.create("skills", f"pre-deploy: {module_name}", reason="antes de deploy_hugo_module")
             starting_hash = snapshot.get("hash", "") if isinstance(snapshot, dict) else ""
 
         ok, reason = self._pre_deploy_gate(module_path, module_name)
@@ -408,7 +408,7 @@ class Deployer(CodeEngineTool):
             if previous:
                 previous["status"] = "superseded"
             data["deployments"].append({
-                "id": deploy_id, "project_path": "skills", "type": "lira_module",
+                "id": deploy_id, "project_path": "skills", "type": "hugo_module",
                 "module_name": module_name,
                 "deployed_at": datetime.datetime.now().isoformat(timespec="seconds"),
                 "status": "active", "artifact_path": module_path,
@@ -426,8 +426,8 @@ class Deployer(CodeEngineTool):
 
         return True
 
-    def update_lira_module(self, module_name: str, new_path: str) -> bool:
-        """Same safety gate as deploy_lira_module(), for an already-
+    def update_hugo_module(self, module_name: str, new_path: str) -> bool:
+        """Same safety gate as deploy_hugo_module(), for an already-
         installed module being updated to the code at `new_path`. On any
         failure: the pre-deploy checkpoint (taken before `new_path`'s
         content ever touched skills/<module_name>.py) is restored via
@@ -437,18 +437,18 @@ class Deployer(CodeEngineTool):
         module_path = os.path.join("skills", f"{module_name}.py")
         allowed, reason = check_permission("deploy", "skills")
         if not allowed:
-            logger.warning("Deployer: denied update_lira_module(%s) (%s)", module_name, reason)
+            logger.warning("Deployer: denied update_hugo_module(%s) (%s)", module_name, reason)
             return False
         allowed_write, reason_write = check_permission("write", "skills")
         if not allowed_write:
-            logger.warning("Deployer: denied update_lira_module(%s) write (%s)", module_name, reason_write)
+            logger.warning("Deployer: denied update_hugo_module(%s) write (%s)", module_name, reason_write)
             return False
 
         from core.code_engine.tool_manager import tool_manager
         checkpointer = tool_manager.get_tool("checkpoint_manager")
         starting_hash = ""
         if checkpointer:
-            snapshot = checkpointer.create("skills", f"pre-update: {module_name}", reason="antes de update_lira_module")
+            snapshot = checkpointer.create("skills", f"pre-update: {module_name}", reason="antes de update_hugo_module")
             starting_hash = snapshot.get("hash", "") if isinstance(snapshot, dict) else ""
 
         editor = tool_manager.get_tool("editor")
@@ -498,7 +498,7 @@ class Deployer(CodeEngineTool):
             if previous:
                 previous["status"] = "superseded"
             data["deployments"].append({
-                "id": deploy_id, "project_path": "skills", "type": "lira_module",
+                "id": deploy_id, "project_path": "skills", "type": "hugo_module",
                 "module_name": module_name,
                 "deployed_at": datetime.datetime.now().isoformat(timespec="seconds"),
                 "status": "active", "artifact_path": module_path,
@@ -532,7 +532,7 @@ class Deployer(CodeEngineTool):
         actually restores anything if the LAST ModuleManager operation on
         this module was update() — see ModuleManager.rollback()'s own
         docstring: it reads an in-memory snapshot only update() writes).
-        deploy_lira_module() calls install(), not update(), so that
+        deploy_hugo_module() calls install(), not update(), so that
         snapshot usually doesn't exist there — falling back to
         manager.install() re-registers whatever content the checkpoint
         rollback just restored, which is always correct regardless of

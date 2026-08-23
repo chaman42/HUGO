@@ -1,10 +1,10 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# BELIEF REVISION — Entity Pillars Phase 3: "Lira should be able to abandon
+# BELIEF REVISION — Entity Pillars Phase 3: "Hugo should be able to abandon
 # previous beliefs when new evidence appears, remember why she changed her
 # mind, and recognize when she was wrong."
 #
 # This is a read-side aggregator, not a new store: every write path that
-# can actually change LIRA's mind already exists and already logs its own
+# can actually change HUGO's mind already exists and already logs its own
 # revision, from Phase 1/2 of this same effort —
 #   - core/memory_store.py's 'outdated'/'outdated_reason' on facts (a
 #     stated fact that got contradicted/updated — see _mark_fact_outdated).
@@ -29,7 +29,7 @@
 import json
 import os
 
-from core.memory_store import MEMORY_LIRA_PATH, MEMORY_SHARED_PATH, _keywords, _load_fact_file
+from core.memory_store import MEMORY_HUGO_PATH, MEMORY_SHARED_PATH, _keywords, _load_fact_file
 from core.memory_user_model import USER_MODEL_HISTORY_PATH
 from core.investigations import _load_investigations
 from core.preferences import _load as _load_preferences
@@ -39,7 +39,7 @@ _MAX_TIMELINE = 15
 
 def _facts_revisions(keywords: set[str] | None) -> list[dict]:
     out = []
-    for path in (MEMORY_SHARED_PATH, MEMORY_LIRA_PATH):
+    for path in (MEMORY_SHARED_PATH, MEMORY_HUGO_PATH):
         for f in _load_fact_file(path, default_category="personal"):
             if not f.get("outdated") or not f.get("outdated_reason"):
                 continue
@@ -128,7 +128,7 @@ def get_revision_timeline(query: str | None = None, limit: int = _MAX_TIMELINE) 
 
 
 def format_revision_block(query: str | None = None, limit: int = 5) -> str:
-    """Reactive-only prompt block ('did LIRA change her mind about X') —
+    """Reactive-only prompt block ('did HUGO change her mind about X') —
     empty unless there's something to show. Mirrors
     core.investigations.format_investigations_block's own instruction not
     to volunteer this unprompted (see core/personalities/base.py's

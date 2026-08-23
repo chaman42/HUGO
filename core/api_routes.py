@@ -112,7 +112,7 @@ def api_version():
         ACTUALLY serving ui/index.html from, right now.
       - installed_shell_commit: the commit electron/.app_version recorded
         the last time rebuild_app.sh successfully rebuilt+installed
-        /Applications/LIRA.app's Electron SHELL (main.js/preload.js only —
+        /Applications/HUGO.app's Electron SHELL (main.js/preload.js only —
         confirmed via `asar extract`: ui/index.html and ui/sw.js are never
         bundled into the app at all, they're served live from this repo
         checkout, same as jarvis.py/launcher.py themselves). A stale

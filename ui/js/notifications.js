@@ -4,7 +4,7 @@
 // up the moment the app is open, shown subtly as a system line in the chat
 // log — same treatment as the existing 'Jarvis online' system message.
 // core.notifications._deliver_pending_notifications covers the voice path
-// (LIRA mentions it naturally next time Joan talks to her) independently —
+// (HUGO mentions it naturally next time Joan talks to her) independently —
 // whichever of the two reaches a given notification first marks it read,
 // so it's never delivered twice.
 async function _checkNotifications() {

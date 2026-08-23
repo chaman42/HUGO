@@ -1,5 +1,5 @@
 #!/bin/bash
-# install_discord_launchd.sh — installs com.lira.discord as a launchd
+# install_discord_launchd.sh — installs com.hugo.discord as a launchd
 # LaunchAgent so the Discord bridge (core/discord_bridge.py) runs
 # independently of the Electron app: starts at login, restarts on crash
 # (KeepAlive), and comes back after the Mac wakes from sleep.
@@ -10,8 +10,8 @@
 set -euo pipefail
 
 REPO_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
-PLIST_SRC="$REPO_ROOT/scripts/com.lira.discord.plist"
-PLIST_DEST="$HOME/Library/LaunchAgents/com.lira.discord.plist"
+PLIST_SRC="$REPO_ROOT/scripts/com.hugo.discord.plist"
+PLIST_DEST="$HOME/Library/LaunchAgents/com.hugo.discord.plist"
 VENV_PYTHON="$REPO_ROOT/venv/bin/python3"
 
 if [ ! -x "$VENV_PYTHON" ]; then
@@ -37,9 +37,9 @@ fi
 launchctl unload "$PLIST_DEST" 2>/dev/null || true
 launchctl load "$PLIST_DEST"
 
-echo "Installed and started com.lira.discord"
+echo "Installed and started com.hugo.discord"
 echo "  plist:  $PLIST_DEST"
 echo "  python: $VENV_PYTHON"
 echo "  logs:   $REPO_ROOT/logs/discord_bridge.log"
 echo
-echo "Check status with: launchctl list | grep com.lira.discord"
+echo "Check status with: launchctl list | grep com.hugo.discord"

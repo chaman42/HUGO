@@ -60,7 +60,7 @@ _OLLAMA_CHAT_URL         = f"{ollama_control.OLLAMA_HOST}/api/chat"
 
 def _ollama_chat_fallback(messages: list[dict], max_tokens: int) -> str | None:
     """One /api/chat call to the local Ollama daemon, given the exact same
-    `messages` list Groq was just handed (LIRA's system prompt + rolling
+    `messages` list Groq was just handed (HUGO's system prompt + rolling
     history + this turn) — unlike core.sleep_llm._ollama_generate's
     /api/generate (a flat system+user pair, fine for one-shot sleep-phase
     prompts), /api/chat accepts the same role/content shape Groq already
@@ -114,7 +114,7 @@ _CLOUDFLARE_TIMEOUT = 15.0   # real cloud inference — no reason to wait as lon
 # qwen on Groq — see _GROQ_QWEN_REASONING_EFFORT's own comment). The
 # CLOUDFLARE_MODEL_CHAIN llama tier stayed the only reliable one (0
 # failures across every real test) — so instead of chasing a better
-# model, this reinforces LIRA's voice at the PROMPT level specifically for
+# model, this reinforces HUGO's voice at the PROMPT level specifically for
 # this fallback: a weaker/smaller model follows nuanced show-don't-tell
 # examples worse than a blunt, explicit restatement of the same rules, and
 # a lower temperature keeps it from drifting into generic assistant
@@ -777,19 +777,19 @@ def _groq_complete(messages: list[dict], max_tokens: int = 256) -> str:
             )
         except Exception:
             logger.debug("Failed to write [THINK_LOG] entry", exc_info=True)
-        # Live 'lira_thinking' socket event — CORE app's Pensamiento tab
+        # Live 'hugo_thinking' socket event — CORE app's Pensamiento tab
         # listens for this so a new thinking block appears the moment this
-        # call finishes (see ui/index.html's 'lira_thinking' listener).
+        # call finishes (see ui/index.html's 'hugo_thinking' listener).
         # Best-effort, mirrors _maybe_emit_panel()'s import pattern.
         try:
             import core.server as server_mod
-            server_mod.emit_lira_thinking({
+            server_mod.emit_hugo_thinking({
                 "query": user_query,
                 "thinking": thinking_text,
                 "model": model_used,
             })
         except Exception:
-            logger.debug("Failed to emit lira_thinking", exc_info=True)
+            logger.debug("Failed to emit hugo_thinking", exc_info=True)
 
     ttft_str    = f"{ttft:.3f}s" if ttft is not None else "n/a"
     think_str   = f"{thinking_done_at:.3f}s" if thinking_done_at is not None else "n/a"

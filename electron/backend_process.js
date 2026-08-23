@@ -19,9 +19,9 @@ const BOOT_TIMEOUT  = 120_000  // ms to wait for local backend on first launch �
 const POLL_INTERVAL = 1_500    // ms between readiness poll ticks
 
 // Passed to app.relaunch({ args }) after a successful in-app update, and
-// checked in startLauncher() below to set LIRA_AUTOSTART=1 for that one
+// checked in startLauncher() below to set HUGO_AUTOSTART=1 for that one
 // launcher.py spawn.
-const AUTOSTART_ARG = '--lira-autostart'
+const AUTOSTART_ARG = '--hugo-autostart'
 
 // ---------------------------------------------------------------------------
 // Locate the JarvisLite project root (the directory that contains launcher.py)
@@ -29,9 +29,9 @@ const AUTOSTART_ARG = '--lira-autostart'
 function findProjectRoot () {
   const candidates = [
     path.resolve(__dirname, '..'),                          // dev: electron/ is inside project
-    path.join(os.homedir(), 'Desktop', 'JarvisLite'),
-    path.join(os.homedir(), 'JarvisLite'),
-    '/opt/JarvisLite',
+    path.join(os.homedir(), 'Desktop', 'HUGO'),
+    path.join(os.homedir(), 'HUGO'),
+    '/opt/HUGO',
   ]
   for (const dir of candidates) {
     if (fs.existsSync(path.join(dir, 'launcher.py'))) return dir
@@ -81,7 +81,7 @@ function waitForBackend (url) {
 // /api/start. Fire it here instead, the moment launcher.py's health check
 // succeeds, so the boot splash's own listeners take it from there. Safe to
 // call unconditionally: /api/start is idempotent (a no-op if jarvis.py is
-// already running, e.g. via LIRA_AUTOSTART=1 on a post-update relaunch).
+// already running, e.g. via HUGO_AUTOSTART=1 on a post-update relaunch).
 // ---------------------------------------------------------------------------
 function autoStartJarvis (baseUrl) {
   try {
@@ -90,10 +90,10 @@ function autoStartJarvis (baseUrl) {
       { hostname: u.hostname, port: Number(u.port || 80), path: '/api/start', method: 'POST', timeout: 5000 },
       res => res.resume()
     )
-    req.on('error', err => console.warn('[LIRA] Auto-start POST /api/start failed:', err.message))
+    req.on('error', err => console.warn('[HUGO] Auto-start POST /api/start failed:', err.message))
     req.end()
   } catch (err) {
-    console.warn('[LIRA] Auto-start POST /api/start failed:', err.message)
+    console.warn('[HUGO] Auto-start POST /api/start failed:', err.message)
   }
 }
 
@@ -158,7 +158,7 @@ function startLauncher (projectRoot) {
   // process, so a launcher.py crash-restart (see the exit handler below)
   // also carries it.
   const autostart = process.argv.includes(AUTOSTART_ARG)
-  console.log(`[LIRA] Spawning: ${python} ${launcherPath}${autostart ? '  (LIRA_AUTOSTART=1)' : ''}`)
+  console.log(`[HUGO] Spawning: ${python} ${launcherPath}${autostart ? '  (HUGO_AUTOSTART=1)' : ''}`)
   launcherProc = spawn(python, [launcherPath], {
     cwd:      projectRoot,
     stdio:    ['ignore', 'pipe', 'pipe'],
@@ -166,7 +166,7 @@ function startLauncher (projectRoot) {
     env:      {
       ...process.env,
       PYTHONUNBUFFERED: '1',
-      ...(autostart ? { LIRA_AUTOSTART: '1' } : {}),
+      ...(autostart ? { HUGO_AUTOSTART: '1' } : {}),
     },
   })
 
@@ -179,10 +179,10 @@ function startLauncher (projectRoot) {
   })
   launcherProc.stderr.on('data', d => process.stderr.write(`[lnc] ${d}`))
   launcherProc.on('exit', (code, signal) => {
-    console.log(`[LIRA] Launcher exited: code=${code} signal=${signal}`)
+    console.log(`[HUGO] Launcher exited: code=${code} signal=${signal}`)
     launcherProc = null
 
-    // Unexpected death while LIRA is still open (crash, OOM, killed from
+    // Unexpected death while HUGO is still open (crash, OOM, killed from
     // outside, reaped after a sleep/wake cycle, etc.) — respawn automatically
     // and re-fire autoStartJarvis() once the respawned launcher is healthy
     // again, same as the initial boot (see bootBackend()) — no user
@@ -192,10 +192,10 @@ function startLauncher (projectRoot) {
     if (state.isQuitting() || !startedLocally) return
 
     if (launcherRestartAttempts >= MAX_LAUNCHER_RESTARTS) {
-      console.error(`[LIRA] Launcher crashed ${MAX_LAUNCHER_RESTARTS} times in a row — giving up auto-restart.`)
+      console.error(`[HUGO] Launcher crashed ${MAX_LAUNCHER_RESTARTS} times in a row — giving up auto-restart.`)
       if (app.dock) app.dock.bounce('critical')
       showStartupError(
-        'LIRA se ha detenido inesperadamente varias veces.\n\n' +
+        'HUGO se ha detenido inesperadamente varias veces.\n\n' +
         'Revisa logs/launcher.log y vuelve a intentarlo.',
         () => {
           launcherRestartAttempts = 0
@@ -205,7 +205,7 @@ function startLauncher (projectRoot) {
       return
     }
     launcherRestartAttempts++
-    console.warn(`[LIRA] Launcher exited unexpectedly — restarting in ${LAUNCHER_RESTART_DELAY}ms ` +
+    console.warn(`[HUGO] Launcher exited unexpectedly — restarting in ${LAUNCHER_RESTART_DELAY}ms ` +
                  `(attempt ${launcherRestartAttempts}/${MAX_LAUNCHER_RESTARTS})…`)
     setTimeout(() => {
       startLauncher(projectRoot)
@@ -217,7 +217,7 @@ function startLauncher (projectRoot) {
   })
 
   startedLocally = true
-  console.log(`[LIRA] Launcher PID ${launcherProc.pid}`)
+  console.log(`[HUGO] Launcher PID ${launcherProc.pid}`)
 }
 
 // Reset the crash-loop bookkeeping for a full user-triggered restart (see
@@ -259,7 +259,7 @@ function killBackend (done) {
     // the broad version matches ANY process whose command line merely
     // mentions the filename (an editor with it open, a grep, a shell wrapper
     // running a command that names the file), which would kill something
-    // that has nothing to do with LIRA.
+    // that has nothing to do with HUGO.
     if (localProjectRoot) {
       const launcherPath = path.join(localProjectRoot, 'launcher.py')
       const jarvisPath    = path.join(localProjectRoot, 'jarvis.py')

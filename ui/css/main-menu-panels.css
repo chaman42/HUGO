@@ -137,7 +137,7 @@
   transition: opacity 0.5s ease;
 }
 .mm-floating-text.visible { opacity: 1; }
-/* The user's own echoed message — dimmer/italic, distinct from LIRA's
+/* The user's own echoed message — dimmer/italic, distinct from HUGO's
    reply that (almost always) follows right after it. */
 .mm-floating-text.user-echo { color: rgba(232,232,232,0.5); font-style: italic; }
 
@@ -298,9 +298,9 @@
    .mm-orb-ring/.mm-orb-glow/etc.), the sleep/wake filter+flash rules, the
    faceted-SVG layout rule, and the gold particle field rule that used to
    live here all moved to diamond-toggles.css/diamond-core.css as
-   .lira-diamond states/`.context-main` variants — #mmOrbWrap and its whole
+   .hugo-diamond states/`.context-main` variants — #mmOrbWrap and its whole
    decorative subtree no longer exist (see #mmOrbSlot's own comment in
-   main-menu-orb.css); #liraDiamond is the only diamond element now. */
+   main-menu-orb.css); #hugoDiamond is the only diamond element now. */
 @keyframes mm-quote-in {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }

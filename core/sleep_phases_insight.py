@@ -7,7 +7,7 @@ from core.sleep_summary import _build_state_summary, _count_recent_errors, _memo
 from core.sleep_insights_store import _add_insight
 
 _PATTERN_SYSTEM = (
-    "Eres LIRA analizando patrones de comportamiento de Joan a partir de lo "
+    "Eres HUGO analizando patrones de comportamiento de Joan a partir de lo "
     "que ya sabes de él. Respondes solo con JSON válido, sin comentarios."
 )
 
@@ -28,7 +28,7 @@ def _phase_pattern_discovery(remaining_budget: int) -> tuple[int, int, str]:
     return tokens, len(items), f"{len(items)} patrones detectados"
 
 _IDEA_SYSTEM = (
-    "Eres LIRA proponiendo mejoras o ideas nuevas basadas en lo que sabes "
+    "Eres HUGO proponiendo mejoras o ideas nuevas basadas en lo que sabes "
     "de Joan y su proyecto. Respondes solo con JSON válido, sin comentarios."
 )
 
@@ -49,7 +49,7 @@ def _phase_idea_generator(remaining_budget: int) -> tuple[int, int, str]:
     return tokens, len(items), f"{len(items)} ideas generadas"
 
 _DIAG_SYSTEM = (
-    "Eres LIRA generando un breve informe de diagnóstico interno. "
+    "Eres HUGO generando un breve informe de diagnóstico interno. "
     "Responde en 2-3 frases, directo, sin rodeos ni relleno."
 )
 
@@ -67,7 +67,7 @@ def _phase_diagnostics(remaining_budget: int) -> tuple[int, int, str]:
     return tokens, 1, report
 
 _QUESTIONS_SYSTEM = (
-    "Eres LIRA identificando qué información falta o es ambigua sobre Joan "
+    "Eres HUGO identificando qué información falta o es ambigua sobre Joan "
     "y sus proyectos. Respondes solo con JSON válido, sin comentarios."
 )
 
@@ -88,7 +88,7 @@ def _phase_pending_questions(remaining_budget: int) -> tuple[int, int, str]:
     return tokens, len(items), f"{len(items)} preguntas identificadas"
 
 _CRITIQUE_SYSTEM = (
-    "Eres LIRA autoevaluándote de forma constructiva. Buscas notas de "
+    "Eres HUGO autoevaluándote de forma constructiva. Buscas notas de "
     "comportamiento CONCRETAS y ACCIONABLES para mejorar futuras "
     "conversaciones — nunca cambios de personalidad, nunca nada vago. "
     "Respondes solo con JSON válido, sin comentarios."
@@ -116,25 +116,25 @@ def _phase_self_critique(remaining_budget: int) -> tuple[int, int, str]:
         instructions = _load_json(MEMORY_INSTRUCTIONS_PATH, {})
         if not isinstance(instructions, dict):
             instructions = {}
-        lira_rules = instructions.get("lira", [])
-        if not isinstance(lira_rules, list):
-            lira_rules = []
+        hugo_rules = instructions.get("hugo", [])
+        if not isinstance(hugo_rules, list):
+            hugo_rules = []
 
-        existing_auto  = [r for r in lira_rules if isinstance(r, str) and r.startswith("[Autocrítica]")]
-        hand_written   = [r for r in lira_rules if not (isinstance(r, str) and r.startswith("[Autocrítica]"))]
+        existing_auto  = [r for r in hugo_rules if isinstance(r, str) and r.startswith("[Autocrítica]")]
+        hand_written   = [r for r in hugo_rules if not (isinstance(r, str) and r.startswith("[Autocrítica]"))]
         for item in items:
             existing_auto.append(f"[Autocrítica] {item['note']}")
             added += 1
             # Also mirrored into sleep_insights.json's own 'autocritica'
             # category (separate from the memory_instructions.json write
-            # above, which is what actually shapes LIRA's behavior) — this
-            # copy is purely for surfacing in NÚCLEO LIRA's "REFLEXIONES DEL
+            # above, which is what actually shapes HUGO's behavior) — this
+            # copy is purely for surfacing in NÚCLEO HUGO's "REFLEXIONES DEL
             # SUEÑO" panel (see get_sleep_insights_summary()), never read
             # back into a prompt.
             _add_insight("autocritica", item["note"], item["confidence"])
         existing_auto = existing_auto[-MAX_SELF_CRITIQUE_NOTES:]   # cap — never grows unbounded
 
-        instructions["lira"] = hand_written + existing_auto
+        instructions["hugo"] = hand_written + existing_auto
         _save_json(MEMORY_INSTRUCTIONS_PATH, instructions)
 
     return tokens, added, f"{added} notas de autocrítica añadidas"

@@ -11,8 +11,8 @@ function _clearResponseTimer() {
 
 // ════════════════════════════════════════════════════════════════════════════
 // USER ACTIVITY — reports what Joan is doing in the HUD (section
-// navigation, concept-form typing, opening an armor model, going idle)
-// over the existing jarvisSocket connection, so LIRA can act as a co-pilot
+// navigation, going idle) over the existing
+// jarvisSocket connection, so HUGO can act as a co-pilot
 // noticing what's happening in the interface itself — see
 // core/server.py's 'user_activity' socket handler and core/commands.py's
 // on_user_activity() / ACTIVIDAD ACTUAL system-prompt block. Every call
@@ -25,24 +25,23 @@ function _emitUserActivity(section, action, context) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// HUD CONTEXT — precise, full-detail state (exactly which armor or concept
-// is on screen right now, and which section of it), separate from USER
-// ACTIVITY above. USER ACTIVITY is a lightweight "what's happening" signal
-// for co-pilot commentary; HUD CONTEXT carries the full object (armor
-// specs/innovations/limitations, concept description) so LIRA can answer
+// HUD CONTEXT — precise, full-detail state (exactly which concept is on
+// screen right now), separate from USER ACTIVITY above. USER ACTIVITY is a
+// lightweight "what's happening" signal for co-pilot commentary; HUD
+// CONTEXT carries the full object (concept description) so HUGO can answer
 // specific questions about whatever's on screen without asking which one —
 // see core/server.py's 'hud_context' socket handler and
 // core/commands.py's PANTALLA ACTUAL system-prompt block. Fires on every
-// meaningful state change (opening an armor/concept, scrolling to a
-// different section within one, navigating away), not just navigation.
+// meaningful state change (opening a concept, navigating away), not just
+// navigation.
 // ════════════════════════════════════════════════════════════════════════════
 function _emitHudContext(payload) {
   if (!jarvisSocket || !jarvisSocket.connected) return
   jarvisSocket.emit('hud_context', payload)
 }
 
-// Internal nav-section id → the vocabulary LIRA's prompt actually uses.
-const _ACTIVITY_SECTION_MAP = { home: 'main', chat: 'chat', maintenance: 'system', armor: 'armor', settings: 'settings' }
+// Internal nav-section id → the vocabulary HUGO's prompt actually uses.
+const _ACTIVITY_SECTION_MAP = { home: 'main', chat: 'chat', maintenance: 'system', settings: 'settings' }
 
 // ── Idle detection — "hasn't touched the HUD in a while", independent of
 // core/commands.py's own 30-min voice-inactivity proactive check (this one
@@ -76,18 +75,8 @@ const _appSections = document.querySelectorAll('.app-section')
 let _currentSection = 'home'
 
 // Public entry point — every nav click, section-changing button, etc. call
-// THIS, not _performSwitchSection() directly. Guards against navigating
-// away while the concept edit modal has unsaved changes (see
-// _conceptFormHasUnsavedChanges/_showUnsavedConceptDialog, near the concept
-// modal code): if there ARE unsaved changes, the actual switch is deferred
-// until the user picks Guardar/Descartar in that dialog — Cancelar just
-// stays put, nothing navigates. No unsaved changes ⇒ identical to before,
-// switches immediately.
+// THIS, not _performSwitchSection() directly.
 function switchSection(name) {
-  if (typeof _conceptFormHasUnsavedChanges === 'function' && _conceptFormHasUnsavedChanges()) {
-    _showUnsavedConceptDialog(name)
-    return
-  }
   _performSwitchSection(name)
 }
 
@@ -100,7 +89,7 @@ function _performSwitchSection(name) {
   _navItems.forEach(b => b.classList.toggle('active', b.dataset.section === name))
 
   // ── Diamond identity across sections ──────────────────────────────────
-  // #liraDiamond is the ONLY diamond DOM element that exists — Main's and
+  // #hugoDiamond is the ONLY diamond DOM element that exists — Main's and
   // Chat's own "orb" are now just empty layout placeholders (#mmOrbSlot,
   // #chatOrbSlot; see their own comments in main-menu-orb.css). There is
   // no second element to hide/reveal/swap-time anymore: entering Main or
@@ -113,9 +102,9 @@ function _performSwitchSection(name) {
   // wherever she's going next, with no warp-to-source-rect step needed
   // (that used to exist ONLY to fake "where would she have been" for an
   // element that was invisible while docked — moot now that she never is).
-  liraDiamond.classList.toggle('context-main', name === 'home')
-  liraDiamond.classList.toggle('context-chat', name === 'chat')
-  liraDiamond.classList.add('visible')   // permanently visible from her first appearance on — never toggled off again, unlike the old per-section fade
+  hugoDiamond.classList.toggle('context-main', name === 'home')
+  hugoDiamond.classList.toggle('context-chat', name === 'chat')
+  hugoDiamond.classList.add('visible')   // permanently visible from her first appearance on — never toggled off again, unlike the old per-section fade
   if (!_diamondEligible()) _closeDiamondBubble()   // Main/Chat have their own dedicated text UI; never leave the bubble open behind on them
 
   // Reposition whenever entering/leaving Main or Chat (always, regardless
@@ -126,7 +115,7 @@ function _performSwitchSection(name) {
   // never yank her out of wake/processing/speaking's own spot).
   const _enteringDockedSection = (name === 'home' || name === 'chat')
   const _leavingDockedSection  = (_prevSection === 'home' || _prevSection === 'chat') && !_enteringDockedSection
-  if (_enteringDockedSection || _leavingDockedSection || _liraDiamondState === 'idle') {
+  if (_enteringDockedSection || _leavingDockedSection || _hugoDiamondState === 'idle') {
     const { top, left, scale } = _resolveDiamondTarget(name)
     _glideDiamondTo(top, left, scale)
   }
@@ -137,16 +126,6 @@ function _performSwitchSection(name) {
     maintCount.textContent = ''
     if (navMaintBadge) navMaintBadge.textContent = ''
     maintLog.scrollTo({ top: maintLog.scrollHeight })
-  }
-
-  // Navigating to armor bay: ensure the active sub-tab content is rendered
-  if (name === 'armor') {
-    _switchSubTab(_currentSub)
-  }
-  // Leaving armor bay: close the detail view so coming back later always
-  // shows the grid fresh, not a stale detail page from before
-  if (_prevSection === 'armor' && name !== 'armor') {
-    _closeDetailView()
   }
 
   // Navigating to Ajustes: refresh system info (was triggered by the old
@@ -167,7 +146,7 @@ function _performSwitchSection(name) {
     mmFloatingText.classList.remove('visible')
   }
 
-  // LIRA CORE — render whichever sub-tab is already active on entry (so
+  // HUGO CORE — render whichever sub-tab is already active on entry (so
   // switching back to CORE later shows fresh data, not a stale render from
   // last time), and only run Estado's polling fallback while CORE itself
   // is the visible section.
@@ -181,8 +160,7 @@ function _performSwitchSection(name) {
   // ESTUDIO — fetch fresh data every time the section is entered (it's not
   // pushed live via socket events, unlike CORE's Estado tab), and close the
   // expanded detail view on the way out so coming back later always shows
-  // the active tab's card list fresh, not a stale detail page — same
-  // reasoning as Armor Bay's own _closeDetailView() on section-leave.
+  // the active tab's card list fresh, not a stale detail page.
   if (name === 'estudio') {
     _loadEstudioData()
   } else if (_prevSection === 'estudio') {
@@ -252,7 +230,7 @@ function _syncBodyClasses() {
 
 // ════════════════════════════════════════════════════════════════════════════
 // CONTEXTUAL PANELS — main-menu side panels that slide in beside the orb
-// while LIRA speaks about a specific topic (weather, time, ...). Backend
+// while HUGO speaks about a specific topic (weather, time, ...). Backend
 // trigger: core/commands.py's _maybe_emit_panel() emits a 'show_panel'
 // socket event (via core/server.py's emit_show_panel()) right after intent
 // detection, before the reply is generated. The frontend just arms

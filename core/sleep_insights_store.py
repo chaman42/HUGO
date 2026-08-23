@@ -1,6 +1,6 @@
 """Sleep System — insights file (data/sleep_insights.json) storage:
 patterns/ideas/questions/curiosity/autocritica records, plus the
-continuous-sleep run summary used by NUCLEO LIRA's Estado/Pensamiento tabs."""
+continuous-sleep run summary used by NUCLEO HUGO's Estado/Pensamiento tabs."""
 import datetime
 
 from core.sleep_state import (
@@ -26,7 +26,7 @@ _REFLECTION_PHASE_LABEL = {
 }
 
 def get_sleep_insights_summary(limit: int = 20) -> dict:
-    """Backs GET /api/sleep_insights — NÚCLEO LIRA's Pensamiento tab
+    """Backs GET /api/sleep_insights — NÚCLEO HUGO's Pensamiento tab
     ('PREGUNTAS DURANTE EL SUEÑO' / 'REFLEXIONES DEL SUEÑO'). Questions are
     ordered by confidence (importance) descending, per spec; reflections
     (patterns + ideas + autocritica combined) by recency descending. Both
@@ -76,7 +76,7 @@ def get_sleep_insights_summary(limit: int = 20) -> dict:
 
 def get_sleep_summary() -> dict:
     """Backs GET /api/sleep_summary — a purpose-built summary of the LAST
-    (or currently running) continuous-sleep run, for NÚCLEO LIRA's Estado
+    (or currently running) continuous-sleep run, for NÚCLEO HUGO's Estado
     "ÚLTIMO SUEÑO" section: when it happened, how many cycles, how long,
     and what it actually did (facts deleted/merged/promoted, insights
     generated, mind-map connections touched). Every cumulative field here
@@ -190,7 +190,7 @@ def get_unused_curiosidad_finding() -> tuple[int | None, str | None]:
     core.sleep_curiosity_search._phase_curiosity_search), as (index, text) —
     (None, None) if there isn't one. Distinct from get_unused_curiosity()
     above (Phase 8's old plain-topic suggestions, no web search behind
-    them) — both get injected into LIRA's prompt, see
+    them) — both get injected into HUGO's prompt, see
     core/personalities/base.py."""
     data = load_insights()
     for i, c in enumerate(data["curiosidad_findings"]):

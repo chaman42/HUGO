@@ -1,8 +1,8 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# EMBEDDINGS — local semantic index over LIRA's memory (facts) and Estudio
-# documents (summaries, schemas, investigations, explorations, armor,
-# concepts), backed by a local Chroma store (data/chroma/, no server) and a
-# local sentence-transformers model. No cloud calls, no per-query cost.
+# EMBEDDINGS — local semantic index over HUGO's memory (facts) and Estudio
+# documents (summaries, schemas, investigations, explorations), backed by a
+# local Chroma store (data/chroma/, no server) and a local
+# sentence-transformers model. No cloud calls, no per-query cost.
 #
 # Why this exists: core/memory_select.py's _select_relevant_facts and
 # core/reflective.py's connection-building both rely on keyword overlap
@@ -12,12 +12,12 @@
 # twice in testing, 2026-08-20). Embedding distance catches this without
 # needing a model to reason about it at all.
 #
-# One shared collection ('lira_memory'), documents tagged by a 'type'
-# metadata field (fact/episode/investigation/summary/schema/exploration/
-# armor/concept) rather than one collection per type — so a single query
+# One shared collection ('hugo_memory'), documents tagged by a 'type'
+# metadata field (fact/episode/investigation/summary/schema/exploration)
+# rather than one collection per type — so a single query
 # can search across everything at once (optionally filtered to one type via
 # query()'s doc_type param), which is the actual point: one semantic index
-# for "what does LIRA know/have that relates to X", not eight separate ones.
+# for "what does HUGO know/have that relates to X", not eight separate ones.
 #
 # Kept dependency-light beyond chromadb/sentence-transformers themselves —
 # no core.commands/core.voice — so this can be imported from a standalone
@@ -38,7 +38,7 @@ def _p(rel: str) -> str:
 
 
 CHROMA_PATH      = _p("data/chroma")
-COLLECTION_NAME  = "lira_memory"
+COLLECTION_NAME  = "hugo_memory"
 
 # Compact multilingual model (~470MB, CPU-friendly) — matches this project's
 # Spanish-first content; a general English-only model would score Spanish
@@ -239,28 +239,6 @@ def reindex_all() -> dict:
             text_fn=lambda e: f"{e.get('title', '')}: {e.get('excerpt') or e.get('summary', '')}",
             meta_fn=lambda e: {"title": e.get("title", ""), "date": e.get("date", "")},
         )
-
-    armor = _load_json("data/armor_knowledge.json", {})
-    if isinstance(armor, dict):
-        models = armor.get("models", [])
-        if isinstance(models, list):
-            _index_collection(
-                "armor", [m for m in models if isinstance(m, dict)],
-                id_fn=lambda m: m.get("name", ""),
-                text_fn=lambda m: f"{m.get('name', '')}: {m.get('description', '') or m.get('desc', '')}",
-                meta_fn=lambda m: {"name": m.get("name", ""), "status": m.get("status", "")},
-            )
-
-    concepts = _load_json("data/concepts.json", {})
-    if isinstance(concepts, dict):
-        concept_list = concepts.get("concepts", [])
-        if isinstance(concept_list, list):
-            _index_collection(
-                "concept", [c for c in concept_list if isinstance(c, dict)],
-                id_fn=lambda c: c.get("name", ""),
-                text_fn=lambda c: f"{c.get('name', '')}: {c.get('desc', '')}",
-                meta_fn=lambda c: {"name": c.get("name", ""), "status": c.get("status", "")},
-            )
 
     logger.info("[EMBEDDINGS] reindex_all: %s", counts)
     return counts

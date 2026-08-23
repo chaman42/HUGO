@@ -18,7 +18,7 @@
 #          the same conversation turn).
 #        - create/update -> CodeEngine.create_ad_hoc_module()/
 #          update_module(), fire-and-forget on a background thread (can
-#          take minutes, multiple LLM calls) — LIRA acknowledges
+#          take minutes, multiple LLM calls) — HUGO acknowledges
 #          immediately, the real outcome is delivered via
 #          core.notifications on Joan's next turn.
 #
@@ -27,14 +27,14 @@
 # that WAS this module's first implementation, and a live end-to-end test
 # exposed real problems with it for this specific use case: its generic,
 # freelance LLM-driven tool-calling has no guardrail enforcing the
-# LiraSkill class shape skills.reload_skills() actually requires (it
+# HugoSkill class shape skills.reload_skills() actually requires (it
 # produced bare functions, not a working module), no guarantee of file-
 # path consistency across steps (it created two different files for one
 # module), and never actually calls ModuleManager.install()/update() on
 # success, so even a "completed" run never installed anything. Routing
 # through core.code_engine.CodeEngine's existing create_module()/
 # update_module() pipeline instead sidesteps all three at once: that
-# pipeline's _CODE_CONTEXT prompt already enforces the LiraSkill shape,
+# pipeline's _CODE_CONTEXT prompt already enforces the HugoSkill shape,
 # it always writes to exactly one deterministic path
 # (skills/<module_name>.py), and it already calls ModuleManager.install()/
 # .update() itself as its last step on success — the same proven path the
@@ -42,7 +42,7 @@
 # requiring a pre-existing catalog entry (see create_ad_hoc_module()'s own
 # docstring). Orchestrator/Planner/Deployer remain fully available for
 # broader, non-module Code Engine work via the API
-# (POST /api/code-engine/orchestrate, /deploy/lira-module) — this module
+# (POST /api/code-engine/orchestrate, /deploy/hugo-module) — this module
 # just no longer routes conversational module creation through them.
 import logging
 import re
@@ -71,7 +71,7 @@ def _code_engine_enabled() -> bool:
 
 def slugify_module_name(topic: str) -> str:
     """Free-text topic -> a valid Python module name (skills/<name>.py,
-    and the LiraSkill's own `name` attribute). Strips accents (NFKD ->
+    and the HugoSkill's own `name` attribute). Strips accents (NFKD ->
     ASCII), lowercases, drops short Spanish function words, joins the
     rest with underscores. Never returns empty — falls back to
     'modulo_nuevo' if the topic had no usable words at all (e.g. it was

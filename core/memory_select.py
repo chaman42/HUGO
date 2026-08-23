@@ -20,7 +20,7 @@ from core.memory_store import (
 # scored against what the user just said (simple keyword overlap, see
 # _keywords) and only the relevant handful are surfaced, under a single
 # CONTEXTO RELEVANTE section (see _build_system_prompt) — e.g. asking about
-# swimming surfaces swim-club/training facts, not unrelated armor facts.
+# swimming surfaces swim-club/training facts, not unrelated ones.
 # ---------------------------------------------------------------------------
 
 def _load_shared_facts() -> list[dict]:
@@ -273,7 +273,7 @@ def _format_relevant_facts_block(facts: list[dict]) -> str:
     not 'added' (last reinforced) — per the temporal-awareness rule: recent
     facts (< 24h, i.e. 'hoy'/'ayer') can be referenced directly, older ones
     get a relative-time hedge ('hace unos días', 'la semana pasada', ...),
-    so LIRA never implies she just learned something she's actually known
+    so HUGO never implies she just learned something she's actually known
     for a while.
 
     Grouped by 'type' (Memory V2 structured field — see _CONTENT_TYPES in
@@ -299,7 +299,7 @@ def _format_relevant_facts_block(facts: list[dict]) -> str:
         # Entity Pillars Phase 1 (facts vs. interpretations, see
         # core/epistemics.py): 'inferred' facts (core.reflective's pattern
         # extraction, never something Joan said outright) get a visible
-        # hedge marker so LIRA doesn't state her own conclusion with the
+        # hedge marker so HUGO doesn't state her own conclusion with the
         # same certainty as something Joan told her directly. 'stated'
         # facts (the vast majority) are unmarked, same as before this field
         # existed.

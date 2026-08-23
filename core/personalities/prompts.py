@@ -2,9 +2,9 @@
 # PROMPTS — shared prompt-string fragments (voice-hygiene rules,
 # chain-of-thought prefix, epistemic-honesty and personal-boundaries
 # instructions). Kept dependency-free and separate from
-# core/personalities/base.py so lira.py can import _VOICE_RULES from here
+# core/personalities/base.py so hugo.py can import _VOICE_RULES from here
 # without creating an import cycle with base.py (which itself imports
-# lira.py to assemble PERSONALITIES). Split out of core/personality.py
+# hugo.py to assemble PERSONALITIES). Split out of core/personality.py
 # (pure refactor, no behavior change).
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -92,7 +92,7 @@ _PERSONAL_BOUNDARIES_PROMPT = (
 # _EPISTEMIC_HONESTY_PROMPT (which covers invented FACTS): this covers
 # invented COMPLETED ACTIONS. Exists because of a real production bug — a
 # turn's intent can fail to match a real action (an unrecognized phrasing,
-# a leading 'lira, ...' vocative breaking an anchored regex, a transcription
+# a leading 'hugo, ...' vocative breaking an anchored regex, a transcription
 # glitch) and fall through to a normal conversational reply; without this
 # rule the model, having no idea the real save/create tool was never
 # invoked, would cheerfully improvise 'Hecho, guardado en Estudio' anyway —

@@ -1,5 +1,5 @@
 """Sleep System — Phase 0 (memory maintenance) and Phase 1 (memory cleanup):
-the two phases that read/write memory_shared.json/memory_lira.json directly,
+the two phases that read/write memory_shared.json/memory_hugo.json directly,
 plus their shared helpers (fact sampling, mind-map maintenance, dedup)."""
 import datetime
 import json
@@ -7,7 +7,7 @@ import random
 import re
 
 from core.sleep_state import (
-    MEMORY_SHARED_PATH, MEMORY_LIRA_PATH, EPISODES_PATH, CONNECTIONS_PATH,
+    MEMORY_SHARED_PATH, MEMORY_HUGO_PATH, EPISODES_PATH, CONNECTIONS_PATH,
     _load_json, _save_json, _now_iso, _today, _log, _fact_similarity,
     _is_fact_expired, _LIFESPAN_VALUES,
 )
@@ -34,7 +34,7 @@ def _fact_age_days(f: dict) -> float:
     return (datetime.datetime.now() - dt).total_seconds() / 86400
 
 _MAINT_SYSTEM = (
-    "Eres LIRA revisando tu propia memoria (hechos guardados sobre Joan). "
+    "Eres HUGO revisando tu propia memoria (hechos guardados sobre Joan). "
     "Detectas duplicados a fusionar, hechos que mezclan dos ideas distintas a "
     "separar, categoría/lifespan mal asignados, y hechos vagos que se repiten "
     "y merecen contexto temporal más preciso. Respondes solo con JSON válido, "
@@ -50,10 +50,10 @@ _LIFESPAN_RULES_ES = (
     "ahora, está en Madrid hoy)."
 )
 
-_LIRA_INDEX_OFFSET = 1000
+_HUGO_INDEX_OFFSET = 1000
 
 # Caps how many facts per file get sent to the LLM review step each cycle —
-# independent of how large memory_shared.json/memory_lira.json actually are.
+# independent of how large memory_shared.json/memory_hugo.json actually are.
 # Keeps the prompt (and therefore local-inference latency) bounded even with
 # hundreds of facts; a continuous run does another cycle immediately after
 # this one anyway, and each cycle samples a fresh random subset (see
@@ -97,9 +97,9 @@ def _phase_memory_maintenance(remaining_budget: int) -> tuple[int, int, str]:
     importance_demoted  = 0
 
     shared_facts = _load_json(MEMORY_SHARED_PATH, [])
-    lira_facts   = _load_json(MEMORY_LIRA_PATH, [])
+    hugo_facts   = _load_json(MEMORY_HUGO_PATH, [])
     shared_facts = shared_facts if isinstance(shared_facts, list) else []
-    lira_facts   = lira_facts if isinstance(lira_facts, list) else []
+    hugo_facts   = hugo_facts if isinstance(hugo_facts, list) else []
 
     def _algorithmic_pass(facts: list[dict]) -> list[dict]:
         nonlocal deleted_expired, promoted, flagged_for_review, importance_promoted, importance_demoted
@@ -135,16 +135,16 @@ def _phase_memory_maintenance(remaining_budget: int) -> tuple[int, int, str]:
         return kept
 
     shared_facts = _algorithmic_pass(shared_facts)
-    lira_facts   = _algorithmic_pass(lira_facts)
+    hugo_facts   = _algorithmic_pass(hugo_facts)
 
     tokens_used = 0
     merged = recategorized = reworded = split_n = 0
-    if remaining_budget > 0 and (shared_facts or lira_facts):
+    if remaining_budget > 0 and (shared_facts or hugo_facts):
         shared_sample = _sample_indexed(shared_facts, _MAINT_REVIEW_SAMPLE_SIZE)
-        lira_sample   = _sample_indexed(lira_facts, _MAINT_REVIEW_SAMPLE_SIZE, offset=_LIRA_INDEX_OFFSET)
+        hugo_sample   = _sample_indexed(hugo_facts, _MAINT_REVIEW_SAMPLE_SIZE, offset=_HUGO_INDEX_OFFSET)
         index_block = (
             "MEMORIA COMPARTIDA:\n" + _build_facts_index(shared_sample) +
-            "\n\nMEMORIA LIRA (índices +1000):\n" + _build_facts_index(lira_sample)
+            "\n\nMEMORIA HUGO (índices +1000):\n" + _build_facts_index(hugo_sample)
         )
         user = (
             f"{index_block}\n\n{_LIFESPAN_RULES_ES}\n\n"
@@ -164,12 +164,12 @@ def _phase_memory_maintenance(remaining_budget: int) -> tuple[int, int, str]:
         )
         raw, tokens_used = _groq_call(_MAINT_SYSTEM, user, remaining_budget)
         if raw:
-            shared_facts, lira_facts, merged, recategorized, reworded, split_n, action_mapping = \
-                _apply_review_actions(shared_facts, lira_facts, raw)
+            shared_facts, hugo_facts, merged, recategorized, reworded, split_n, action_mapping = \
+                _apply_review_actions(shared_facts, hugo_facts, raw)
             mind_map_mapping.update(action_mapping)
 
     _save_json(MEMORY_SHARED_PATH, shared_facts)
-    _save_json(MEMORY_LIRA_PATH, lira_facts)
+    _save_json(MEMORY_HUGO_PATH, hugo_facts)
 
     map_changes = _apply_mind_map_maintenance(mind_map_mapping, promoted_texts)
 
@@ -193,10 +193,10 @@ def _phase_memory_maintenance(remaining_budget: int) -> tuple[int, int, str]:
     return tokens_used, insights, summary
 
 def _apply_review_actions(
-    shared_facts: list[dict], lira_facts: list[dict], raw: str,
+    shared_facts: list[dict], hugo_facts: list[dict], raw: str,
 ) -> tuple[list[dict], list[dict], int, int, int, int, dict[str, str | None]]:
     """Parses/applies _phase_memory_maintenance's LLM action list. Returns
-    (shared_facts, lira_facts, merged_count, recategorized_count,
+    (shared_facts, hugo_facts, merged_count, recategorized_count,
     reworded_count, split_count, mind_map_mapping) — mind_map_mapping maps
     an old fact TEXT to either its replacement text (merge/reword) or None
     (deleted with no single replacement, e.g. split), for
@@ -205,30 +205,30 @@ def _apply_review_actions(
     here must never corrupt or drop existing facts."""
     match = re.search(r"\[.*\]", raw, re.DOTALL)
     if not match:
-        return shared_facts, lira_facts, 0, 0, 0, 0, {}
+        return shared_facts, hugo_facts, 0, 0, 0, 0, {}
     try:
         actions = json.loads(match.group())
     except json.JSONDecodeError:
-        return shared_facts, lira_facts, 0, 0, 0, 0, {}
+        return shared_facts, hugo_facts, 0, 0, 0, 0, {}
     if not isinstance(actions, list):
-        return shared_facts, lira_facts, 0, 0, 0, 0, {}
+        return shared_facts, hugo_facts, 0, 0, 0, 0, {}
 
     def _resolve(idx) -> tuple[list[dict], int] | None:
         try:
             idx = int(idx)
         except (TypeError, ValueError):
             return None
-        if idx >= _LIRA_INDEX_OFFSET:
-            i = idx - _LIRA_INDEX_OFFSET
-            return (lira_facts, i) if 0 <= i < len(lira_facts) else None
+        if idx >= _HUGO_INDEX_OFFSET:
+            i = idx - _HUGO_INDEX_OFFSET
+            return (hugo_facts, i) if 0 <= i < len(hugo_facts) else None
         return (shared_facts, idx) if 0 <= idx < len(shared_facts) else None
 
     mapping: dict[str, str | None] = {}
     merged_n = recats_n = reworded_n = split_n = 0
     removed_shared: set[int] = set()
-    removed_lira: set[int] = set()
+    removed_hugo: set[int] = set()
     added_shared: list[dict] = []
-    added_lira: list[dict] = []
+    added_hugo: list[dict] = []
 
     for action in actions[:8]:   # hard safety cap regardless of what the model returns
         if not isinstance(action, dict):
@@ -246,7 +246,7 @@ def _apply_review_actions(
             target_list = resolved[0][0]
             if any(lst is not target_list for lst, _ in resolved):
                 continue   # cross-file merge not supported — skip rather than guess
-            removed_set = removed_shared if target_list is shared_facts else removed_lira
+            removed_set = removed_shared if target_list is shared_facts else removed_hugo
             originals = [lst[i] for lst, i in resolved]
             for _, i in resolved:
                 removed_set.add(i)
@@ -261,7 +261,7 @@ def _apply_review_actions(
                 "weight": sum(o.get("weight", 1) for o in originals),
                 "outdated": False, "outdated_at": None, "source": "conversation",
             }
-            (added_shared if target_list is shared_facts else added_lira).append(new_fact)
+            (added_shared if target_list is shared_facts else added_hugo).append(new_fact)
             merged_n += 1
 
         elif kind == "split":
@@ -271,7 +271,7 @@ def _apply_review_actions(
                 continue
             lst, i = resolved
             original = lst[i]
-            (removed_shared if lst is shared_facts else removed_lira).add(i)
+            (removed_shared if lst is shared_facts else removed_hugo).add(i)
             mapping[original["fact"]] = None
             for item in new_items[:3]:
                 if not isinstance(item, dict):
@@ -286,7 +286,7 @@ def _apply_review_actions(
                     "created_at": _now_iso(), "added": _now_iso(), "weight": 1,
                     "outdated": False, "outdated_at": None, "source": "conversation",
                 }
-                (added_shared if lst is shared_facts else added_lira).append(new_fact)
+                (added_shared if lst is shared_facts else added_hugo).append(new_fact)
             split_n += 1
 
         elif kind == "recategorize":
@@ -294,7 +294,7 @@ def _apply_review_actions(
             if not resolved:
                 continue
             lst, i = resolved
-            if i in (removed_shared if lst is shared_facts else removed_lira):
+            if i in (removed_shared if lst is shared_facts else removed_hugo):
                 continue
             f = lst[i]
             changed = False
@@ -313,7 +313,7 @@ def _apply_review_actions(
             if not resolved or not new_text:
                 continue
             lst, i = resolved
-            if i in (removed_shared if lst is shared_facts else removed_lira):
+            if i in (removed_shared if lst is shared_facts else removed_hugo):
                 continue
             old_text = lst[i]["fact"]
             if new_text == old_text:
@@ -323,8 +323,8 @@ def _apply_review_actions(
             reworded_n += 1
 
     shared_out = [f for i, f in enumerate(shared_facts) if i not in removed_shared] + added_shared
-    lira_out   = [f for i, f in enumerate(lira_facts) if i not in removed_lira] + added_lira
-    return shared_out, lira_out, merged_n, recats_n, reworded_n, split_n, mapping
+    hugo_out   = [f for i, f in enumerate(hugo_facts) if i not in removed_hugo] + added_hugo
+    return shared_out, hugo_out, merged_n, recats_n, reworded_n, split_n, mapping
 
 def _apply_mind_map_maintenance(mapping: dict[str, str | None], promoted_texts: set[str]) -> int:
     """Applies Phase 0's fact deletions/merges/rewords to
@@ -400,7 +400,7 @@ def _dedup_and_clean(path: str) -> tuple[int, int]:
 
 def _phase_memory_cleanup(remaining_budget: int) -> tuple[int, int, str]:
     out1, dup1 = _dedup_and_clean(MEMORY_SHARED_PATH)
-    out2, dup2 = _dedup_and_clean(MEMORY_LIRA_PATH)
+    out2, dup2 = _dedup_and_clean(MEMORY_HUGO_PATH)
 
     episodes = _load_json(EPISODES_PATH, [])
     tokens_used = 0

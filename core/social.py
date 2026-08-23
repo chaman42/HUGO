@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# SOCIAL — Proactive Intelligence Phase 6 (final phase): LIRA knows who
+# SOCIAL — Proactive Intelligence Phase 6 (final phase): HUGO knows who
 # she's talking to, their relationship with Joan, and adapts accordingly.
 #
 # Builds on real signals that already exist in this codebase rather than
@@ -66,7 +66,7 @@ class Person:
     name:                  str | None
     relationship_to_joan:  str   # self | friend | family | colleague | stranger
     trust_level:           float
-    knows_lira:            bool
+    knows_hugo:            bool
     voice_profile_id:      str | None = None
     linguistic_profile:    dict = field(default_factory=dict)
     first_seen:            str = ""
@@ -98,7 +98,7 @@ class BehaviorProfile:
     tone:                  str   # formal | casual | technical | warm | neutral
     response_length:       str   # brief | normal | detailed | minimal
     information_sharing:   str   # full | limited | minimal
-    lira_personality_mode: str   # normal | reserved | professional | friendly
+    hugo_personality_mode: str   # normal | reserved | professional | friendly
 
 
 @dataclass
@@ -106,8 +106,8 @@ class InfoPermissions:
     can_access_joan_schedule:        bool
     can_access_joan_projects:        bool
     can_access_joan_memory:          bool
-    can_ask_lira_personal_questions: bool
-    lira_acknowledges_knowing_joan:  bool
+    can_ask_hugo_personal_questions: bool
+    hugo_acknowledges_knowing_joan:  bool
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -124,7 +124,7 @@ _DEFAULT_PROFILES = {
     "people": {
         "joan": {
             "id": "joan", "name": "Joan", "relationship_to_joan": "self",
-            "trust_level": 1.0, "knows_lira": True, "voice_profile_id": "joan_primary",
+            "trust_level": 1.0, "knows_hugo": True, "voice_profile_id": "joan_primary",
             "trust_confirmed": True,
             "linguistic_profile": {}, "first_seen": "", "last_seen": "", "interaction_count": 0,
             "discord_id": None,
@@ -133,7 +133,7 @@ _DEFAULT_PROFILES = {
         },
     },
     "strangers_seen": 0,
-    "introduction_template": "Soy LIRA.",
+    "introduction_template": "Soy HUGO.",
 }
 
 
@@ -146,7 +146,7 @@ def _load() -> dict:
     if not isinstance(data, dict) or not isinstance(data.get("people"), dict):
         return json.loads(json.dumps(_DEFAULT_PROFILES))
     data.setdefault("strangers_seen", 0)
-    data.setdefault("introduction_template", "Soy LIRA.")
+    data.setdefault("introduction_template", "Soy HUGO.")
     data["people"].setdefault("joan", json.loads(json.dumps(_DEFAULT_PROFILES["people"]["joan"])))
     return data
 
@@ -164,7 +164,7 @@ def _person_from_record(record: dict) -> Person:
         name=record.get("name"),
         relationship_to_joan=record.get("relationship_to_joan", "stranger"),
         trust_level=float(record.get("trust_level", 0.0)),
-        knows_lira=bool(record.get("knows_lira", False)),
+        knows_hugo=bool(record.get("knows_hugo", False)),
         voice_profile_id=record.get("voice_profile_id"),
         linguistic_profile=record.get("linguistic_profile", {}) or {},
         first_seen=record.get("first_seen", ""),
@@ -289,7 +289,7 @@ class SocialEngine:
             data["people"][person_id] = {
                 "id": person_id, "name": None, "relationship_to_joan": "stranger",
                 "trust_level": 0.3 if role == "user" else 0.0,   # Discord-authorized 'user' role is a mild trust signal Joan already granted, not full trust
-                "knows_lira": role == "user", "voice_profile_id": None,
+                "knows_hugo": role == "user", "voice_profile_id": None,
                 "linguistic_profile": {}, "first_seen": now, "last_seen": now, "interaction_count": 0,
                 "discord_id": discord_user_id,
                 "relationship": {"type": "stranger", "closeness": 0.1, "joan_sentiment": "unknown", "shared_topics": [], "notes": []},
@@ -344,7 +344,7 @@ class SocialEngine:
             _mark_present(person)
             return person
 
-        unknown = Person(id="unknown", name=None, relationship_to_joan="stranger", trust_level=0.0, knows_lira=False)
+        unknown = Person(id="unknown", name=None, relationship_to_joan="stranger", trust_level=0.0, knows_hugo=False)
         _mark_present(unknown)
         return unknown
 
@@ -508,30 +508,30 @@ class SocialEngine:
                 adapted.pop(key, None)
         return adapted
 
-    def introduce_lira(self, person: Person) -> str:
+    def introduce_hugo(self, person: Person) -> str:
         """Returns ONLY what to say — the 'does not introduce herself
         automatically, waits to be addressed' gating (spec) is the
         caller's job (see the pipeline integration), since that's about
         WHEN this gets called, not what it returns. person is accepted
         (per the class interface) but the template is currently the same
-        regardless of who's asking — 'Soy LIRA.', nothing more, per spec's
+        regardless of who's asking — 'Soy HUGO.', nothing more, per spec's
         own explicit example; Joan expanding it later
         ('Puedes hablar con ella normal') is a trust_level change, handled
         by POST /api/social/people/<id>/trust, not a different string
         here."""
         data = _load()
-        return data.get("introduction_template", "Soy LIRA.")
+        return data.get("introduction_template", "Soy HUGO.")
 
     def acknowledge_known(self, person_id: str) -> None:
-        """Marks knows_lira=True after a first acknowledged interaction —
-        spec: 'Marks person as knows_lira: true after first acknowledged
+        """Marks knows_hugo=True after a first acknowledged interaction —
+        spec: 'Marks person as knows_hugo: true after first acknowledged
         interaction'. Separate from update_interaction() since this is a
         one-time flag flip, not a per-turn bookkeeping call."""
         with _lock:
             data = _load()
             record = data["people"].get(person_id)
-            if record is not None and not record.get("knows_lira"):
-                record["knows_lira"] = True
+            if record is not None and not record.get("knows_hugo"):
+                record["knows_hugo"] = True
                 _save_locked(data)
 
     # ── secret protection — hard filter, never LLM judgment ─────────────
@@ -556,7 +556,7 @@ class SocialEngine:
                 continue
             if not permissions.can_access_joan_projects and _PROJECT_LEAK_RE.search(low):
                 continue
-            if not permissions.lira_acknowledges_knowing_joan and _RELATIONSHIP_ACK_RE.search(low):
+            if not permissions.hugo_acknowledges_knowing_joan and _RELATIONSHIP_ACK_RE.search(low):
                 continue
             kept.append(sentence)
         sanitized = " ".join(kept).strip()
@@ -566,26 +566,26 @@ class SocialEngine:
 # ── behavior/permission tables ──────────────────────────────────────────────
 
 BEHAVIOR_BY_RELATIONSHIP: dict[str, BehaviorProfile] = {
-    "self":       BehaviorProfile(tone="casual",  response_length="normal", information_sharing="full",    lira_personality_mode="normal"),
-    "family":     BehaviorProfile(tone="warm",     response_length="brief",  information_sharing="limited", lira_personality_mode="friendly"),
-    "friend":     BehaviorProfile(tone="casual",  response_length="brief",  information_sharing="limited", lira_personality_mode="friendly"),
-    "colleague":  BehaviorProfile(tone="professional", response_length="brief", information_sharing="minimal", lira_personality_mode="professional"),
-    "acquaintance": BehaviorProfile(tone="neutral", response_length="minimal", information_sharing="minimal", lira_personality_mode="reserved"),
-    "stranger":   BehaviorProfile(tone="neutral",  response_length="minimal", information_sharing="minimal", lira_personality_mode="reserved"),
+    "self":       BehaviorProfile(tone="casual",  response_length="normal", information_sharing="full",    hugo_personality_mode="normal"),
+    "family":     BehaviorProfile(tone="warm",     response_length="brief",  information_sharing="limited", hugo_personality_mode="friendly"),
+    "friend":     BehaviorProfile(tone="casual",  response_length="brief",  information_sharing="limited", hugo_personality_mode="friendly"),
+    "colleague":  BehaviorProfile(tone="professional", response_length="brief", information_sharing="minimal", hugo_personality_mode="professional"),
+    "acquaintance": BehaviorProfile(tone="neutral", response_length="minimal", information_sharing="minimal", hugo_personality_mode="reserved"),
+    "stranger":   BehaviorProfile(tone="neutral",  response_length="minimal", information_sharing="minimal", hugo_personality_mode="reserved"),
 }
 
 PERMISSIONS_BY_TRUST: dict[float, InfoPermissions] = {
     1.0: InfoPermissions(   # Joan
         can_access_joan_schedule=True, can_access_joan_projects=True, can_access_joan_memory=True,
-        can_ask_lira_personal_questions=True, lira_acknowledges_knowing_joan=True,
+        can_ask_hugo_personal_questions=True, hugo_acknowledges_knowing_joan=True,
     ),
     0.5: InfoPermissions(   # trusted friend
         can_access_joan_schedule=False, can_access_joan_projects=False, can_access_joan_memory=False,
-        can_ask_lira_personal_questions=False, lira_acknowledges_knowing_joan=True,
+        can_ask_hugo_personal_questions=False, hugo_acknowledges_knowing_joan=True,
     ),
     0.0: InfoPermissions(   # stranger
         can_access_joan_schedule=False, can_access_joan_projects=False, can_access_joan_memory=False,
-        can_ask_lira_personal_questions=False, lira_acknowledges_knowing_joan=False,
+        can_ask_hugo_personal_questions=False, hugo_acknowledges_knowing_joan=False,
     ),
 }
 

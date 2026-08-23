@@ -1,5 +1,5 @@
-"""LIRA's reflective mode — an idle-time background consolidation pass over
-existing memory (facts, episodes, armor knowledge, concepts) that looks for
+"""HUGO's reflective mode — an idle-time background consolidation pass over
+existing memory (facts, episodes) that looks for
 connections/patterns/inferences an LLM call can surface but that never came
 up explicitly in conversation.
 
@@ -54,8 +54,6 @@ load_dotenv(_p(".env"))
 
 MEMORY_SHARED_PATH   = _p("data/memory_shared.json")
 EPISODES_PATH        = _p("data/episodes.json")
-ARMOR_KNOWLEDGE_PATH = _p("data/armor_knowledge.json")
-CONCEPTS_PATH        = _p("data/concepts.json")
 BUDGET_PATH          = _p("data/reflective_budget.json")
 CONNECTIONS_PATH     = _p("data/mind_map_connections.json")
 LOG_PATH             = _p("logs/reflective.log")
@@ -166,7 +164,7 @@ def save_budget(budget: dict) -> None:
 
 def get_status() -> dict:
     """Snapshot for the UI — GET /api/info folds this into its response for
-    NÚCLEO LIRA's Estado tab (see core/server.py's api_info)."""
+    NÚCLEO HUGO's Estado tab (see core/server.py's api_info)."""
     return load_budget()
 
 
@@ -221,8 +219,6 @@ def _reserve(budget: dict) -> None:
 def _build_context_block() -> str:
     facts    = _load_json(MEMORY_SHARED_PATH, [])
     episodes = _load_json(EPISODES_PATH, [])
-    armor    = _load_json(ARMOR_KNOWLEDGE_PATH, {})
-    concepts = _load_json(CONCEPTS_PATH, {})
 
     fact_lines = [
         f"- ({f.get('category', '?')}) {f.get('fact', '')}"
@@ -234,23 +230,9 @@ def _build_context_block() -> str:
         for e in episodes if isinstance(e, dict)
     ][-8:]
 
-    armor_models = armor.get("models", []) if isinstance(armor, dict) else []
-    armor_lines = [
-        f"- {m.get('name', '?')} ({m.get('status', '?')})"
-        for m in armor_models if isinstance(m, dict)
-    ][-8:]
-
-    concept_list = concepts.get("concepts", []) if isinstance(concepts, dict) else []
-    concept_lines = [
-        f"- {c.get('name', '?')} ({c.get('status', '?')}): {str(c.get('desc', ''))[:60]}"
-        for c in concept_list if isinstance(c, dict)
-    ][-8:]
-
     return (
         "FACTS:\n" + ("\n".join(fact_lines) or "(ninguno)") + "\n\n"
-        "EPISODIOS:\n" + ("\n".join(episode_lines) or "(ninguno)") + "\n\n"
-        "ARMADURAS:\n" + ("\n".join(armor_lines) or "(ninguna)") + "\n\n"
-        "CONCEPTOS:\n" + ("\n".join(concept_lines) or "(ninguno)")
+        "EPISODIOS:\n" + ("\n".join(episode_lines) or "(ninguno)")
     )
 
 
@@ -481,7 +463,7 @@ def run_reflective_session(api_key: str | None = None) -> dict:
         # budget below.
         raw, tokens_used = sleep_llm._groq_call(
             (
-                "Eres LIRA reflexionando en segundo plano sobre lo que sabes de "
+                "Eres HUGO reflexionando en segundo plano sobre lo que sabes de "
                 "Joan. Respondes solo con JSON válido, sin comentarios ni rodeos."
             ),
             _PROMPT_TEMPLATE.format(data=_build_context_block()),

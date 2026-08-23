@@ -1,15 +1,15 @@
-"""Calendar skill — thin LiraSkill wrapper over core.tools_calendar
+"""Calendar skill — thin HugoSkill wrapper over core.tools_calendar
 (Calendar.app reads/writes via AppleScript). No calendar logic lives here.
 
 `context` may carry {"action": "today" | "week" | "create", ...}; for
 "create" it must also carry {"title", "date", "time", "duration"} —
 same shape core.intent._parse_event_details already produces for the
 calendar_write intent (see core/intent.py)."""
-from skills import LiraSkill
+from skills import HugoSkill
 from core import tools_calendar
 
 
-class CalendarSkill(LiraSkill):
+class CalendarSkill(HugoSkill):
     name = "calendar"
     description = "Lee y crea eventos en Calendar.app."
     triggers = ["qué tengo hoy", "mi agenda", "crea un evento", "agenda una reunión"]

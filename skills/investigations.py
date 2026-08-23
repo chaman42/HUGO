@@ -1,15 +1,15 @@
-"""Investigations skill — thin LiraSkill wrapper over core.investigations
+"""Investigations skill — thin HugoSkill wrapper over core.investigations
 (data/investigations.json lifecycle storage). Incubation itself still runs
 during sleep (core/sleep_phases_incubation.py) — this skill only starts a
 new investigation or lists the active ones.
 
 `context` may carry {"action": "list"} to list active investigations
 instead of creating a new one (default)."""
-from skills import LiraSkill
+from skills import HugoSkill
 from core import investigations
 
 
-class InvestigationsSkill(LiraSkill):
+class InvestigationsSkill(HugoSkill):
     name = "investigations"
     description = "Inicia y consulta investigaciones de fondo, incubadas durante el sueño."
     # No explicit `triggers` on purpose. core/intent.py already owns
@@ -25,7 +25,7 @@ class InvestigationsSkill(LiraSkill):
     # va esa investigación...?") silently started a brand new investigation
     # instead of being answered from the INVESTIGACIONES context block in
     # core/personalities/base.py. Leaving triggers empty keeps this skill
-    # reachable only via the IMPLICIT path (LIRA deciding to use it,
+    # reachable only via the IMPLICIT path (HUGO deciding to use it,
     # signaled by [USAR_SKILL: investigations] in her own reply), which
     # doesn't have this false-positive problem.
     triggers = []

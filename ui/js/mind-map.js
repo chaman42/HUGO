@@ -18,19 +18,9 @@ function _mapaShareKeyword(a, b) {
   return false
 }
 
-const CORE_MAP_NODE_RADIUS = { fact: 4, episode: 9, armor: 7, concept: 7 }
+const CORE_MAP_NODE_RADIUS = { fact: 4, episode: 9 }
 
-function _mapaDiamondPath(r) { return `M0,${-r} L${r},0 L0,${r} L${-r},0 Z` }
-function _mapaHexPath(r) {
-  const pts = []
-  for (let i = 0; i < 6; i++) {
-    const a = (Math.PI / 3) * i - Math.PI / 2
-    pts.push([r * Math.cos(a), r * Math.sin(a)])
-  }
-  return 'M' + pts.map(p => p.join(',')).join('L') + 'Z'
-}
-
-function _mapaBuildGraph(facts, episodes, concepts, connections, armorData) {
+function _mapaBuildGraph(facts, episodes, connections) {
   const nodes = []
   const links = []
 
@@ -43,18 +33,9 @@ function _mapaBuildGraph(facts, episodes, concepts, connections, armorData) {
   episodes.forEach((e, i) => {
     nodes.push({ id: `ep-${i}`, type: 'episode', label: e.topic || e.summary || 'Episodio', data: e })
   })
-  concepts.forEach((c, i) => {
-    nodes.push({ id: `concept-${i}`, type: 'concept', label: c.name || 'Concepto', data: c })
-  })
-  const armorModels = [...(armorData.primarios || []), ...(armorData.paralelos || [])]
-  armorModels.forEach(m => {
-    nodes.push({ id: `armor-${m.id}`, type: 'armor', label: m.name, data: m })
-  })
 
   const factNodes    = nodes.filter(n => n.type === 'fact')
   const episodeNodes = nodes.filter(n => n.type === 'episode')
-  const conceptNodes = nodes.filter(n => n.type === 'concept')
-  const armorNodes   = nodes.filter(n => n.type === 'armor')
 
   // Facts connected to the episodes they came from — matched against each
   // episode's key_facts (short phrases summarizing what was learned) and
@@ -67,34 +48,6 @@ function _mapaBuildGraph(facts, episodes, concepts, connections, armorData) {
       const related = keyFactKw.some(kw => _mapaShareKeyword(factKw, kw)) || _mapaShareKeyword(factKw, topicKw)
       if (related) links.push({ source: factNode.id, target: epNode.id, kind: 'fact-episode' })
     })
-  })
-
-  // Concepts connected to the armor models they relate to.
-  conceptNodes.forEach(cNode => {
-    const cKw = _mapaKeywords(`${cNode.data.name || ''} ${cNode.data.desc || ''}`)
-    armorNodes.forEach(aNode => {
-      const aKw = _mapaKeywords(`${aNode.data.name || ''} ${aNode.data.nickname || ''} ${aNode.data.descripcion || ''}`)
-      if (_mapaShareKeyword(cKw, aKw)) links.push({ source: cNode.id, target: aNode.id, kind: 'concept-armor' })
-    })
-  })
-
-  // Episodes connected to concepts they touched on.
-  episodeNodes.forEach(epNode => {
-    const epKw = _mapaKeywords(`${epNode.data.topic || ''} ${(epNode.data.key_facts || []).join(' ')}`)
-    conceptNodes.forEach(cNode => {
-      const cKw = _mapaKeywords(`${cNode.data.name || ''} ${cNode.data.desc || ''}`)
-      if (_mapaShareKeyword(epKw, cKw)) links.push({ source: epNode.id, target: cNode.id, kind: 'episode-concept' })
-    })
-  })
-
-  // Armor evolution chain — each model links to the next within its own
-  // category list, grounded in the data's own ordering (and its
-  // "evolucion" narrative field), not a guessed relation.
-  ;['primarios', 'paralelos'].forEach(cat => {
-    const arr = armorData[cat] || []
-    for (let i = 0; i < arr.length - 1; i++) {
-      links.push({ source: `armor-${arr[i].id}`, target: `armor-${arr[i + 1].id}`, kind: 'armor-chain' })
-    }
   })
 
   // Reflective-mode connections (data/mind_map_connections.json, see
@@ -124,7 +77,7 @@ let _coreMapaSimulation = null
 
 // Reuses ui/css/estudio.css's estudio-console-* building blocks directly
 // (chip/meta-readout/hero-title/prose/item-card — all globally available,
-// same instrument-console language as ESTUDIO/Armor Bay/NÚCLEO's other
+// same instrument-console language as ESTUDIO/NÚCLEO's other
 // tabs) rather than this panel's own now-retired .core-map-detail-kind/
 // -title/-row classes. hero-title's font-size is knocked down inline —
 // this slide-in panel is only ~260px wide, too narrow for its default
@@ -156,43 +109,6 @@ function _mapaNodeDetailHTML(node) {
         </div>
       </div>`
   }
-  if (node.type === 'concept') {
-    return `
-      <div class="estudio-console-hero-eyebrow">
-        <span class="estudio-console-chip">Concepto</span>
-        <span class="estudio-console-meta-readout">${esc(d.type === 'general' ? 'General' : 'Armadura')}</span>
-      </div>
-      <div class="estudio-console-hero-title" style="font-size:0.95rem;">${esc(d.name || '')}</div>
-      <div class="estudio-console-prose">${esc(d.desc || '')}</div>
-      <div class="estudio-console-item-card">
-        <div class="estudio-console-item-head">
-          <span class="estudio-console-item-type">Estado</span>
-          <span class="estudio-console-item-title">${esc(d.status || '—')}</span>
-        </div>
-      </div>`
-  }
-  // armor
-  return `
-    <div class="estudio-console-hero-eyebrow">
-      <span class="estudio-console-chip">Armadura</span>
-      <span class="estudio-console-meta-readout">${esc(d.status || '')}</span>
-    </div>
-    <div class="estudio-console-hero-title" style="font-size:0.95rem;">${esc(d.name || '')}${d.nickname ? ` "${esc(d.nickname)}"` : ''}</div>
-    <div class="estudio-console-prose">${esc(d.descripcion || '')}</div>
-    <div class="estudio-console-item-card" style="--hc:var(--green);">
-      <div class="estudio-console-item-head"><span class="estudio-console-item-type">Innovaciones</span></div>
-      <div class="estudio-console-item-text" style="margin-bottom:0;">${esc(d.innovaciones || '—')}</div>
-    </div>
-    <div class="estudio-console-item-card" style="--hc:var(--p-color);">
-      <div class="estudio-console-item-head"><span class="estudio-console-item-type">Limitaciones</span></div>
-      <div class="estudio-console-item-text" style="margin-bottom:0;">${esc(d.limitaciones || '—')}</div>
-    </div>
-    <div class="estudio-console-item-card">
-      <div class="estudio-console-item-head">
-        <span class="estudio-console-item-type">Horas</span>
-        <span class="estudio-console-item-title">${esc(d.hours || '—')}</span>
-      </div>
-    </div>`
 }
 
 function _closeMapaDetail() {
@@ -220,16 +136,11 @@ async function _renderCoreMapa() {
     const res = await fetch(`${JARVIS_API}/api/mind_map_connections`)
     connections = await res.json()
   } catch { connections = [] }
-  const armorData = await _fetchArmorModels()
 
   const facts    = data.facts    || {}
   const episodes = data.episodes || []
-  const concepts = data.concepts || []
 
-  // "Sin datos suficientes aún" specifically means LIRA hasn't had enough
-  // conversations yet — facts and episodes are conversation-derived, while
-  // armor/concepts are authored data that exists regardless, so only the
-  // former two decide the empty state.
+  // "Sin datos suficientes aún" — facts and episodes are conversation-derived.
   const hasConversationData = Object.values(facts).some(arr => arr.length > 0) || episodes.length > 0
   if (!hasConversationData) {
     emptyEl.classList.remove('core-map-hidden')
@@ -239,7 +150,7 @@ async function _renderCoreMapa() {
   emptyEl.classList.add('core-map-hidden')
   graphEl.classList.add('active')
 
-  const { nodes, links } = _mapaBuildGraph(facts, episodes, concepts, connections, armorData)
+  const { nodes, links } = _mapaBuildGraph(facts, episodes, connections)
 
   const width  = svgEl.clientWidth  || 320
   const height = svgEl.clientHeight || 400
@@ -281,9 +192,7 @@ async function _renderCoreMapa() {
   nodeSel.each(function (d) {
     const g = d3.select(this)
     const r = CORE_MAP_NODE_RADIUS[d.type]
-    if (d.type === 'armor')        g.append('path').attr('d', _mapaDiamondPath(r)).attr('class', 'core-map-node-armor')
-    else if (d.type === 'concept') g.append('path').attr('d', _mapaHexPath(r)).attr('class', 'core-map-node-concept')
-    else                           g.append('circle').attr('r', r).attr('class', `core-map-node-${d.type}`)
+    g.append('circle').attr('r', r).attr('class', `core-map-node-${d.type}`)
   })
 
   // Labels only for the coarser, fewer node types — hundreds of tiny fact
@@ -305,7 +214,7 @@ async function _renderCoreMapa() {
   })
 
   const simulation = d3.forceSimulation(nodes)
-    .force('link', d3.forceLink(links).id(d => d.id).distance(l => l.kind === 'armor-chain' ? 34 : 46).strength(0.35))
+    .force('link', d3.forceLink(links).id(d => d.id).distance(46).strength(0.35))
     .force('charge', d3.forceManyBody().strength(-70))
     .force('center', d3.forceCenter(width / 2, height / 2))
     .force('collide', d3.forceCollide().radius(d => CORE_MAP_NODE_RADIUS[d.type] + 6))
@@ -343,13 +252,13 @@ document.getElementById('coreMapaSvg').addEventListener('click', _closeMapaDetai
 // [CHANGE 15] _PERSONALITY_QUOTES moved here (before applyPersonality) to fix a
 // Temporal Dead Zone bug: applyPersonality() references this const, but it was
 // previously defined ~400 lines later.  The TDZ caused a ReferenceError on the
-// first applyPersonality('lira') call, which silently prevented the clock
+// first applyPersonality('hugo') call, which silently prevented the clock
 // setInterval from ever being registered — causing the "—:—:—" frozen display.
 // Guards the quote-on-personality-switch logic in applyPersonality() below
-// (only re-pick on a genuine switch) and tracks LIRA's own sequential
+// (only re-pick on a genuine switch) and tracks HUGO's own sequential
 // position for both that switch-in pick and _rotateMMQuote()'s 45s cycle —
 // declared before applyPersonality() for the same TDZ reason as
 // _PERSONALITY_QUOTES itself (see [CHANGE 15] above).
 let _mmLastQuotedPersonality = null
-let _mmLiraQuoteIdx = 0
+let _mmHugoQuoteIdx = 0
 

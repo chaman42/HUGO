@@ -1,11 +1,11 @@
-"""Weather skill — thin LiraSkill wrapper over core.tools.get_location /
+"""Weather skill — thin HugoSkill wrapper over core.tools.get_location /
 get_weather_string (Open-Meteo; see core/tools_environment.py). No weather
 fetching logic lives here."""
-from skills import LiraSkill
+from skills import HugoSkill
 from core import tools
 
 
-class WeatherSkill(LiraSkill):
+class WeatherSkill(HugoSkill):
     name = "weather"
     description = "Clima actual para la ubicación detectada."
     triggers = ["qué tiempo hace", "clima", "va a llover", "temperatura"]

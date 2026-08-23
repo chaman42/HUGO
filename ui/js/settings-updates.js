@@ -3,16 +3,16 @@ const testModeToggle = document.getElementById('testModeToggle')
 testModeToggle.addEventListener('click', () => _toggleFeatureFlag('modo_test', testModeToggle))
 
 // "Actualizar Sistema" — triggers scripts/rebuild_app.sh via launcher.py
-// (git pull -> rebuild -> reinstall /Applications/LIRA.app). A real update
+// (git pull -> rebuild -> reinstall /Applications/HUGO.app). A real update
 // takes a while (npm install + electron-builder), so this fetch is simply
 // awaited for as long as it takes; the button stays disabled the whole time.
 // Gated behind a HUD-styled confirmation (#updateConfirmModal) — never a
 // browser confirm() — since this restarts the whole app. During the
-// rebuild, updateLiraStatus reflects REAL progress via 'update_progress'
+// rebuild, updateHugoStatus reflects REAL progress via 'update_progress'
 // socket events from launcher.py's api_update() (see _applyUpdateProgress()
 // below), not a fixed sequence of timed messages.
-const updateLiraBtn      = document.getElementById('updateLiraBtn')
-const updateLiraStatus   = document.getElementById('updateLiraStatus')
+const updateHugoBtn      = document.getElementById('updateHugoBtn')
+const updateHugoStatus   = document.getElementById('updateHugoStatus')
 const updateConfirmModal = document.getElementById('updateConfirmModal')
 const updateConfirmBtn   = document.getElementById('updateConfirmBtn')
 const updateCancelBtn    = document.getElementById('updateCancelBtn')
@@ -28,25 +28,25 @@ const UPDATE_PROGRESS_LABELS = {
 }
 function _applyUpdateProgress(data) {
   if (!data || !data.stage) return
-  updateLiraStatus.style.color = 'var(--accent)'
-  updateLiraStatus.textContent = data.label || UPDATE_PROGRESS_LABELS[data.stage] || data.stage
+  updateHugoStatus.style.color = 'var(--accent)'
+  updateHugoStatus.textContent = data.label || UPDATE_PROGRESS_LABELS[data.stage] || data.stage
 }
 
-updateLiraBtn.addEventListener('click', _showUpdateConfirm)
+updateHugoBtn.addEventListener('click', _showUpdateConfirm)
 updateCancelBtn.addEventListener('click', _hideUpdateConfirm)
 updateConfirmModal.addEventListener('click', e => { if (e.target === updateConfirmModal) _hideUpdateConfirm() })
 
 updateConfirmBtn.addEventListener('click', async () => {
   _hideUpdateConfirm()
-  updateLiraBtn.disabled = true
-  updateLiraStatus.style.color = 'var(--accent)'
-  updateLiraStatus.textContent = UPDATE_PROGRESS_LABELS.downloading
+  updateHugoBtn.disabled = true
+  updateHugoStatus.style.color = 'var(--accent)'
+  updateHugoStatus.textContent = UPDATE_PROGRESS_LABELS.downloading
   try {
     const res  = await fetch(`${LAUNCHER_API}/api/update`, { method: 'POST' })
     const data = await res.json()
     if (res.ok && data.ok) {
-      updateLiraStatus.style.color = 'var(--green)'
-      updateLiraStatus.textContent = UPDATE_PROGRESS_LABELS.restarting
+      updateHugoStatus.style.color = 'var(--green)'
+      updateHugoStatus.textContent = UPDATE_PROGRESS_LABELS.restarting
       // Left disabled: electron/main.js's health poll picks up pending_relaunch
       // within a few seconds and relaunches the app on its own — no manual
       // restart needed, so this reads as "in progress" rather than an
@@ -56,9 +56,9 @@ updateConfirmBtn.addEventListener('click', async () => {
     }
   } catch (e) {
     console.error('[Update] failed:', e)
-    updateLiraStatus.style.color = 'var(--red)'
-    updateLiraStatus.textContent = 'Error en actualización'
-    updateLiraBtn.disabled = false   // allow retry
+    updateHugoStatus.style.color = 'var(--red)'
+    updateHugoStatus.textContent = 'Error en actualización'
+    updateHugoBtn.disabled = false   // allow retry
   }
 })
 
@@ -179,13 +179,13 @@ function _applySleepBodyState(running) {
     return
   }
   if (_sleepBodyWasActive) {
-    // Formerly #mmOrbWrap — #liraDiamond is the only diamond element now;
-    // the CSS (.lira-diamond.context-main.waking, diamond-core.css) only
+    // Formerly #mmOrbWrap — #hugoDiamond is the only diamond element now;
+    // the CSS (.hugo-diamond.context-main.waking, diamond-core.css) only
     // actually shows the flash while she's docked onto Main anyway, so
     // firing this unconditionally regardless of current section is
     // harmless, not just off-screen.
-    liraDiamond.classList.add('waking')
-    setTimeout(() => liraDiamond.classList.remove('waking'), 1400)
+    hugoDiamond.classList.add('waking')
+    setTimeout(() => hugoDiamond.classList.remove('waking'), 1400)
   }
   document.body.classList.remove('sleeping')
   _sleepBodyWasActive = false
@@ -220,7 +220,7 @@ function _applySleepStatus(status) {
   sleepStartBtn.textContent = 'Iniciar Sueño'
   if (sleepStopBtn) sleepStopBtn.style.display = 'none'
   if (wasPolling && cont.total_cycles_completed != null) {
-    const reasonLabel = { interaction: 'LIRA despertó', manual_stop: 'detenido manualmente', error: 'error' }[cont.stop_reason] || 'detenido'
+    const reasonLabel = { interaction: 'HUGO despertó', manual_stop: 'detenido manualmente', error: 'error' }[cont.stop_reason] || 'detenido'
     sleepStartStatus.style.color = 'var(--green)'
     sleepStartStatus.textContent =
       `Sueño finalizado (${reasonLabel}) — ${cont.total_cycles_completed} ciclo${cont.total_cycles_completed === 1 ? '' : 's'} completado${cont.total_cycles_completed === 1 ? '' : 's'}`

@@ -1,11 +1,11 @@
-"""Web search skill — thin LiraSkill wrapper over core.tools.search_web /
+"""Web search skill — thin HugoSkill wrapper over core.tools.search_web /
 format_search_results (Serper.dev primary, DuckDuckGo Instant Answer API
 fallback; see core/tools_search.py). No search logic lives here."""
-from skills import LiraSkill
+from skills import HugoSkill
 from core import tools
 
 
-class WebSearchSkill(LiraSkill):
+class WebSearchSkill(HugoSkill):
     name = "web_search"
     description = "Busca información actual en internet (Serper.dev / DuckDuckGo)."
     triggers = ["busca", "búscame", "investiga en internet", "qué está pasando con", "últimas noticias"]

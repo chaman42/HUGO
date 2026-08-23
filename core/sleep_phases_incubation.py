@@ -20,7 +20,7 @@ from core import investigations as investigations_mod
 from core import notifications as notifications_mod
 
 _INCUBATION_SYSTEM = (
-    "Eres LIRA incubando una investigación en segundo plano, razonando paso "
+    "Eres HUGO incubando una investigación en segundo plano, razonando paso "
     "a paso sobre una pregunta que Joan te pidió investigar. Respondes solo "
     "con JSON válido, sin comentarios."
 )

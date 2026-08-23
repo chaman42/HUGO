@@ -103,7 +103,7 @@ def _extract_and_save_memory(user_msg: str, assistant_msg: str, personality: str
                 "- Datos temporales, eventos del momento, precios, o cualquier cosa que cambie "
                 "con el tiempo — eso vive en datos en tiempo real, jamás en memoria.\n\n"
                 "Esto no se negocia:\n"
-                "- Jarvis, Friday, LIRA, Lyra, Leera, Siri, Alexa son NOMBRES DE ASISTENTES, "
+                "- Jarvis, Friday, HUGO, Lyra, Leera, Siri, Alexa son NOMBRES DE ASISTENTES, "
                 "no el nombre de Joan. Jamás guardes ninguno de estos como su nombre ni como "
                 "hecho personal suyo.\n"
                 f"- Ignora por completo estas palabras: {blacklist_str}\n"
@@ -118,9 +118,9 @@ def _extract_and_save_memory(user_msg: str, assistant_msg: str, personality: str
                 "lifespan=permanent): \"Joan tiene un Audi A4\".\n"
                 "- Joan: \"¿sabes si va a llover mañana?\" → NO guardar. Pregunta de información "
                 "en tiempo real, no un hecho sobre Joan.\n"
-                "- Joan: \"llevo tres meses currando en el proyecto de LIRA por las noches, ya "
+                "- Joan: \"llevo tres meses currando en el proyecto de HUGO por las noches, ya "
                 "tengo el motor de memoria funcionando\" → SÍ guardar (category=project, "
-                "lifespan=weekly): \"El proyecto LIRA de Joan ya tiene el motor de memoria "
+                "lifespan=weekly): \"El proyecto HUGO de Joan ya tiene el motor de memoria "
                 "funcionando\" — esto es justo el tipo de hecho concreto y duradero que MÁS "
                 "importa capturar, no lo dejes pasar por venir mezclado con charla informal.\n\n"
                 "Memoria que evoluciona, no solo se acumula:\n"
@@ -141,7 +141,7 @@ def _extract_and_save_memory(user_msg: str, assistant_msg: str, personality: str
             raw = commands._groq_complete_extract(
                 [
                     {"role": "system", "content": (
-                        "Eres LIRA. Repasas lo que Joan acaba de decir y te quedas solo con "
+                        "Eres HUGO. Repasas lo que Joan acaba de decir y te quedas solo con "
                         "lo que de verdad vale la pena recordar de él — nada de relleno, nada "
                         "inventado. Respondes solo con JSON válido, sin comentarios ni rodeos."
                     )},

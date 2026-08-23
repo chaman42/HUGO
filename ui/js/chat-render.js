@@ -38,7 +38,7 @@ function addMessage(type, message) {
   // any DOM mutation, captures the PRE-append scroll state instead.
   const wasAtBottom = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 100
 
-  // ── Unified floating diamond — track every LIRA reply unconditionally
+  // ── Unified floating diamond — track every HUGO reply unconditionally
   // (the bubble's "last response" line needs this even when the diamond
   // isn't currently eligible to show, e.g. the reply arrived while still
   // on Main/Chat), but only fade the floating text in when it actually is
@@ -49,15 +49,15 @@ function addMessage(type, message) {
   if (type === 'jarvis') {
     _lastJarvisReply = message
     if (_diamondEligible()) {
-      liraDiamond.classList.add('visible')
+      hugoDiamond.classList.add('visible')
       _showDiamondText(message)
       if (currentStatus !== 'speaking') _scheduleDiamondTextHide()
     }
   }
 
-  // ── Main menu floating text — both the user's own brief echo and LIRA's
+  // ── Main menu floating text — both the user's own brief echo and HUGO's
   // reply show here while on Main. The user's echo always holds briefly;
-  // LIRA's reply's hold timer is armed by setStatus once she actually
+  // HUGO's reply's hold timer is armed by setStatus once she actually
   // stops speaking (see there) — but if she isn't speaking right now
   // (TTS muted, or this arrived after status already moved on), there's no
   // such transition to catch it, so arm the same fallback timer here too.
@@ -66,12 +66,12 @@ function addMessage(type, message) {
     if (type === 'user' || currentStatus !== 'speaking') _scheduleMMFloatingTextHide()
   }
 
-  // 'jarvis' here is the generic message-type key for every LIRA reply
+  // 'jarvis' here is the generic message-type key for every HUGO reply
   // (legacy name, predates personality removal — not worth a wider rename
   // since it's an internal identifier, not anything user-visible).
   const TYPES = {
     user:   { cls: 'msg-user',   label: '🎤  you' },
-    jarvis: { cls: 'msg-lira',   label: PERSONALITY_LABEL },
+    jarvis: { cls: 'msg-hugo',   label: PERSONALITY_LABEL },
     error:  { cls: 'msg-error',  label: '✕  err' },
   }
   const cfg = TYPES[type] ?? TYPES.error
@@ -118,7 +118,7 @@ function addMessage(type, message) {
   // Auto-scroll to the new bottom. Your own outgoing message (typed or
   // voice-transcribed) always scrolls into view regardless of prior
   // position — you just sent it, standard chat UX never leaves that
-  // hanging off-screen. LIRA's replies and error lines instead respect
+  // hanging off-screen. HUGO's replies and error lines instead respect
   // wasAtBottom: if the user has manually scrolled up to read older
   // messages, an incoming reply doesn't yank the view down — scrolling
   // resumes on its own the moment they're back near the bottom (e.g. after
@@ -190,14 +190,14 @@ function setInputEnabled(enabled) {
 // moondream fallback — see that module's own header) actually describes
 // them server-side, folded into the same turn's reply by core.commands
 // before the personality LLM call. PDF/Documentos are still UI-only staging
-// (LIRA has no document-reading endpoint yet) — picking one just folds its
+// (HUGO has no document-reading endpoint yet) — picking one just folds its
 // filename into the outgoing message as a plain-text note, same as every
 // attachment type used to work before this change.
 //
 // The paperclip opens a small type menu (#attachMenu, ui/index.html) before
 // the actual file picker — only "Fotos" is live (accept="image/*"); PDF/
 // Documentos are disabled placeholders, setting up the menu shape for when
-// LIRA can actually read those too.
+// HUGO can actually read those too.
 // ════════════════════════════════════════════════════════════════════════════
 
 // FileReader wrapped in a Promise — readAsDataURL's result is
@@ -279,7 +279,7 @@ attachFileInput?.addEventListener('change', () => {
 })
 
 // sourceInput defaults to the Chat section's own #textInput, but accepts
-// any other input element (the unified floating diamond's #liraDiamondInput,
+// any other input element (the unified floating diamond's #hugoDiamondInput,
 // Main's #mmFloatingInput) so every "type a command" surface in the app
 // shares this exact same send path — literally the same code, not a re-
 // implementation, per the floating diamond / Main floating input requirements.
@@ -371,8 +371,6 @@ async function updateSettingsInfo() {
             <div class="estudio-console-block">
               <div class="estudio-console-section-label neutral"><span class="dot"></span>Voz</div>
               <div class="info-row"><span class="info-key">TTS Engine</span><span class="info-val">${esc(info.tts)}</span></div>
-              <div class="info-row"><span class="info-key">Kokoro Voice</span><span class="info-val">${esc(info.kokoro_voice)}</span></div>
-              <div class="info-row"><span class="info-key">Fallback Voice</span><span class="info-val">${esc(info.fallback_voice)}</span></div>
               <div class="info-row"><span class="info-key">STT Model</span><span class="info-val">${esc(info.vosk_model)}</span></div>
             </div>
             <div class="estudio-console-block">
@@ -428,8 +426,6 @@ const FEATURE_FLAG_LABELS = [
   { key: 'paneles_dinamicos', label: 'Paneles dinámicos' },
   { key: 'deteccion_tono',    label: 'Detección de tono' },
   { key: 'memoria_episodica', label: 'Memoria episódica' },
-  { key: 'code_engine_enabled', label: 'Código LIRA' },
-  { key: 'auto_update_enabled', label: 'Auto-actualización' },
 ]
 let _featureFlags = {}
 
@@ -554,57 +550,6 @@ async function _loadFeatureFlags() {
   } catch { _featureFlags = {} }
   _renderFeatureToggles()
 }
-
-// MOTOR DE VOZ — two-way engine choice, backed by GET/POST
-// /api/tts_engine + /api/set_tts_engine (core/routes_control.py,
-// core/voice.py). Switches live — no restart — so _setTtsEngine() just
-// re-renders on the response rather than needing a page reload.
-let _ttsEngine = 'kokoro'
-
-function _renderTtsEngineToggle() {
-  const container = document.getElementById('ttsEngineToggle')
-  if (!container) return
-  container.querySelectorAll('.engine-toggle-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.engine === _ttsEngine)
-  })
-}
-
-async function _setTtsEngine(engine, btn) {
-  if (engine === _ttsEngine) return
-  const container = document.getElementById('ttsEngineToggle')
-  if (container) container.querySelectorAll('.engine-toggle-btn').forEach(b => { b.disabled = true })
-  try {
-    const res  = await fetch(`${JARVIS_API}/api/set_tts_engine`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ engine }),
-    })
-    const data = await res.json()
-    if (res.ok && data.ok) _ttsEngine = data.engine
-  } catch { /* leave previous state; next load/sync reconciles */ }
-  if (container) container.querySelectorAll('.engine-toggle-btn').forEach(b => { b.disabled = false })
-  _renderTtsEngineToggle()
-}
-
-// 'tts_engine_state' socket handler (see connection.js) — keeps every
-// connected HUD tab's toggle in sync when it's switched from another one.
-function _applyTtsEngineState(engine) {
-  _ttsEngine = engine
-  _renderTtsEngineToggle()
-}
-
-async function _loadTtsEngine() {
-  try {
-    const res  = await fetch(`${JARVIS_API}/api/tts_engine`)
-    const data = await res.json()
-    _ttsEngine = data.engine || 'kokoro'
-  } catch { _ttsEngine = 'kokoro' }
-  _renderTtsEngineToggle()
-}
-
-document.querySelectorAll('#ttsEngineToggle .engine-toggle-btn').forEach(btn => {
-  btn.addEventListener('click', () => _setTtsEngine(btn.dataset.engine, btn))
-})
 
 // MODO TEST toggle — reuses _toggleFeatureFlag() (same POST endpoint, same
 // flip-and-re-render flow every other flag uses), it's just not rendered

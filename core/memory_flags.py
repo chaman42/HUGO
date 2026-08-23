@@ -26,7 +26,7 @@ _DEFAULT_FEATURE_FLAGS = {
     # Voice-identification test tools (Ajustes -> Modo Test's expandable
     # panel) — see core.commands._identify_speaker_multi_factor and
     # core.speaker for where each is actually read. Independent of
-    # modo_test: these control WHO LIRA thinks is speaking, not whether
+    # modo_test: these control WHO HUGO thinks is speaking, not whether
     # the conversation gets persisted.
     "voice_recognition_enabled": True,  # off = skip the Phase 4/5 identity gate entirely, full trust (same effect as speaker.SPEAKER_VERIFICATION_ENABLED=False, just runtime-toggleable)
     "voice_learning_enabled":    True,  # off = speaker.absorb_sample() no-ops — an accepted match still gets a reply, just stops refining the enrolled fingerprint
@@ -38,10 +38,10 @@ _DEFAULT_FEATURE_FLAGS = {
     # personalization toggle like the ones above. Off means zero behavior
     # change from before this feature existed.
     "interrupt_ducking_enabled": False,
-    "code_engine_enabled": True, # kill switch for all of Code Engine — see core.code_engine.tool_manager.CodeEngineToolManager.get_tool() and core.code_engine.CodeEngine.create_module()/update_module()
-    "auto_update_enabled": True, # gates the UNATTENDED 6-hourly com.joan.lira.autoupdate LaunchAgent run only — see scripts/rebuild_app.sh's own "Auto-actualización" guard; never affects the manual "Actualizar Sistema" button (LIRA_FORCE_UPDATE=1 always bypasses it)
+    "code_engine_enabled": False, # kill switch for all of Code Engine — see core.code_engine.tool_manager.CodeEngineToolManager.get_tool() and core.code_engine.CodeEngine.create_module()/update_module(). No Ajustes toggle for this anymore (removed from FEATURE_FLAG_LABELS) — defaults off with no UI path to re-enable.
+    "auto_update_enabled": False, # gates the UNATTENDED 6-hourly com.joan.hugo.autoupdate LaunchAgent run only — see scripts/rebuild_app.sh's own "Auto-actualización" guard; never affects the manual "Actualizar Sistema" button (HUGO_FORCE_UPDATE=1 always bypasses it). No Ajustes toggle for this anymore (removed from FEATURE_FLAG_LABELS) — defaults off with no UI path to re-enable.
     # skills/ loadable-capabilities gates — see skills/__init__.py's
-    # LiraSkill.flag / _flag_for(); each skill checks its own flag on
+    # HugoSkill.flag / _flag_for(); each skill checks its own flag on
     # every get_skill()/list_skills() call, so toggling one here (or via
     # the Ajustes panel, which calls set_feature_flag()) takes effect
     # without a server restart.
@@ -55,7 +55,7 @@ _DEFAULT_FEATURE_FLAGS = {
 }
 
 # ---------------------------------------------------------------------------
-# TEST MODE — when "modo_test" is on, LIRA responds normally but nothing from
+# TEST MODE — when "modo_test" is on, HUGO responds normally but nothing from
 # the conversation is persisted: no fact extraction (_extract_and_save_memory,
 # gated at its own top), no episode extraction or session-end snapshot (both
 # gated together in _end_of_session_bookkeeping, since a leftover

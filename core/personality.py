@@ -16,18 +16,18 @@ from core.personalities.base import PERSONALITIES, _build_system_prompt
 
 logger = logging.getLogger(__name__)
 
-_personality      = "lira"   # the only personality (JARVIS/FRIDAY removed 2026-08-10)
+_personality      = "hugo"   # the only personality (JARVIS/FRIDAY removed 2026-08-10)
 _personality_lock = threading.Lock()
 
 # ---------------------------------------------------------------------------
-# Wake-word-only acknowledgment — LIRA is the only personality now, so there's
+# Wake-word-only acknowledgment — HUGO is the only personality now, so there's
 # nothing left to SWITCH between (that machinery — _SWITCH_PATTERNS,
 # _detect_personality_switch, _switch_personality — is gone), but a bare
-# "lira" with no command content still needs a brief ready-ack instead of
+# "hugo" with no command content still needs a brief ready-ack instead of
 # being forwarded to Groq as an empty query. Variant list kept in sync with
-# listener.py's _LIRA_VARIANTS.
+# core/wake_word.py's _HUGO_VARIANTS.
 # ---------------------------------------------------------------------------
 _WAKE_ONLY_RE = re.compile(
-    r"^\s*(?:lira|lyra|leera|liera|liira|lirra|lila|lida)\s*$",
+    r"^\s*(?:hugo)\s*$",
     re.IGNORECASE,
 )

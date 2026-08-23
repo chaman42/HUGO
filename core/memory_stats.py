@@ -10,7 +10,7 @@ import datetime
 
 from core.memory_store import (
     MEMORY_SHARED_PATH,
-    MEMORY_LIRA_PATH,
+    MEMORY_HUGO_PATH,
     _MEMORY_HEALTH_WARN_THRESHOLD,
     _TEMPORAL_FACT_PATTERNS,
     _memory_lock,
@@ -20,7 +20,6 @@ from core.memory_store import (
     _load_fact_file,
     _save_fact_file,
 )
-from core.memory_context import CONCEPTS_PATH
 from core.memory_episodes import _load_episodes
 
 logger = logging.getLogger(__name__)
@@ -29,7 +28,7 @@ logger = logging.getLogger(__name__)
 def _memory_file_map() -> dict[str, str]:
     return {
         "shared": MEMORY_SHARED_PATH,
-        "lira":   MEMORY_LIRA_PATH,
+        "hugo":   MEMORY_HUGO_PATH,
     }
 
 
@@ -155,34 +154,20 @@ def clean_all_memory() -> dict:
 
 
 def get_active_memory() -> dict:
-    """Currently stored facts (shared Layer 1 + LIRA's own Layer 2, grouped
-    by category), the 5 most recent episodes, current concepts, and the
-    live HUD context — backs GET /api/memory_active for both the CORE app's
-    Memoria tab and its Mapa Mental graph (see ui/index.html
-    _renderCoreMapa). This is the full read-only pool of what COULD be
-    injected, not a live relevance-filtered slice tied to one specific
-    query — there isn't a "current query" concept outside an active
-    dispatch_command call, and this endpoint is a standalone status view,
-    not part of the prompt pipeline itself."""
+    """Currently stored facts (shared Layer 1 + HUGO's own Layer 2, grouped
+    by category), the 5 most recent episodes, and the live HUD context —
+    backs GET /api/memory_active for both the CORE app's Memoria tab and its
+    Mapa Mental graph (see ui/index.html _renderCoreMapa). This is the full
+    read-only pool of what COULD be injected, not a live relevance-filtered
+    slice tied to one specific query — there isn't a "current query" concept
+    outside an active dispatch_command call, and this endpoint is a
+    standalone status view, not part of the prompt pipeline itself."""
     facts_by_category: dict[str, list[dict]] = {}
-    for path in (MEMORY_SHARED_PATH, MEMORY_LIRA_PATH):
+    for path in (MEMORY_SHARED_PATH, MEMORY_HUGO_PATH):
         for f in _load_fact_file(path, default_category="personal"):
             facts_by_category.setdefault(f["category"], []).append(f)
 
     episodes = sorted(_load_episodes(), key=lambda e: e.get("date", ""), reverse=True)[:5]
-
-    # Concepts — same source and 'type' normalization as GET /api/concepts
-    # (see core.server.api_concepts_get), read directly here rather than
-    # via an HTTP round-trip since this already runs in-process.
-    try:
-        with open(CONCEPTS_PATH, "r", encoding="utf-8") as f:
-            concepts = json.load(f).get("concepts", [])
-        for c in concepts:
-            if isinstance(c, dict) and c.get("type") != "general":
-                c["type"] = "armor"
-    except (FileNotFoundError, json.JSONDecodeError, OSError) as exc:
-        logger.debug("Could not load concepts for active memory: %s", exc)
-        concepts = []
 
     try:
         import core.server as server_mod
@@ -193,7 +178,6 @@ def get_active_memory() -> dict:
     return {
         "facts":       facts_by_category,
         "episodes":    episodes,
-        "concepts":    concepts,
         "hud_context": hud_context,
     }
 
@@ -235,7 +219,7 @@ def get_think_log(limit: int = 10) -> list[dict]:
 # Weekly memory consolidation — checked from _proactive_loop, so "if the Mac
 # is on" is automatically satisfied: it can only run while this process is
 # alive, once per week, the first tick that lands on Sunday 03:00–03:59.
-# Reviews memory_shared.json and LIRA's memory_lira.json (per spec — Layer 2
+# Reviews memory_shared.json and HUGO's memory_hugo.json (per spec — Layer 2
 # for the other personalities stays manually curated, same as everywhere
 # else in this file), permanently dropping outdated facts (see
 # _mark_fact_outdated) and merging any remaining near-duplicates — the same
@@ -273,13 +257,13 @@ def _consolidate_memory_file(path: str, default_category: str) -> tuple[int, int
 
 
 def _consolidate_memory() -> None:
-    """Weekly pass over Layer 1 (memory_shared.json) and LIRA's Layer 2
-    (memory_lira.json) — see module comment above."""
+    """Weekly pass over Layer 1 (memory_shared.json) and HUGO's Layer 2
+    (memory_hugo.json) — see module comment above."""
     lines = [f"=== Memory consolidation — {_now_iso()} ==="]
     with _memory_lock:
         for label, path, default_category in (
             ("shared", MEMORY_SHARED_PATH, "personal"),
-            ("lira",   MEMORY_LIRA_PATH,   "context"),
+            ("hugo",   MEMORY_HUGO_PATH,   "context"),
         ):
             try:
                 outdated_removed, duplicates_merged, remaining = _consolidate_memory_file(path, default_category)

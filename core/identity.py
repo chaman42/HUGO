@@ -1,9 +1,9 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# IDENTITY — Entity Pillars Phase 7 (closing the loop): "Lira should have a
+# IDENTITY — Entity Pillars Phase 7 (closing the loop): "Hugo should have a
 # recognizable and consistent sense of self... remaining coherent across
 # different contexts."
 #
-# core/personalities/lira.py's PERSONALITY["system"] is who she IS by
+# core/personalities/hugo.py's PERSONALITY["system"] is who she IS by
 # design — fixed, hand-written, and correctly never touched by anything
 # built in this effort (an identity that rewrote its own core traits
 # wouldn't be stable, it'd be unstable in a new way). Everything else this

@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# RESPONSE — formatting a tool result into LIRA's final spoken reply, the
+# RESPONSE — formatting a tool result into HUGO's final spoken reply, the
 # web-search intent handler, and the static (offline) fallback pool. Split
 # out of core/commands.py (pure refactor, no behavior change).
 # ═══════════════════════════════════════════════════════════════════════════
@@ -47,7 +47,7 @@ def _format_response(
 # cheap Groq translation. Results are formatted with tools.format_search_results
 # (trusted sources tagged [FUENTE FIABLE], everything else [FUENTE]) and fed
 # through the normal _format_response pipeline — full personality + memory
-# prompt — so LIRA cites her source naturally instead of reciting a list.
+# prompt — so HUGO cites her source naturally instead of reciting a list.
 # If nothing useful comes back, she's told plainly there were no results, so
 # her system-prompt instructions (see memory_instructions.json) have her
 # fall back to training data and note her knowledge cutoff instead of
@@ -105,11 +105,11 @@ def _format_date_static() -> str:
 
 
 def _pf(j: str, l: str, f: str) -> str:
-    """Always returns `l` (the LIRA line) now — JARVIS/FRIDAY removed
-    2026-08-10, LIRA is the only personality. Kept as a 3-arg shim rather
+    """Always returns `l` (the HUGO line) now — JARVIS/FRIDAY removed
+    2026-08-10, HUGO is the only personality. Kept as a 3-arg shim rather
     than removed outright: core/actions.py (~35 call sites) and
     core/commands.py (~5) still call this positionally
-    (jarvis_line, lira_line, friday_line) — out of scope for this pass,
+    (jarvis_line, hugo_line, friday_line) — out of scope for this pass,
     so the signature stays stable for them rather than forcing an edit
     across every call site just to drop two now-unused parameters. Any
     call site that IS cleaned up to drop the dead j/f arguments should
@@ -129,8 +129,6 @@ _FALLBACK_RULES: list[tuple[list[str], object]] = [
      lambda: "Bien. Silencio activado."),
     (["clima", "tiempo", "temperatura", "lluvia", "sol", "pronóstico", "weather"],
      lambda: "Sin internet no veo el tiempo. Mira por la ventana."),
-    (["armadura", "coraza", "pieza", "piezas", "armorías", "armor"],
-     lambda: "Las armaduras siguen ahí. El servidor, no. Vuelve cuando tengas red."),
     (["cuánto", "calcula", "calcul", "dividido", "raíz", "potencia"],
      lambda: "Sin red no puedo dar formato al resultado. Usa una calculadora."),
     (["música", "canción", "reproduce", "pon", "music"],
