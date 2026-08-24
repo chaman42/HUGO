@@ -13,7 +13,7 @@ Every push to `main` triggers a GitHub Actions workflow (`.github/workflows/rele
 3. Creates a **GitHub Release** tagged `v<version>` and uploads the DMG, ZIP, and `latest-mac.yml`
 4. Commits the version bump back to `main` (with `[skip ci]` to avoid an infinite loop)
 
-The installed HUGO app *attempts* to check this repository's Releases on every launch via `electron-updater`, but since this repo is **private** and the shipped app carries no GitHub credentials, that check always fails with a 404 — the built-in updater can never actually succeed here. See "Local auto-update" below for how the installed app is actually kept current.
+The installed HUGO app checks this repository's Releases on every launch via `electron-updater` (`electron/updater.js`) and installs updates silently in the background. This works end-to-end because the repo is **public** (`chaman42/HUGO`) — no GitHub credentials are needed to read public release assets. First confirmed working with `v1.0.1`; see "Getting the app" below for how a new install (e.g. Dani's) gets the app in the first place.
 
 ### Required secret
 
@@ -25,20 +25,21 @@ The build runs with `CSC_IDENTITY_AUTO_DISCOVERY=false`, which skips Apple code 
 
 ---
 
-## Local Auto-Update
+## Getting the App
 
-Because `electron-updater` can't reach this private repo's Releases (see above), `/Applications/HUGO.app` is kept current by a local rebuild instead:
+New installs (including Dani's) come from the GitHub Release, not a local build:
 
-- **`scripts/rebuild_app.sh`** — pulls the latest `main`, builds the app locally (`npm run build -- --dir`, skipping DMG packaging), and replaces `/Applications/HUGO.app` in place. Skips cleanly (no error) if there's no internet connection or if HUGO is currently running, so it never disrupts an active session. Prints `HUGO actualizada correctamente` on success.
-- **`com.joan.hugo.autoupdate`** — a LaunchAgent (`~/Library/LaunchAgents/com.joan.hugo.autoupdate.plist`) that runs the script every 6 hours. It only fires while the Mac is awake (launchd timers don't tick during sleep) and only does real work when there's an internet connection (checked inside the script). Output is logged to `logs/autoupdate.log`.
+**[github.com/chaman42/HUGO/releases/latest](https://github.com/chaman42/HUGO/releases/latest)** — always points at the newest DMG. Download it, drag HUGO to Applications, and on first launch bypass the Gatekeeper "unidentified developer" warning once (right-click → Open) — the build is intentionally unsigned, see "Skipping code signing" above. Every launch after that is unaffected, and updates from then on install themselves via `electron-updater` (see above) with no further action needed.
 
-  It invokes the script through `python3.11` rather than `/bin/bash` directly — `/bin/bash` has no macOS TCC grant for the Desktop folder, which is why the *other* LaunchAgent in this repo (`com.joan.jarvislite.autopush`, `logs/autopush.log`) has been silently failing on every run with `fatal: not a git repository`. `python3.11` already holds that grant on this machine, and a bash child process it spawns inherits it.
+## Manual Rebuild (dev machine only)
 
-To trigger an update manually at any time (e.g. right after pushing a fix), just run:
+For local development — testing a change before it's pushed, or rebuilding without waiting on CI — `scripts/rebuild_app.sh` pulls the latest `main`, builds the app locally (`npm run build -- --dir`, skipping DMG packaging), and replaces `/Applications/HUGO.app` in place on *this* machine. Skips cleanly (no error) if there's no internet connection or if HUGO is currently running. Run it manually:
 
 ```
-~/Desktop/JarvisLite/scripts/rebuild_app.sh
+~/Desktop/HUGO/scripts/rebuild_app.sh
 ```
+
+This isn't needed to keep Dani's (or any downloaded) install current — that happens automatically through GitHub Releases + `electron-updater` instead. No LaunchAgent runs this on a schedule.
 
 ---
 
