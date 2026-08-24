@@ -8,6 +8,8 @@ import os
 from groq import Groq
 from dotenv import load_dotenv
 
+from core import active_person
+
 load_dotenv()
 
 # Main conversational model chain — GROQ_MODEL_CHAIN, an ordered,
@@ -172,7 +174,49 @@ def _reasoning_effort_for(model: str) -> str | None:
 # single-client singleton).
 GROQ_API_KEYS = [k for k in (os.getenv("GROQ_API_KEY"), os.getenv("GROQ_API_KEY_2")) if k]
 
+# Per-person key isolation (2026-08-24, Joan's request: "when I access from
+# my computer it uses my api keys and when Dani accesses from his computer
+# it uses his"). GROQ_API_KEYS above stays Joan's own resilience chain
+# (primary + optional second-account key) exactly as before — Joan is the
+# default identity, so unidentified/Joan turns keep using it unchanged.
+# Dani is the only OTHER profile core.social currently recognizes (see
+# core.social._DEFAULT_PROFILES), so he's the only one that needs an
+# explicit override; a third profile would need adding to
+# _ISOLATED_PERSON_GROQ_KEYS the same way.
+#
+# Isolation is intentional, not a bug: Joan explicitly chose "no fallback"
+# over "fall back to my key" for Dani's turns (2026-08-24) — if Dani's key
+# is unset or rate-limited, his turns should degrade to the local
+# Ollama/offline fallback (see core.groq_client._groq_complete's tail)
+# rather than silently spending Joan's quota. See active_groq_keys() below
+# for where that's actually enforced.
+_ISOLATED_PERSON_GROQ_KEYS = {
+    person: key
+    for person, key in {"dani": os.getenv("GROQ_API_KEY_DANI")}.items()
+    if key
+}
+_ISOLATED_PERSONS = {"dani"}   # checked even when the person above has no key configured yet
+
 _groq_clients: dict[str, Groq] = {}   # one cached client per key, keyed by the key itself
+
+
+def active_groq_keys() -> list[str | None]:
+    """The ordered key list _groq_complete()/_groq_stream_chunks() should
+    walk for the CURRENTLY IDENTIFIED person (core.active_person, set by
+    core.commands right after identify_person() resolves each turn).
+
+    Joan (or nobody identified yet — voice-restricted/low-confidence turns)
+    gets the existing shared GROQ_API_KEYS chain, unchanged from before this
+    existed. An isolated person (currently just Dani) gets ONLY their own
+    key — an empty list if it's not configured, never Joan's — so the
+    caller's own key-exhausted tail (Cloudflare/Ollama/static fallback)
+    kicks in instead of ever touching Joan's quota on Dani's behalf.
+    """
+    person = active_person.get_active_person()
+    if person in _ISOLATED_PERSONS:
+        key = _ISOLATED_PERSON_GROQ_KEYS.get(person)
+        return [key] if key else []
+    return GROQ_API_KEYS or [None]
 
 
 def _get_groq(api_key: str | None = None):

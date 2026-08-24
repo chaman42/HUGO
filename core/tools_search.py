@@ -12,6 +12,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from core import active_person
+
 try:
     import certifi
     _SSL_CTX = ssl.create_default_context(cafile=certifi.where())
@@ -118,10 +120,32 @@ def _is_trusted(url: str) -> bool:
     return any(domain in netloc for domain in TRUSTED_SOURCES)
 
 
+# Per-person key isolation (2026-08-24) — same rationale and pattern as
+# core.groq_config's _ISOLATED_PERSON_GROQ_KEYS/active_groq_keys(): Dani's
+# web searches should bill his own Serper key, never Joan's, and if his
+# isn't configured (or a request on it fails) the existing
+# _serper_search -> _duckduckgo_search fallback in search_web() already
+# covers "no key available" gracefully — no separate empty-list handling
+# needed here the way _groq_complete's fallback tail required.
+_ISOLATED_PERSON_SERPER_KEYS = {
+    person: key
+    for person, key in {"dani": os.getenv("SERPER_API_KEY_DANI")}.items()
+    if key
+}
+_ISOLATED_PERSONS = {"dani"}
+
+
+def _active_serper_key() -> str:
+    person = active_person.get_active_person()
+    if person in _ISOLATED_PERSONS:
+        return _ISOLATED_PERSON_SERPER_KEYS.get(person, "")
+    return os.getenv("SERPER_API_KEY", "").strip()
+
+
 def _serper_search(query: str) -> list[dict] | None:
     """Query Serper.dev. Returns up to 5 {title, snippet, url, source} dicts,
     or None if the API key is missing or the request fails for any reason."""
-    api_key = os.getenv("SERPER_API_KEY", "").strip()
+    api_key = _active_serper_key()
     if not api_key:
         return None
     try:

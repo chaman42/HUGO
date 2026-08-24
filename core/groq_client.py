@@ -507,7 +507,15 @@ def _groq_stream_chunks(messages: list[dict], max_tokens: int = 256):
     if not chain:
         chain = [groq_config.GROQ_MODEL_FALLBACK]
 
-    keys = groq_config.GROQ_API_KEYS or [None]
+    # See _groq_complete's own comment on active_groq_keys() — same
+    # per-person isolation applies here. Streaming is only ever attempted
+    # for Joan/unidentified turns today (core.commands' _safe_to_stream
+    # gate), so an isolated person hitting this at all would be a future
+    # change elsewhere, not a case seen in practice right now — handled
+    # here anyway so it's correct if that gate ever changes. An empty list
+    # just yields nothing, and the "every tier failed" comment below
+    # already documents the caller's own non-streaming fallback.
+    keys = groq_config.active_groq_keys()
 
     for api_key in keys:
         for model in chain:
@@ -668,14 +676,28 @@ def _groq_complete(messages: list[dict], max_tokens: int = 256) -> str:
     if not chain:
         chain = [groq_config.GROQ_MODEL_FALLBACK]   # groq_config.GROQ_MODEL_CHAIN misconfigured empty — don't crash outright
 
-    keys = groq_config.GROQ_API_KEYS or [None]   # [None] preserves the old "GROQ_API_KEY not set" error from _get_groq()
+    # core.groq_config.active_groq_keys() — Joan (or nobody identified)
+    # gets the shared GROQ_API_KEYS chain as before; an isolated person
+    # (currently just Dani, see that function's own docstring) gets ONLY
+    # their own key, or an empty list if unset — deliberately NOT
+    # `or [None]` for that case, so an empty list skips the loop below
+    # entirely rather than falling back to the shared/default key.
+    keys = groq_config.active_groq_keys()
 
     model_used = chain[0]
     thinking_text = ""
     ttft: float | None = None
     thinking_done_at: float | None = None
     clean_text = ""
-    last_exc: Exception | None = None
+    # Priming last_exc when keys is empty (isolated person, no key
+    # configured) makes the loop below's zero iterations look like "every
+    # key's chain already failed" to the fallback tail further down —
+    # otherwise last_exc would stay None (its "success" value) despite
+    # clean_text never having been set, silently returning an empty reply
+    # instead of falling through to Cloudflare/Ollama/static.
+    last_exc: Exception | None = None if keys else RuntimeError(
+        "no Groq API key configured for the current identified person"
+    )
 
     for key_idx, api_key in enumerate(keys):
         for i, model in enumerate(chain):

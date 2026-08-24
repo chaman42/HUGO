@@ -82,6 +82,7 @@ import uuid
 
 from core.voice import speak
 from core import tools
+from core import active_person
 from core import memory
 from core import personality as personality_mod
 from core import intent as intent_mod
@@ -2278,6 +2279,12 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
                 _can_access_schedule = _turn_permissions.can_access_joan_schedule
         except Exception:
             logger.debug("Social identification failed (non-critical)", exc_info=True)
+        # core.active_person — lets core.groq_config/core.tools_search bill
+        # THIS person's own API key for the rest of the turn (see that
+        # module's own docstring). Set unconditionally, including back to
+        # None on a failed/unidentified lookup, so a worker thread reused
+        # for the next request never keeps a stale identity from this one.
+        active_person.set_active_person(_current_person.id if _current_person is not None else None)
 
         # ── Build user content — inject conversation context if provided ─────
         # Part 2: conversation mode passes the rolling buffer as context so
