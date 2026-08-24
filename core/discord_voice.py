@@ -404,7 +404,8 @@ class _DiscordSTTSink(voice_recv.AudioSink):
                 result = json.loads(self._rec.Result())
                 text = (result.get("text") or "").strip()
                 if text:
-                    logger.info("[DISCORD-VOICE] transcript: %r", text)
+                    from core import social as social_mod
+                    logger.info("[DISCORD-VOICE] transcript: %r", social_mod.redact_identity_code(text))
                     asyncio.run_coroutine_threadsafe(self._on_transcript(text), self._loop)
         except Exception:
             logger.warning("[DISCORD-VOICE] chunk processing failed (non-critical)", exc_info=True)

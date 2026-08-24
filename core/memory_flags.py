@@ -123,10 +123,37 @@ def reload_feature_flags() -> None:
         _feature_flags = _load_feature_flags()
 
 
+def _current_speaker_is_joan() -> bool:
+    """Best-effort 'is Joan the identified speaker right now' check — same
+    who_is_present() lookup as core.sleep_curiosity_search._admin_device_active,
+    duplicated here rather than imported to keep this module free of a
+    core.social dependency at import time. A lookup failure defaults to
+    False (not Joan) so a bug here can never silently make is_feature_enabled
+    ephemeral-ize a real Dani conversation."""
+    try:
+        from core import social as social_mod
+        present = social_mod.social_engine.who_is_present()
+        current = present[0] if present else None
+        return current is not None and current.id == "joan"
+    except Exception:
+        return False
+
+
 def is_feature_enabled(name: str) -> bool:
     """True unless explicitly toggled off. Unknown names default True rather
     than raising, so a typo'd flag name fails open (feature stays on) instead
-    of silently disabling something."""
+    of silently disabling something.
+
+    'modo_test' has a second, automatic trigger on top of the manual Ajustes
+    toggle: HUGO is Dani's assistant, not Joan's (see the 2026-08-24 identity
+    redesign) — Joan's own testing/admin conversations should never become
+    part of HUGO's memory of Dani, so every 'modo_test'-gated ephemeral-
+    conversation path (fact extraction, episodes, session-end snapshot,
+    linguistic fingerprint, pattern tracking — see this module's own TEST
+    MODE section) also fires automatically whenever Joan is the currently
+    identified speaker, with no toggle required."""
+    if name == "modo_test" and _current_speaker_is_joan():
+        return True
     with _feature_flags_lock:
         return _feature_flags.get(name, True)
 

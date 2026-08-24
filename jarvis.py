@@ -211,6 +211,17 @@ try:
         # reason tools.py does above, or editing one of them during
         # development would silently require a full restart to take effect.
         "memory": "core.memory",
+        # Same "missing from this map" bug as tools.py above — core.memory
+        # does `from core.memory_flags import (..., is_feature_enabled, ...)`
+        # (a name binding, not `import core.memory_flags as x`), so reloading
+        # core.memory alone rebinds to whatever memory_flags module object
+        # was already in sys.modules — editing memory_flags.py silently
+        # needed a full restart until this entry existed. Listed AFTER
+        # "memory" in this dict but MODULE_MAP is unordered for reload
+        # purposes (each entry only fires for its own file's on_modified
+        # event) — memory_flags.py changes reload only this module; a
+        # concurrent memory.py edit would need its own save to pick this up.
+        "memory_flags": "core.memory_flags",
         "personality": "core.personality",
         "intent": "core.intent",
         # Same "missing from this map" bug as tools.py above (see that

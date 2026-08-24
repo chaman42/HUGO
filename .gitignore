@@ -191,6 +191,7 @@ data/allowed_devices.json
 data/autopilot_running.lock
 data/local_device_id.json
 data/tts_cache/
+data/identity_code.json
 *.wav
 *.plist
 speechbrain/

@@ -2033,7 +2033,8 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
                  dispatch_command()'s docstring.
     """
     cmd_start = time.monotonic()
-    logger.info("[LATENCY] command_received  text=%r", transcript[:80])
+    from core import social as social_mod
+    logger.info("[LATENCY] command_received  text=%r", social_mod.redact_identity_code(transcript[:80]))
     # Set True by _stream_and_speak_reply's call sites below once a reply
     # has already been spoken chunk-by-chunk as it streamed in — the
     # shared tail near the end of this function checks this before its
@@ -2133,10 +2134,18 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
                 social_mod.override_as_joan(device_id or social_mod.get_local_device_id())
                 with personality_mod._personality_lock:
                     current_p = personality_mod._personality
-                confirm = response._format_response(
-                    "Identidad confirmada. Hola, Joan.",
-                    transcript=transcript, personality=current_p,
-                )
+                # Spoken VERBATIM — deliberately skips response._format_response()
+                # (which normally naturalizes replies through a Groq call built
+                # from f"Comando original: {transcript}") because that would send
+                # the raw transcript — containing the secret phrase itself — to
+                # the LLM. The whole point of the identity code is that it's a
+                # deterministic, LLM-blind check ("Joan is here" := True); the
+                # confirmation reply has to be equally LLM-blind, not just the
+                # check. Found via a real incident: this originally DID call
+                # _format_response(transcript=transcript, ...), which worked
+                # exactly as feared — the phrase reached Groq and got echoed
+                # back in the naturalized reply.
+                confirm = "Identidad confirmada. Hola, Joan."
                 logger.info("Jarvis: %s", confirm)
                 _say_for(current_p, confirm, cmd_start=cmd_start)
                 return
@@ -2646,10 +2655,20 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
             # restrict_memory guard as the memory extraction just above (an
             # unidentified speaker's turn shouldn't shape Joan's fingerprint any
             # more than it should become one of her stored facts).
-            try:
-                linguistic_fingerprint.update_fingerprint([transcript])
-            except Exception:
-                logger.warning("Linguistic fingerprint live update failed (non-critical)", exc_info=True)
+            #
+            # Real incident (2026-08-24): this direct update_fingerprint() call
+            # bypasses update_from_session()'s own modo_test check (that check
+            # lives in the wrapper, not the underlying function — see
+            # core.linguistic_fingerprint's own docstrings), so a Joan
+            # conversation was still writing to data/linguistic_fingerprint.json
+            # even after is_feature_enabled('modo_test') started auto-triggering
+            # for Joan (core.memory_flags.is_feature_enabled). Guarded directly
+            # here instead of pushing the check further down.
+            if not memory.is_feature_enabled("modo_test"):
+                try:
+                    linguistic_fingerprint.update_fingerprint([transcript])
+                except Exception:
+                    logger.warning("Linguistic fingerprint live update failed (non-critical)", exc_info=True)
         reminders._maybe_store_reminder(transcript, reply, current_p)
         # HUGO-only pattern tracking (see _build_intuition_context above) —
         # recorded AFTER the reply, using this turn's own transcript/tone,

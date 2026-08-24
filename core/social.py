@@ -785,6 +785,20 @@ def check_identity_code(text: str) -> bool:
     return code in _normalize_for_match(text)
 
 
+def redact_identity_code(text: str) -> str:
+    """Strips the configured override phrase out of `text` before it's
+    written anywhere persistent (activity.log, [LATENCY]/[VAD]/[CONV] debug
+    lines, the chat log via server.emit_user_transcript) — the whole point
+    of the code is that it's a secret, so a transcript of it defeats that
+    even if the code check itself never reaches Groq. No-op (returns text
+    unchanged) when no code is configured or it isn't present in `text`."""
+    code = (_load_identity_code().get("code") or "").strip()
+    if not code:
+        return text
+    import re
+    return re.sub(re.escape(code), "[código de identidad]", text, flags=re.IGNORECASE)
+
+
 def override_as_joan(device_id: str | None = None) -> Person:
     """Called once check_identity_code() confirms the phrase — elevates the
     current session's identified speaker to Joan regardless of which

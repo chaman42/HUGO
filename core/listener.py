@@ -688,14 +688,18 @@ def listen(stop_event):
             # processing bottleneck; use both numbers together to tell
             # which one it actually is.
             _stt_vad_elapsed = time.monotonic() - _collect_start if _collect_start else None
+            from core import social as social_mod
+            _redacted_text = social_mod.redact_identity_code(full_text)
             logger.info(
                 "[LATENCY] command_window_closed  text=%r  stt_vad_elapsed=%s",
-                full_text, f"{_stt_vad_elapsed:.3f}s" if _stt_vad_elapsed is not None else "n/a",
+                _redacted_text, f"{_stt_vad_elapsed:.3f}s" if _stt_vad_elapsed is not None else "n/a",
             )
             # Show the final transcript in the chat log as a user message —
             # same as typed input — before dispatch_command() runs, so the
             # user's turn always appears ahead of the assistant's reply.
-            server_mod.emit_user_transcript(full_text)
+            # (Identity-code phrase redacted — same reasoning as the log line
+            # above, see core.social.redact_identity_code's own docstring.)
+            server_mod.emit_user_transcript(_redacted_text)
             _dispatch_in_progress.set()
             # A real command directed at her — never let this linger in the
             # ambient buffer to be re-processed as "overheard chatter" by
@@ -742,11 +746,14 @@ def listen(stop_event):
         except Exception:
             pass
         if full_text and not _dispatch_in_progress.is_set():
+            from core import social as social_mod
+            _redacted_text = social_mod.redact_identity_code(full_text)
             logger.info("[CONV] dispatch  text=%r  context_len=%d",
-                        full_text, len(context or ""))
+                        _redacted_text, len(context or ""))
             # Show the final transcript in the chat log as a user message —
             # same as typed input — before dispatch_command() runs.
-            server_mod.emit_user_transcript(full_text)
+            # (Identity-code phrase redacted — see core.social.redact_identity_code.)
+            server_mod.emit_user_transcript(_redacted_text)
             _dispatch_in_progress.set()
             # Same reasoning as the wake-word path's _do_dispatch above —
             # keep a just-answered request out of the ambient buffer.
@@ -1264,8 +1271,9 @@ def listen(stop_event):
                             pass
                         full_text   = " ".join(_collected_parts).strip()
                         personality = _collect_personality
+                        from core import social as social_mod
                         logger.info("[VAD] early dispatch after %.1fs silence, text=%r",
-                                    now - _silence_since, full_text)
+                                    now - _silence_since, social_mod.redact_identity_code(full_text))
                         _do_dispatch(full_text, personality)
                         continue
 
@@ -1363,15 +1371,17 @@ def listen(stop_event):
                 if seg_words:
                     seg_end = max(w.get("end", 0.0) for w in seg_words)
                     if seg_end < _MIN_SEGMENT_SECS:
+                        from core import social as social_mod
                         logger.debug("Segment skipped (too short %.2fs): %r",
-                                     seg_end, es_json.get("text", ""))
+                                     seg_end, social_mod.redact_identity_code(es_json.get("text", "")))
                         continue
 
                 # ── Overall transcript confidence filter ─────────────────────
                 overall_conf = _overall_confidence(es_json)
                 if overall_conf < _TRANSCRIPT_CONF_THRESHOLD:
+                    from core import social as social_mod
                     logger.debug("Transcript skipped (low confidence=%.2f): %r",
-                                 overall_conf, es_json.get("text", ""))
+                                 overall_conf, social_mod.redact_identity_code(es_json.get("text", "")))
                     continue
 
                 # ── English recognizer result ────────────────────────────────
