@@ -878,27 +878,6 @@
         </div><!-- /.section-inner -->
       </div><!-- /#section-core -->
 
-      <!-- ── CONTROL ───────────────────────────────────────────────────────
-           Placeholder only, per spec — no functionality yet. Reached only
-           via the app launcher, same as CORE above. -->
-      <div class="app-section" id="section-control">
-        <div class="section-inner">
-          <div class="settings-head">
-            <span class="settings-title-text">CONTROL</span>
-            <button id="controlClose" class="settings-close" title="Volver a Main">✕</button>
-          </div>
-          <div class="design-placeholder">
-            <svg class="control-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="4" y1="6"  x2="20" y2="6"/><circle cx="9"  cy="6"  r="2"/>
-              <line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/>
-              <line x1="4" y1="18" x2="20" y2="18"/><circle cx="7"  cy="18" r="2"/>
-            </svg>
-            <div class="design-placeholder-title">CONTROL CENTER — En desarrollo</div>
-            <div class="design-placeholder-desc">Estadísticas, ADN de personalidades y configuración avanzada. Próximamente.</div>
-          </div>
-        </div><!-- /.section-inner -->
-      </div><!-- /#section-control -->
-
       <!-- ── ESTUDIO ───────────────────────────────────────────────────────
            5 subsections (Investigación/Resúmenes/Esquemas/Ideas/Documentos),
            all logic in ui/js/estudio.js, all styling in ui/css/estudio.css —
@@ -1008,15 +987,6 @@
            _applySleepBodyState() in the script — driven by both the
            always-on ambient poll and the Ajustes detailed poll). -->
       <div class="sleep-bar-indicator" id="sleepBarIndicator" title="HUGO está durmiendo — mantenimiento de memoria en curso">ZZZ</div>
-      <!-- Design Studio autopilot indicator — same always-visible-regardless-
-           of-section philosophy as the sleep/test-mode dots above. display:none
-           by default; shown/updated via body.ds-autopilot-active + JS text
-           updates in _dsRunAutopilot() (ui/js/design-studio.js). Clickable —
-           navigates back to the Design Studio workspace at any point. -->
-      <div class="ds-ap-bar-indicator" id="dsApBarIndicator" title="Piloto automático de diseño en curso — clic para ver">
-        <span class="ds-ap-bar-dot"></span>
-        <span id="dsApBarText">DISEÑANDO...</span>
-      </div>
       <!-- Connection status -->
       <div class="conn-status">
         <div class="status-dot"></div>

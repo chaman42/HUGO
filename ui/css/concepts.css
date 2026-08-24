@@ -52,13 +52,6 @@
   gap: 10px;
 }
 
-/* CONTROL's large centered launcher-icon reuse — same SVG, just big. */
-.control-icon-svg {
-  width: 56px; height: 56px;
-  color: var(--accent);
-  opacity: 0.45;
-}
-
 /* Generic HUD confirm-modal overlay — shared by every confirmation dialog
    in the app (update, force-update, sleep-mode entry). */
 .concept-confirm-overlay {

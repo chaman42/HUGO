@@ -564,7 +564,20 @@
 // Now called for real. (v179's connection.js guard fix is still correct
 // and kept, but was never reachable without this.) Bump so clients drop
 // their stale cached copy that never actually booted.
-const CACHE = 'jarvis-v180';
+// v181: removed the CONTROL app-launcher entry (placeholder tab, no
+// functionality — "Estadísticas, ADN de personalidades..." never built)
+// and the orphaned "DISEÑANDO..." Design Studio autopilot bottom-bar
+// indicator (leftover from the already-removed Armor Design Studio
+// subsystem, see v176 — it referenced a design-studio.js that no longer
+// exists, so nothing ever hid it). diamond-text-launcher.js and
+// concepts.css changed; both already in PRECACHE, hence the bump.
+// v182: 'repeat that' replay button on assistant chat bubbles — plays
+// back a reply's already-synthesized edge-tts audio via the new
+// 'tts_audio_ready' socket event (see core/server.py's
+// emit_tts_audio_ready and core/voice.py's replay-cache module section).
+// chat-render.js, connection.js, chat.css all changed; all three already
+// in PRECACHE, hence the bump.
+const CACHE = 'jarvis-v182';
 
 // Assets to pre-cache on install so the icons/manifest load instantly
 // offline. '/' (ui/index.html) is deliberately NOT in this list — see the

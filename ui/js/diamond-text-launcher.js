@@ -231,12 +231,6 @@ const APP_LAUNCHER_APPS = [
     action: () => switchSection('core'),
   },
   {
-    id:     'control',
-    icon:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="7" cy="18" r="2"/></svg>',
-    label:  'CONTROL',
-    action: () => switchSection('control'),
-  },
-  {
     id:     'estudio',
     icon:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5 C10.2 5 7.3 4.5 4 5 V18 C7.3 17.5 10.2 18 12 19.5 C13.8 18 16.7 17.5 20 18 V5 C16.7 4.5 13.8 5 12 6.5 Z"/><path d="M12 6.5 V19.5"/></svg>',
     label:  'ESTUDIO',
@@ -322,6 +316,5 @@ document.querySelectorAll('#section-core .armor-subtab').forEach(btn => {
 })
 
 document.getElementById('coreClose').addEventListener('click', () => switchSection('home'))
-document.getElementById('controlClose').addEventListener('click', () => switchSection('home'))
 
 // ── Estado ────────────────────────────────────────────────────────────────

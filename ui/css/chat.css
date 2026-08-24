@@ -183,6 +183,24 @@ body.speaking .status-label { color: var(--accent); }
   word-break: break-word;
 }
 
+/* 'Repeat that' replay button — see _applyTtsAudioReady()/.msg-replay-btn
+   in chat-render.js. display:none until 'tts_audio_ready' arrives (say
+   fallback replies never get one — see core.voice's own docstring on
+   that), same reveal-on-event pattern as .msg-timing below. */
+.msg-replay-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 0.15s ease;
+}
+.msg-replay-btn:hover  { opacity: 0.9; }
+.msg-replay-btn:active { opacity: 0.5; }
+
 /* Response-latency display — 'LLM: Xs · VOZ: Xs', see _applyResponseTiming()
    in chat-render.js. Barely-visible by design (spec: "not distracting") —
    empty until the first timing event for this reply arrives, then :empty

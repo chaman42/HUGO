@@ -33,7 +33,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // timeout (see _enterBootSplashWait() in ui/index.html). Distinct from
   // the plain HTTP retry that button already falls back to outside
   // Electron: main.js's restart-backend handler kills launcher.py +
-  // jarvis.py, force-frees ports 8079/8080 in case something's wedged
+  // jarvis.py, force-frees ports 8179/8180 in case something's wedged
   // outside normal process tracking, then reboots from scratch — a
   // stronger recovery than just asking the (possibly unresponsive)
   // launcher.py to restart jarvis.py again via its own HTTP API.

@@ -28,12 +28,15 @@ from core.port_cleanup import _free_port, _kill_stale_jarvis
 _jarvis_proc: subprocess.Popen | None = None
 _proc_lock       = threading.Lock()
 _start_time: float | None = None
-_jarvis_ready    = False          # True once /api/ready on port 8080 confirms
+_jarvis_ready    = False          # True once /api/ready on port 8180 confirms
 _retry_count     = 0
 _MAX_RETRIES     = 5
 _RESTART_DELAY   = 3.0            # seconds before first restart attempt
 _COOLDOWN_DELAY  = 30.0           # seconds after max retries
-_JARVIS_PORT     = 8080
+# HUGO's own ports (offset +100 from JarvisLite/LIRA's 8079/8080 default —
+# see launcher.py's LAUNCHER_PORT right next to it) so both can run at the
+# same time on one machine without a port clash.
+_JARVIS_PORT     = 8180
 
 # Guards _start_jarvis() against concurrent invocation — see that function's
 # own docstring for the real incident this fixes (logs/launcher.log,

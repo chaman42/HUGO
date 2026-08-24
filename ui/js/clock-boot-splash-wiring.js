@@ -326,7 +326,7 @@ function _enterBootSplashWait(splash, nameEl, orb, statusEl, retryBtn) {
   retryBtn.addEventListener('click', () => {
     showLoading()
     // Inside Electron: the "nuclear" recovery — kills launcher.py +
-    // jarvis.py, force-frees ports 8079/8080 in case something's wedged
+    // jarvis.py, force-frees ports 8179/8180 in case something's wedged
     // outside normal process tracking, then reboots from scratch (see
     // electron/main.js's restart-backend handler / preload.js's
     // restartBackend()). This is what actually fixes the "stuck forever"

@@ -2,7 +2,7 @@
   "name": "Jarvis",
   "short_name": "Jarvis",
   "description": "Jarvis Voice Assistant",
-  "start_url": "http://localhost:8079/",
+  "start_url": "http://localhost:8179/",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#00d4ff",
@@ -27,5 +27,5 @@
       "purpose": "any"
     }
   ],
-  "id": "jarvis-8079"
+  "id": "jarvis-8179"
 }

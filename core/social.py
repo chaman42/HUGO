@@ -28,11 +28,20 @@ import logging
 import os
 import re
 import threading
+import uuid
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
 PROFILES_PATH = "data/social_profiles.json"
+
+# The spoken/typed override code — see check_identity_code()'s own
+# docstring for why this exists (device ID alone can't identify Joan on
+# a device he doesn't own, e.g. sitting at Dani's computer).
+IDENTITY_CODE_PATH = "data/identity_code.json"
+
+# The local-machine identity — see get_local_device_id()'s own docstring.
+LOCAL_DEVICE_ID_PATH = "data/local_device_id.json"
 
 # Recalibrated 2026-08-10 (was 0.75, the spec's literal number): a genuine
 # enrolled match on Joan's own real voice measured 0.48 raw — this compares
@@ -69,6 +78,11 @@ class Person:
     knows_hugo:            bool
     voice_profile_id:      str | None = None
     linguistic_profile:    dict = field(default_factory=dict)
+    # Persistent per-device UUIDs (ui/js/bootstrap-auth.js's _deviceFingerprint,
+    # stored in that browser's localStorage — survives reloads/restarts, only
+    # ever changes if the user clears site data) known to belong to this
+    # person. See _match_device below for how this gets populated.
+    device_ids:            list[str] = field(default_factory=list)
     first_seen:            str = ""
     last_seen:             str = ""
     interaction_count:     int = 0
@@ -108,6 +122,17 @@ class InfoPermissions:
     can_access_joan_memory:          bool
     can_ask_hugo_personal_questions: bool
     hugo_acknowledges_knowing_joan:  bool
+    # Creator authority: whether this person can make HUGO actually DO
+    # something with real consequences (write to the calendar, create a
+    # reminder, open an app, start an investigation, ...) — distinct from
+    # every field above, which is about what HUGO will SAY. Only Joan's own
+    # tier (trust_level 1.0) ever gets True — see PERMISSIONS_BY_TRUST below
+    # and core.commands._dispatch_command_impl's gate right before
+    # actions._execute_action. A trusted friend like Dani can still ask
+    # HUGO to do things; HUGO just won't actually execute them, the same
+    # way she wouldn't act on a vague/implicit request from Joan himself —
+    # she says so instead, never silently.
+    can_trigger_actions:             bool = False
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -127,8 +152,26 @@ _DEFAULT_PROFILES = {
             "trust_level": 1.0, "knows_hugo": True, "voice_profile_id": "joan_primary",
             "trust_confirmed": True,
             "linguistic_profile": {}, "first_seen": "", "last_seen": "", "interaction_count": 0,
-            "discord_id": None,
+            "discord_id": None, "device_ids": [],
             "relationship": {"type": "self", "closeness": 1.0, "joan_sentiment": "n/a", "shared_topics": [], "notes": []},
+            "interactions": [],
+        },
+        # Dani is HUGO's real intended day-to-day user, not a fabricated
+        # placeholder — Joan built HUGO for him (see the personality's own
+        # 'También conoces a Dani' block in core/personalities/hugo.py).
+        # Seeded here (not just this repo's data/social_profiles.json) so a
+        # FRESH install — the copy Dani actually downloads and runs on his
+        # own computer — already has him as the default identity: see
+        # _match_device's own docstring for why an unrecognized device
+        # resolves to 'dani', not a generic stranger, unless Joan has
+        # explicitly claimed it (his own device, or the identity code).
+        "dani": {
+            "id": "dani", "name": "Dani", "relationship_to_joan": "friend",
+            "trust_level": 0.5, "knows_hugo": True, "voice_profile_id": None,
+            "trust_confirmed": True,
+            "linguistic_profile": {}, "first_seen": "", "last_seen": "", "interaction_count": 0,
+            "discord_id": None, "device_ids": [],
+            "relationship": {"type": "friend", "closeness": 0.3, "joan_sentiment": "positive", "shared_topics": [], "notes": []},
             "interactions": [],
         },
     },
@@ -148,6 +191,7 @@ def _load() -> dict:
     data.setdefault("strangers_seen", 0)
     data.setdefault("introduction_template", "Soy HUGO.")
     data["people"].setdefault("joan", json.loads(json.dumps(_DEFAULT_PROFILES["people"]["joan"])))
+    data["people"].setdefault("dani", json.loads(json.dumps(_DEFAULT_PROFILES["people"]["dani"])))
     return data
 
 
@@ -167,6 +211,7 @@ def _person_from_record(record: dict) -> Person:
         knows_hugo=bool(record.get("knows_hugo", False)),
         voice_profile_id=record.get("voice_profile_id"),
         linguistic_profile=record.get("linguistic_profile", {}) or {},
+        device_ids=list(record.get("device_ids") or []),
         first_seen=record.get("first_seen", ""),
         last_seen=record.get("last_seen", ""),
         interaction_count=int(record.get("interaction_count", 0)),
@@ -255,6 +300,57 @@ class SocialEngine:
         person.confidence = confidence
         return person
 
+    def _match_device(self, device_id: str | None) -> Person | None:
+        """Persistent per-device UUID → social profile — the counterpart to
+        _match_context's Discord ID for the HUD/text channel (see
+        ui/js/bootstrap-auth.js's _deviceFingerprint, sent as 'device_id' on
+        every /text_command POST). Exact match, so confidence is always 1.0
+        when one is found, same reasoning as the Discord branch.
+
+        Default-to-Dani rule (2026-08-24 redesign — see the project memory
+        on this): HUGO's real day-to-day user is Dani, not Joan — Joan's own
+        use of any given install is the admin/testing exception, not the
+        default. So any device HUGO has never seen before is assumed to be
+        Dani's and silently folded into his profile — zero setup on Dani's
+        end, exactly the point ('easier when Dani downloads the app'). Joan
+        is the one who has to be explicit about a device being his: either
+        it was registered ahead of time (core.social.register_device, the
+        Personas tab), or he proves it in the moment with the identity
+        override code (see check_identity_code/override_as_joan, which also
+        registers the device that said the code so it doesn't need repeating).
+        No more generic 'stranger' record for an unrecognized device — a
+        third real person showing up is not a scenario this app supports
+        today, and 'assume Dani' is a far safer default for that edge case
+        than 'assume Joan' ever was (Dani's own tier already can't see
+        Joan's memory/schedule/projects or trigger actions — see
+        InfoPermissions — so a genuine stranger mistaken for Dani still
+        can't reach anything sensitive)."""
+        if not device_id:
+            return None
+        data = _load()
+        for record in data["people"].values():
+            if device_id in (record.get("device_ids") or []):
+                p = _person_from_record(record)
+                p.confidence = 1.0
+                return p
+
+        with _lock:
+            data = _load()
+            for record in data["people"].values():
+                if device_id in (record.get("device_ids") or []):
+                    p = _person_from_record(record)
+                    p.confidence = 1.0
+                    return p
+
+            dani_record = data["people"].get("dani")
+            if dani_record is None:
+                return None
+            dani_record.setdefault("device_ids", []).append(device_id)
+            _save_locked(data)
+            p = _person_from_record(dani_record)
+            p.confidence = 1.0
+            return p
+
     def _match_context(self, discord_user_id: str | None = None) -> Person | None:
         """Discord ID → social profile, the one channel that genuinely
         distinguishes specific non-Joan individuals today (see module
@@ -321,6 +417,21 @@ class SocialEngine:
                 _mark_present(person)
                 return person
 
+        # Device UUID is exact/authoritative like the Discord branch above,
+        # not probabilistic like voice/linguistic below — checked next so a
+        # typed message from a recognized (or newly-seen) device resolves
+        # deterministically instead of falling through to the Joan-only
+        # linguistic fingerprint, which could otherwise misidentify a
+        # stranger typing in Joan's vocabulary style as Joan herself (same
+        # risk this ordering already guards against for Discord — see the
+        # comment above discord_user_id).
+        device_id = (voice_sample or {}).get("device_id")
+        if device_id:
+            person = self._match_device(device_id)
+            if person is not None:
+                _mark_present(person)
+                return person
+
         person = self._match_voice(voice_sample or {})
         if person is not None and person.confidence > VOICE_CONFIDENCE_THRESHOLD:
             _mark_present(person)
@@ -367,19 +478,22 @@ class SocialEngine:
         """Single-listener architecture (see core/listener.py) — this app
         has never tracked simultaneous multiple speakers, so 'present'
         realistically means 'the most recently identified speaker, if
-        recent enough to still be considered around'. Falls back to Joan
-        when nothing else is known (matches core.situation's own
-        social_context default reasoning: no signal defaults to the
-        common case, not to 'nobody')."""
+        recent enough to still be considered around'. Falls back to Dani
+        when nothing else is known — HUGO's real day-to-day user (Joan's
+        own use is the admin/testing exception, not the default; see
+        _match_device's own docstring on the 2026-08-24 redesign), same
+        'no signal defaults to the common case, not to nobody' reasoning
+        core.situation's social_context default already used, just pointed
+        at the actual common case now."""
         with _presence_lock:
             presence = dict(_last_presence) if _last_presence else None
         if presence is None:
-            joan = get_person("joan")
-            return [joan] if joan else []
+            dani = get_person("dani")
+            return [dani] if dani else []
         age = (datetime.datetime.now() - presence["at"]).total_seconds()
         if age > PRESENCE_TTL_SECONDS:
-            joan = get_person("joan")
-            return [joan] if joan else []
+            dani = get_person("dani")
+            return [dani] if dani else []
         return [presence["person"]]
 
     def update_interaction(self, person_id: str, interaction: dict) -> None:
@@ -575,17 +689,20 @@ BEHAVIOR_BY_RELATIONSHIP: dict[str, BehaviorProfile] = {
 }
 
 PERMISSIONS_BY_TRUST: dict[float, InfoPermissions] = {
-    1.0: InfoPermissions(   # Joan
+    1.0: InfoPermissions(   # Joan — creator authority: the only tier that can make HUGO actually act
         can_access_joan_schedule=True, can_access_joan_projects=True, can_access_joan_memory=True,
         can_ask_hugo_personal_questions=True, hugo_acknowledges_knowing_joan=True,
+        can_trigger_actions=True,
     ),
-    0.5: InfoPermissions(   # trusted friend
+    0.5: InfoPermissions(   # trusted friend (e.g. Dani) — can talk, can't act
         can_access_joan_schedule=False, can_access_joan_projects=False, can_access_joan_memory=False,
         can_ask_hugo_personal_questions=False, hugo_acknowledges_knowing_joan=True,
+        can_trigger_actions=False,
     ),
     0.0: InfoPermissions(   # stranger
         can_access_joan_schedule=False, can_access_joan_projects=False, can_access_joan_memory=False,
         can_ask_hugo_personal_questions=False, hugo_acknowledges_knowing_joan=False,
+        can_trigger_actions=False,
     ),
 }
 
@@ -612,6 +729,152 @@ _RELATIONSHIP_ACK_RE = re.compile(
     r"\bjoan\s+es\s+mi\b",
     re.IGNORECASE,
 )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# IDENTITY OVERRIDE CODE — the explicit fallback for exactly the case device
+# matching can't cover: Joan talking to HUGO from a device that isn't his own
+# (Dani's computer, a borrowed phone, ...). A spoken/typed passphrase, checked
+# BEFORE the passive identify_person() chain above — see
+# core.commands._dispatch_command_impl's own call site for why this is a
+# deterministic short-circuit, not folded into identify_person() itself: it's
+# a deliberate action ("this is me"), not a biometric/contextual signal to
+# weigh probabilistically.
+# ═══════════════════════════════════════════════════════════════════════════
+
+_identity_code_lock = threading.Lock()
+
+
+def _load_identity_code() -> dict:
+    try:
+        with open(IDENTITY_CODE_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return {"code": None}
+    return data if isinstance(data, dict) else {"code": None}
+
+
+def get_identity_code_configured() -> bool:
+    """Whether Joan has set a code yet — routes_social's status endpoint
+    uses this so the UI can show 'no configurado' without ever echoing the
+    code itself back to the frontend."""
+    return bool(_load_identity_code().get("code"))
+
+
+def set_identity_code(code: str) -> None:
+    code = (code or "").strip()
+    with _identity_code_lock:
+        os.makedirs(os.path.dirname(IDENTITY_CODE_PATH) or ".", exist_ok=True)
+        with open(IDENTITY_CODE_PATH, "w", encoding="utf-8") as f:
+            json.dump({"code": code or None}, f, ensure_ascii=False, indent=2)
+
+
+def _normalize_for_match(text: str) -> str:
+    return " ".join((text or "").lower().split())
+
+
+def check_identity_code(text: str) -> bool:
+    """True if `text` contains the configured override phrase. Substring
+    match rather than exact-equality — spoken input rarely arrives as
+    *just* the code ('el código es cascada azul', 'cascada azul, hugo') —
+    and case/whitespace-insensitive for the same reason. No code
+    configured -> always False, never a silent 'anything matches'."""
+    code = _normalize_for_match(_load_identity_code().get("code") or "")
+    if not code:
+        return False
+    return code in _normalize_for_match(text)
+
+
+def override_as_joan(device_id: str | None = None) -> Person:
+    """Called once check_identity_code() confirms the phrase — elevates the
+    current session's identified speaker to Joan regardless of which
+    device this came from, exactly like a passive device/voice match would,
+    just triggered explicitly instead of inferred.
+
+    When a device_id is given, this also permanently claims it as Joan's
+    (moving it off Dani's profile first if it had already default-resolved
+    there — see _match_device's own docstring on the default-to-Dani
+    redesign) — so saying the code once is enough; HUGO recognizes that
+    same device as Joan from then on without repeating it."""
+    person = get_person("joan")
+    _mark_present(person)
+    if device_id:
+        register_device("joan", device_id)
+    return person
+
+
+def register_device(person_id: str, device_id: str) -> bool:
+    """Joan-facing action (see routes_social's register-device route) —
+    explicitly assigns a device UUID to a person, e.g. moving a
+    device HUGO auto-created as a stranger onto Dani's real profile, or
+    hand-registering a second device of Joan's own. Returns False if
+    person_id doesn't exist."""
+    device_id = (device_id or "").strip()
+    if not device_id:
+        return False
+    with _lock:
+        data = _load()
+        record = data["people"].get(person_id)
+        if record is None:
+            return False
+        # A device UUID identifies one person — pull it off anyone else who
+        # currently has it (e.g. it was auto-registered as a stray stranger
+        # before Joan assigned it here) so it never resolves ambiguously.
+        for other in data["people"].values():
+            ids = other.get("device_ids")
+            if ids and device_id in ids:
+                ids.remove(device_id)
+        record.setdefault("device_ids", []).append(device_id)
+        _save_locked(data)
+    return True
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LOCAL MACHINE IDENTITY — voice has no browser, so it can never carry a
+# _deviceFingerprint the way a typed /text_command does (see
+# core.commands._dispatch_command_impl's own comment on this).
+# get_local_device_id() gives the physical machine a stable UUID of its own
+# (generated once, persisted, independent of any browser's localStorage) so
+# voice has SOMETHING to identify against. core.commands falls back to this
+# id whenever a turn doesn't carry an explicit device_id (always true for
+# voice, and true for typed input too on a rare cold-start racing ahead of
+# the frontend's own fingerprint).
+#
+# No special Joan-binding here anymore (2026-08-24 redesign — see the
+# _match_device docstring on why): this id resolves through the exact same
+# generic _match_device path as any other device_id — Joan on an install
+# where he's already explicitly claimed it (the identity code, or manual
+# registration), Dani by default everywhere else, including a fresh install
+# that's never seen it before. A previous version of this function
+# force-bound it to Joan unconditionally on first use, which was correct
+# reasoning for Joan's own dev machine but exactly backwards for the copy
+# Dani actually runs — his own first voice/chat turn would have silently
+# registered HIS machine as Joan's.
+# ═══════════════════════════════════════════════════════════════════════════
+
+_local_device_id_lock = threading.Lock()
+_local_device_id_cached: str | None = None
+
+
+def get_local_device_id() -> str:
+    global _local_device_id_cached
+    if _local_device_id_cached:
+        return _local_device_id_cached
+    with _local_device_id_lock:
+        if _local_device_id_cached:
+            return _local_device_id_cached
+        try:
+            with open(LOCAL_DEVICE_ID_PATH, "r", encoding="utf-8") as f:
+                existing = (json.load(f) or {}).get("device_id")
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            existing = None
+        if not existing:
+            existing = f"local-{uuid.uuid4()}"
+            os.makedirs(os.path.dirname(LOCAL_DEVICE_ID_PATH) or ".", exist_ok=True)
+            with open(LOCAL_DEVICE_ID_PATH, "w", encoding="utf-8") as f:
+                json.dump({"device_id": existing}, f, ensure_ascii=False, indent=2)
+        _local_device_id_cached = existing
+        return existing
 
 
 _presence_lock = threading.Lock()

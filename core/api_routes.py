@@ -196,7 +196,7 @@ def api_mic_status():
 def api_reload():
     """Force every connected HUD client to perform a hard page reload.
 
-    Because the launcher socket (port 8079) is always running — even when
+    Because the launcher socket (port 8179) is always running — even when
     jarvis.py is down — this is the most reliable way to push a reload to all
     open browser tabs after a frontend deployment (e.g. after bumping the
     Service Worker cache key in ui/sw.js).

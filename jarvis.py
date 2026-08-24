@@ -213,7 +213,35 @@ try:
         "memory": "core.memory",
         "personality": "core.personality",
         "intent": "core.intent",
+        # Same "missing from this map" bug as tools.py above (see that
+        # entry's own comment) — core.commands imports these via local
+        # `from core import X` inside functions, so commands.py itself
+        # hot-reloading doesn't help: it just re-binds to whatever stale
+        # module object is already in sys.modules.
+        "social": "core.social",
+        "sleep_curiosity_search": "core.sleep_curiosity_search",
+        # core/personalities/ is a subdirectory — needs the Observer watch
+        # below to be recursive=True as well, not just an entry here (see
+        # that call site's own comment). Keyed by bare filename stem like
+        # everything else in this map, so "base"/"hugo" would collide if a
+        # same-named file ever showed up elsewhere under core/ — narrow but
+        # matches this map's existing convention throughout.
+        "hugo": "core.personalities.hugo",
+        "base": "core.personalities.base",
     }
+
+    # hugo.py -> base.py -> personality.py is a chain of NAME imports (each
+    # link does `from <previous> import specific_name`, not `import
+    # <previous> as mod`): core.personalities.base does `from
+    # core.personalities.hugo import PERSONALITY as _HUGO_PERSONALITY`,
+    # and core.personality does `from core.personalities.base import
+    # PERSONALITIES, _build_system_prompt`. Reloading hugo.py alone
+    # refreshes hugo.py's own PERSONALITY object but leaves base.py (and
+    # therefore personality.py) holding the OLD one — same stale-reference
+    # bug as the voice.py incident above, just one link further down the
+    # chain. Whichever link changes, every link AFTER it in this list also
+    # needs reloading, in order, for the fix to actually reach commands.py.
+    _PERSONALITY_CHAIN = ["core.personalities.hugo", "core.personalities.base", "core.personality"]
 
     class _CoreReloader(FileSystemEventHandler):
         def __init__(self):
@@ -242,6 +270,42 @@ try:
                 logger.info("Reloaded %s successfully.", module_name)
                 if stem == "listener":
                     restart_listener()
+                # Personality-chain cascade — see _PERSONALITY_CHAIN's own
+                # comment. Reloads every link AFTER the one that just
+                # changed, in order, before the general commands.py
+                # cascade below runs (which needs personality.py already
+                # fresh).
+                if module_name in _PERSONALITY_CHAIN:
+                    remaining = _PERSONALITY_CHAIN[_PERSONALITY_CHAIN.index(module_name) + 1:]
+                    for chain_module in remaining:
+                        try:
+                            importlib.reload(importlib.import_module(chain_module))
+                            logger.info("Reloaded %s successfully. (chained from %s)", chain_module, module_name)
+                        except Exception:
+                            logger.exception("Failed to chain-reload %s after %s", chain_module, module_name)
+                # Cascade fix (real incident, 2026-08-24 — edge-tts landed in
+                # core/voice.py, hot-reloaded cleanly per the log line above,
+                # but HUGO kept speaking through the OLD `say`-only code path
+                # for several turns afterward): core/commands.py imports
+                # several of these BY NAME at module level — `from
+                # core.voice import speak`, same for tools/memory/
+                # personality/intent — not as `from core import voice as
+                # voice_mod` + voice_mod.speak(...). A name import binds
+                # ONCE, to whatever function object existed at that moment;
+                # reloading core.voice alone creates a NEW speak object that
+                # commands.py's own `speak` name never learns about. Only
+                # re-running commands.py's own `from core.voice import
+                # speak` line rebinds it — so every dependency reload here
+                # (other than commands.py reloading itself) must also
+                # reload commands.py right after, or the fix silently sits
+                # in memory unused until a full restart.
+                if module_name != "core.commands":
+                    try:
+                        import core.commands as _commands_mod
+                        importlib.reload(_commands_mod)
+                        logger.info("Reloaded core.commands successfully. (cascaded from %s)", module_name)
+                    except Exception:
+                        logger.exception("Failed to cascade-reload core.commands after %s", module_name)
             except Exception:
                 logger.exception("Failed to reload %s", module_name)
 
@@ -274,11 +338,15 @@ if __name__ == "__main__":
 
     # Start Flask/SocketIO server
     server_mod.start()
-    logger.info("Web UI available at http://localhost:8080")
+    logger.info("Web UI available at http://localhost:8180")
 
     if _WATCHDOG_AVAILABLE:
         _observer = Observer()
-        _observer.schedule(_CoreReloader(), path="core", recursive=False)
+        # recursive=True (was False) — core/personalities/hugo.py and
+        # base.py live one directory down; a non-recursive watch silently
+        # never saw edits there at all, so PERSONALITY-text changes needed
+        # a full restart to take effect even with the map entries above.
+        _observer.schedule(_CoreReloader(), path="core", recursive=True)
         _observer.start()
         logger.info("Hot-reload watcher active on core/")
 

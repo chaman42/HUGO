@@ -1,14 +1,17 @@
 """Flask routes: text-command dispatch, mic/TTS mute, feature flags,
 listen mode, and misc status/reload endpoints."""
 import logging
+import re
 import threading
 
-from flask import jsonify, request
+from flask import jsonify, request, send_file
 
 import core.server as _server
 from core.server import app, socketio, emit_force_reload
 
 logger = logging.getLogger(__name__)
+
+_AUDIO_ID_RE = re.compile(r"^[0-9a-f]{12}$")   # matches core.voice._cache_tts_audio's uuid4().hex[:12]
 
 _MAX_IMAGE_B64_CHARS = 8_000_000   # ~6MB decoded — generous for a phone photo, cheap enough to reject before it ever reaches OpenRouter/Ollama
 
@@ -18,6 +21,7 @@ def text_command():
         return "", 204
     data = request.get_json(force=True, silent=True) or {}
     text = (data.get("text") or "").strip()
+    device_id = (data.get("device_id") or "").strip() or None
     # images: [{"data": <base64, no data: prefix>, "mime": "image/jpeg"}, ...] —
     # ui/js/chat-render.js's staged attachments, FileReader-encoded before
     # POST. Text-less-but-image-only messages are valid (a bare photo with
@@ -32,12 +36,29 @@ def text_command():
     def _run():
         import core.commands as commands
         try:
-            commands.dispatch_command(text, images=images or None)
+            commands.dispatch_command(text, images=images or None, device_id=device_id)
         except Exception:
             pass
 
     threading.Thread(target=_run, daemon=True, name="text-dispatch").start()
     return jsonify({"ok": True})
+
+
+@app.route("/api/tts_audio/<audio_id>")
+def api_tts_audio(audio_id):
+    """Serves a cached edge-tts reply's audio for the chat log's 'repeat
+    that' replay button (ui/js/chat-render.js's .msg-replay-btn, wired to
+    the 'tts_audio_ready' socket event — see core.server.emit_tts_audio_ready
+    and core.voice's own replay-cache module section for the full picture).
+    404 for an id that's expired out of the bounded cache or never existed —
+    same response either way, nothing here needs to distinguish them."""
+    if not _AUDIO_ID_RE.match(audio_id):
+        return jsonify({"error": "not found"}), 404
+    import core.voice as voice_mod
+    path = voice_mod.get_cached_audio_path(audio_id)
+    if not path:
+        return jsonify({"error": "not found"}), 404
+    return send_file(path, mimetype="audio/mpeg")
 
 @app.route("/api/session_history")
 def api_session_history():

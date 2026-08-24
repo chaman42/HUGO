@@ -14,9 +14,9 @@ let trayIconNorm = null   // nativeImage for normal (unmuted) state
 let trayIconMute = null   // nativeImage for muted state
 let isMuted      = false  // local mirror of backend mute state (polled every 5 s)
 
-// Derive the jarvis.py API base URL from the launcher URL (always port 8080).
+// Derive the jarvis.py API base URL from the launcher URL (always port 8180).
 // Works for both local and Tailscale targets.
-const jarvisUrl = () => state.getBackendUrl().replace(/:(\d+)$/, ':8080')
+const jarvisUrl = () => state.getBackendUrl().replace(/:(\d+)$/, ':8180')
 
 // Fire-and-forget POST — used for mute/unmute/mic_stop/mic_start calls.
 function _httpPost (fullUrl) {

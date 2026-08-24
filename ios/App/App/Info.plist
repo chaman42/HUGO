@@ -31,7 +31,7 @@
 		     does not touch ATS. Without this dict, iOS blocks every
 		     cleartext HTTP request at the OS level before the page (or even
 		     Capacitor's JS bridge) ever loads, which is what produced the
-		     blank white screen against http://100.124.252.100:8080. -->
+		     blank white screen against http://100.124.252.100:8180. -->
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>

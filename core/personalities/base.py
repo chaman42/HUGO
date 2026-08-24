@@ -108,6 +108,56 @@ def _build_system_prompt(
     if instructions_block:
         base += "\n\nINSTRUCCIONES:\n" + instructions_block
 
+    # ── INTERLOCUTOR ACTUAL — who core.social currently thinks is present
+    # (core.social.SocialEngine.who_is_present(), updated every turn by
+    # core.commands._dispatch_command_impl's identify_person() call, or by
+    # the identity-code short-circuit — see core.social's own module
+    # comments). Omitted entirely for Joan himself: the persona text above
+    # already assumes Joan by default, so this only needs to say anything
+    # when the answer is someone else. Best-effort — a lookup failure here
+    # must never break the reply itself.
+    try:
+        from core import social as social_mod
+        present = social_mod.social_engine.who_is_present()
+        current_person = present[0] if present else None
+    except Exception:
+        current_person = None
+    if current_person is not None and current_person.id != "joan":
+        if current_person.id == "unknown":
+            base += (
+                "\n\nINTERLOCUTOR ACTUAL: no se ha podido identificar con quién "
+                "hablas ahora mismo — no asumas que es Joan ni Dani. Trátalo "
+                "con la reserva y neutralidad de alguien que no conoces, sin "
+                "compartir nada privado de Joan."
+            )
+        else:
+            behavior     = social_mod.social_engine.get_behavior_profile(current_person.id)
+            permissions  = social_mod.social_engine.get_information_permissions(current_person.id)
+            display_name = current_person.name or "esta persona"
+            base += (
+                f"\n\nINTERLOCUTOR ACTUAL: estás hablando con {display_name} "
+                f"(relación con Joan: {current_person.relationship_to_joan}). "
+                f"Adapta el tono a esa relación como ya sabes hacerlo — "
+                f"registro {behavior.tone}, respuestas {behavior.response_length}. "
+            )
+            if not permissions.can_access_joan_memory:
+                base += (
+                    "No compartas recuerdos, hábitos, agenda ni proyectos "
+                    "privados de Joan con esta persona salvo que Joan te haya "
+                    "dado permiso explícito — esquívalo con naturalidad, nunca "
+                    "con una negativa robótica. "
+                )
+            if not permissions.hugo_acknowledges_knowing_joan:
+                base += "No confirmes ni niegues tu relación con Joan a menos que haga falta. "
+            if not permissions.can_trigger_actions:
+                base += (
+                    "Recuerda: la autoridad para ejecutar acciones con "
+                    "consecuencias reales (calendario, recordatorios, abrir "
+                    "apps, iniciar investigaciones) es exclusiva de Joan — si "
+                    f"{display_name} te pide algo así, no lo ejecutes, "
+                    "explícaselo con tu tono habitual. "
+                )
+
     # ── LAYER 4: DATOS EN TIEMPO REAL — always fetched/computed fresh here,
     # NEVER persisted as a fact (enforced in _extract_and_save_memory via
     # _TEMPORAL_FACT_PATTERNS, no exceptions).

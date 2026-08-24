@@ -3,7 +3,7 @@
   "appName": "HUGO",
   "webDir": "ui/",
   "server": {
-    "url": "http://100.124.252.100:8080",
+    "url": "http://100.124.252.100:8180",
     "cleartext": true
   }
 }

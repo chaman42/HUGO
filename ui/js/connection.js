@@ -81,7 +81,7 @@ async function _doPollHealth() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// JARVIS SOCKET  (port 8080 — only connect AFTER health confirms ready)
+// JARVIS SOCKET  (port 8180 — only connect AFTER health confirms ready)
 // ════════════════════════════════════════════════════════════════════════════
 function _doConnectJarvis() {
   if (jarvisSocket && jarvisSocket.connected) return
@@ -118,7 +118,7 @@ function _attemptConnect() {
   const _targetURL = BACKEND_URLS[_urlIndex] ?? BACKEND_URLS[BACKEND_URLS.length - 1]
   console.log(`[Jarvis] SocketIO connect attempt ${_connectAttempts} → ${_targetURL} (url ${_urlIndex + 1}/${BACKEND_URLS.length})`)
 
-  // [AUTH] Fingerprint sent as query param so the Jarvis server (port 8080) can
+  // [AUTH] Fingerprint sent as query param so the Jarvis server (port 8180) can
   // reject unregistered devices at the SocketIO level, independent of the
   // launcher-side check.
   jarvisSocket = io(_targetURL, {
@@ -269,6 +269,9 @@ function _attemptConnect() {
   // Chat latency display — see core/server.py's emit_response_timing()
   // and chat-render.js's _applyResponseTiming()/_lastJarvisTimingEl.
   jarvisSocket.on('response_timing', (data) => { if (typeof _applyResponseTiming === 'function') _applyResponseTiming(data) })
+  // 'Repeat that' replay button — see core/server.py's emit_tts_audio_ready()
+  // and chat-render.js's _applyTtsAudioReady()/_lastJarvisReplayBtn.
+  jarvisSocket.on('tts_audio_ready', (data) => { if (typeof _applyTtsAudioReady === 'function') _applyTtsAudioReady(data) })
   // Unified floating diamond — live partial transcript (what Joan is
   // saying, mid-recognition) shown above the diamond while she's actively
   // listening and still processing. Additional listener alongside the

@@ -12,10 +12,13 @@
 //   5. Kill launcher.py + jarvis.py cleanly on quit
 //
 // Port notes:
-//   8079 — launcher.py: serves the full HUD (index.html) + launcher SocketIO
-//   8080 — jarvis.py  : AI backend SocketIO (the HUD connects to it internally)
-//   The Electron window loads from port 8079. Port 8080 is handled by the HUD.
-//   The user-specified Tailscale primary URL uses 8079 on the remote machine.
+//   8179 — launcher.py: serves the full HUD (index.html) + launcher SocketIO
+//   8180 — jarvis.py  : AI backend SocketIO (the HUD connects to it internally)
+//   The Electron window loads from port 8179. Port 8180 is handled by the HUD.
+//   The user-specified Tailscale primary URL uses 8179 on the remote machine.
+//   (HUGO's ports are offset +100 from JarvisLite/LIRA's default 8079/8080
+//   specifically so both can run at once on the same machine — see
+//   core/process_manager.py's own comment on _JARVIS_PORT.)
 //
 // The window/tray/backend-process/updater responsibilities themselves live in
 // window.js, tray.js, backend_process.js, and updater.js respectively — this
@@ -37,13 +40,13 @@ const { setupUpdater } = require('./updater')
 // ---------------------------------------------------------------------------
 
 // Primary: Tailscale IP where the remote JarvisLite stack is running.
-// The HUD is served by launcher.py on port 8079; port 8080 is the AI backend
+// The HUD is served by launcher.py on port 8179; port 8180 is the AI backend
 // that the HUD page connects to by itself once loaded.
-// NOTE: The requirements specified port 8080 as the Electron window URL, but
-// the HUD page lives at 8079 (launcher). Adjust TAILSCALE_URL if your remote
+// NOTE: The requirements specified port 8180 as the Electron window URL, but
+// the HUD page lives at 8179 (launcher). Adjust TAILSCALE_URL if your remote
 // machine's launcher uses a non-default port.
-const TAILSCALE_URL  = 'http://100.124.252.100:8079'
-const LOCALHOST_URL  = 'http://localhost:8079'
+const TAILSCALE_URL  = 'http://100.124.252.100:8179'
+const LOCALHOST_URL  = 'http://localhost:8179'
 
 const UPDATE_POLL_INTERVAL = 3_000  // ms between /api/health checks for a pending relaunch
 
@@ -280,8 +283,10 @@ async function bootBackend () {
 // _enterBootSplashWait()/preload.js's restartBackend() in ui/index.html) —
 // a strictly stronger recovery than plain bootBackend(): first kills
 // launcher.py + jarvis.py (both the graceful killBackend() sweep AND a
-// broader force-kill of anything actually bound to ports 8079/8080, since
-// the whole point of this button is recovering from a state where the
+// broader force-kill of anything actually bound to ports 8179/8180 — HUGO's
+// own ports only, deliberately NOT LIRA's 8079/8080, since a stuck HUGO
+// boot has no business also killing a LIRA instance running alongside it —
+// since the whole point of this button is recovering from a state where the
 // normal, name-based process tracking might itself be wedged or wrong —
 // see backend_process.js's killProcessesOnPorts()'s own comment), then
 // re-runs the full boot sequence from scratch.
@@ -297,7 +302,7 @@ ipcMain.on('restart-backend', () => {
   restartInProgress = true
   console.log('[HUGO] restart-backend requested — killing backend and rebooting.')
   backend.killBackend(() => {
-    backend.killProcessesOnPorts([8079, 8080], () => {
+    backend.killProcessesOnPorts([8179, 8180], () => {
       backend.resetForRestart()
       restartInProgress = false
       bootBackend()

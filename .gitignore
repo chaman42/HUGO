@@ -189,6 +189,8 @@ data/_tmp_cmd.wav
 data/memoria_voz/
 data/allowed_devices.json
 data/autopilot_running.lock
+data/local_device_id.json
+data/tts_cache/
 *.wav
 *.plist
 speechbrain/

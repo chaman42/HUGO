@@ -332,10 +332,30 @@ def _synthesize_topic_finding(topic: str, hits: list[dict]) -> dict | None:
     }
 
 
+def _admin_device_active() -> bool:
+    """True when Joan (the admin/testing device, not Dani — HUGO's real
+    intended user) is the currently identified speaker. Exploration is
+    built from recent conversation material (see _extract_topics_and_queries),
+    so admin/testing chats from Joan's own device would otherwise pollute
+    Dani's explorations with topics from Joan's dev/QA sessions rather than
+    Dani's actual interests. Best-effort — a lookup failure defaults to
+    'not Joan' so a bug here never silently disables exploration for Dani's
+    real usage."""
+    try:
+        from core import social as social_mod
+        present = social_mod.social_engine.who_is_present()
+        current = present[0] if present else None
+        return current is not None and current.id == "joan"
+    except Exception:
+        return False
+
+
 def _phase_curiosity_search(remaining_budget: int) -> tuple[int, int, str]:
     """Phase 8 entry point — same (tokens, insights, summary) contract as
     every other phase (see core.sleep._PHASE_FUNCS), even though tokens is
     always 0 here (Ollama-only, no Groq spend ever)."""
+    if _admin_device_active():
+        return 0, 0, "dispositivo admin — exploración omitida"
     if not memory_flags.is_feature_enabled("busqueda_web"):
         return 0, 0, "búsqueda web desactivada"
     if not _ollama_available():
@@ -480,6 +500,8 @@ def _phase_curiosity_deep(stop_check) -> dict:
     stay interruptible, so this bounds how long it goes between checks
     rather than imposing a token/time budget), or Ollama stops responding.
     Zero Serper cost — pure Ollama. Returns {"explored": int}."""
+    if _admin_device_active():
+        return {"explored": 0}
     explored = 0
     cycle = sleep_insights_store._current_cycle
 

@@ -7,7 +7,9 @@ no Terminal.app window is ever opened. Can also be run standalone for
 development:
     python launcher.py
 
-Serves on http://localhost:8079
+Serves on http://localhost:8179 (see LAUNCHER_PORT below — offset +100 from
+JarvisLite/LIRA's default 8079/8080 so HUGO can run alongside it on the same
+machine without a port clash)
 - Hosts the full frontend (ui/)
 - Manages the jarvis.py process lifecycle (see core/process_manager.py) —
   spawned directly via subprocess.Popen, stdout/stderr piped straight into
@@ -36,6 +38,8 @@ from core import process_manager as pm
 from core import api_routes            # noqa: F401 — registers routes on import
 from core import api_routes_update      # noqa: F401 — registers routes on import
 
+LAUNCHER_PORT = 8179   # see this module's own docstring on the +100 offset from LIRA's 8079
+
 if __name__ == "__main__":
     # No-orphan-processes guarantee: kill any other launcher.py or jarvis.py
     # still running before we touch anything else. This is what prevents the
@@ -44,11 +48,11 @@ if __name__ == "__main__":
     # deliberate fresh start while an old one is still alive.
     _kill_stale_launcher()
     _kill_stale_jarvis()
-    _free_port(8079)
+    _free_port(LAUNCHER_PORT)
     _free_port(pm._JARVIS_PORT)
 
     logger.info("=" * 60)
-    logger.info("JarvisLite Launcher starting — http://localhost:8079")
+    logger.info("JarvisLite Launcher starting — http://localhost:%d", LAUNCHER_PORT)
     logger.info("  PID=%d", os.getpid())
     logger.info("  mic_status=%s", _get_mic_status())
     logger.info("=" * 60)
@@ -72,7 +76,7 @@ if __name__ == "__main__":
     socketio.run(
         app,
         host="0.0.0.0",
-        port=8079,
+        port=LAUNCHER_PORT,
         use_reloader=False,
         allow_unsafe_werkzeug=True,
         log_output=False,

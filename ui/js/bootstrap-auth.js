@@ -21,13 +21,13 @@ function esc(s) {
 // Connection order: Tailscale IP → serving hostname → mDNS .local
 // Each attempt has a 5 s timeout; on failure the next URL in the list is tried.
 const BACKEND_URLS = [
-  'http://100.124.252.100:8080',
-  `http://${window.location.hostname}:8080`,
-  'http://MacBook-Pro-de-Joan.local:8080',
+  'http://100.124.252.100:8180',
+  `http://${window.location.hostname}:8180`,
+  'http://MacBook-Pro-de-Joan.local:8180',
 ]
 let JARVIS_URL   = BACKEND_URLS[0]
 let JARVIS_API   = JARVIS_URL
-const LAUNCHER_API = ''                 // same origin as this page (8079)
+const LAUNCHER_API = ''                 // same origin as this page (8179)
 
 // ════════════════════════════════════════════════════════════════════════════
 // DOM REFS
@@ -182,7 +182,7 @@ function _showRejectionPage() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// LAUNCHER SOCKET  (always-on, port 8079 = same as this page)
+// LAUNCHER SOCKET  (always-on, port 8179 = same as this page)
 // Created by _initLauncherSocket() only after device auth passes.
 // ════════════════════════════════════════════════════════════════════════════
 // [AUTH] launcher is declared here but created only after auth passes.
@@ -199,7 +199,7 @@ launcher.on('connect', async () => {
   // wake"): this launcher socket has reconnection:true, so it silently
   // auto-reconnects on its own after any brief network drop (e.g. macOS
   // suspending the renderer's network during display sleep) — completely
-  // independent of whatever the jarvis socket (port 8080) is doing. Unlike
+  // independent of whatever the jarvis socket (port 8180) is doing. Unlike
   // 'jarvis_status'/'jarvis_restart' below, this handler had no
   // _hasShownMainUI guard, so a routine reconnect mid-session called
   // setBootState('starting') and threw the full-screen boot overlay back
@@ -368,6 +368,23 @@ launcher.on('build_ios_progress', _applyBuildIosProgress)
 // check against the launcher) is disabled server-side right now — see
 // _generateFingerprint()'s own comment — so, matching ui/app.js's own
 // "AUTH DISABLED" fallback, skip straight to starting the app.
+//
+// Fingerprint generation used to be dead code too — this whole bootstrap
+// call was never reached before the fix above, so _deviceFingerprint
+// stayed '' forever and every /text_command POST sent no device_id at
+// all. It's no longer only for the disabled auth-reject gate:
+// core.social's SocialEngine._match_device now uses this same per-device
+// UUID to tell Joan's devices apart from anyone else's (Dani's), so it
+// has to actually be populated even with the reject-on-mismatch check
+// itself switched off — hence generating it first, below, before
+// _initLauncherSocket() runs.
 // ════════════════════════════════════════════════════════════════════════════
-_initLauncherSocket()
+;(async () => {
+  try {
+    _deviceFingerprint = await _generateFingerprint()
+  } catch {
+    _deviceFingerprint = ''   // bootstrap mode still works with an empty fp
+  }
+  _initLauncherSocket()
+})()
 

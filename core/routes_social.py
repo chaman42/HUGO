@@ -7,9 +7,18 @@ person trust_confirmed), GET /api/social/people/<id> (person detail +
 interaction history), PATCH /api/social/people/<id> (edit name/
 relationship_to_joan/knows_hugo), DELETE /api/social/people/<id> (forget
 person). Backs the Núcleo HUGO "Personas" tab. See core/social.py's own
-module docstring."""
+module docstring.
+
+Every route here is gated to Joan only (see _joan_only below) — this whole
+surface is HUGO's own idea of who everyone is, trust levels included, and
+none of it should render for Dani (or anyone else) when he opens the same
+Núcleo UI: the Personas tab, and 'who's present' with it, simply doesn't
+exist for a non-Joan viewer. Same core.social.who_is_present() signal
+already used everywhere else (secret protection, creator-authority action
+gating, the live system-prompt block) — nothing new to keep in sync."""
 import logging
 from dataclasses import asdict
+from functools import wraps
 
 from flask import jsonify, request
 
@@ -19,7 +28,32 @@ from core import social
 logger = logging.getLogger(__name__)
 
 
+def _current_person_is_joan() -> bool:
+    """Same permissive-default convention as the rest of this app (creator-
+    authority action gating in core.commands, the identity prompt block in
+    core.personalities.base): defaults to Joan when nobody's been
+    identified yet, since solo use with no signal at all is still the
+    common case. A lookup failure also fails open to Joan rather than
+    locking Joan himself out over a bug here."""
+    try:
+        present = social.social_engine.who_is_present()
+        current = present[0] if present else None
+        return current is None or current.id == "joan"
+    except Exception:
+        return True
+
+
+def _joan_only(view):
+    @wraps(view)
+    def wrapper(*args, **kwargs):
+        if not _current_person_is_joan():
+            return jsonify({"error": "not authorized"}), 403
+        return view(*args, **kwargs)
+    return wrapper
+
+
 @app.route("/api/social/present")
+@_joan_only
 def api_social_present():
     try:
         present = social.social_engine.who_is_present()
@@ -30,6 +64,7 @@ def api_social_present():
 
 
 @app.route("/api/social/people")
+@_joan_only
 def api_social_people():
     try:
         people = social.get_all_people()
@@ -43,6 +78,7 @@ _VALID_RELATIONSHIPS = {"friend", "family", "colleague", "stranger"}   # 'self' 
 
 
 @app.route("/api/social/people", methods=["POST"])
+@_joan_only
 def api_social_person_create():
     """Joan manually registering someone HUGO hasn't (yet) identified on
     her own — the Personas tab's 'Añadir persona'. Created-by-Joan means
@@ -88,6 +124,7 @@ def api_social_person_create():
 
 
 @app.route("/api/social/people/<person_id>")
+@_joan_only
 def api_social_person_detail(person_id):
     try:
         data = social._load()
@@ -110,6 +147,7 @@ def api_social_person_detail(person_id):
 
 
 @app.route("/api/social/people/<person_id>/trust", methods=["POST"])
+@_joan_only
 def api_social_person_trust(person_id):
     """Joan-only, explicit action — the ONLY place a trust_level ever
     changes (spec: 'Trust level is set by Joan — never auto-elevated by
@@ -150,6 +188,7 @@ def api_social_person_trust(person_id):
 
 
 @app.route("/api/social/people/<person_id>", methods=["PATCH"])
+@_joan_only
 def api_social_person_edit(person_id):
     """Joan-only — edits the fields the trust route (above) deliberately
     doesn't touch: name, relationship_to_joan, knows_hugo. Refuses 'joan'
@@ -190,7 +229,67 @@ def api_social_person_edit(person_id):
         return jsonify({"ok": False, "error": str(exc)}), 500
 
 
+@app.route("/api/social/people/<person_id>/device", methods=["POST"])
+@_joan_only
+def api_social_person_register_device(person_id):
+    """Joan-facing — assigns a device UUID (ui/js/bootstrap-auth.js's
+    _deviceFingerprint) to a person. Typical flow: HUGO auto-created a
+    'stranger' the first time Dani's device connected (see
+    core.social.SocialEngine._match_device) — Joan opens the Personas tab,
+    sees the stranger's interaction history to recognize it as Dani, PATCHes
+    name/relationship_to_joan, then calls this route with that same device_id
+    to fold future visits from that device straight into Dani's profile.
+    Also how Joan registers a second device of his own."""
+    try:
+        body = request.get_json(silent=True) or {}
+        device_id = (body.get("device_id") or "").strip()
+        if not device_id:
+            return jsonify({"ok": False, "error": "expected non-empty {device_id}"}), 400
+        ok = social.register_device(person_id, device_id)
+        if not ok:
+            return jsonify({"ok": False, "error": "not found"}), 404
+        return jsonify({"ok": True, "person": social._load()["people"][person_id]})
+    except Exception as exc:
+        logger.error("Failed to register device: %s", exc)
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
+@app.route("/api/social/identity_code", methods=["GET"])
+@_joan_only
+def api_social_identity_code_status():
+    """Never echoes the code itself back — only whether one is configured.
+    Backs a 'código configurado / no configurado' indicator in the UI."""
+    try:
+        return jsonify({"configured": social.get_identity_code_configured()})
+    except Exception as exc:
+        logger.error("Failed to read identity code status: %s", exc)
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/social/identity_code", methods=["POST"])
+@_joan_only
+def api_social_identity_code_set():
+    """Joan-facing — sets (or rotates) the spoken/typed override phrase HUGO
+    accepts as proof of identity from any device, including one that isn't
+    Joan's own (see core.social's own IDENTITY OVERRIDE CODE module
+    section, and core.commands._dispatch_command_impl's short-circuit that
+    checks it on every turn). Pass {code: ''} or {code: null} to disable it."""
+    try:
+        body = request.get_json(silent=True) or {}
+        if "code" not in body:
+            return jsonify({"ok": False, "error": "expected {code: str}"}), 400
+        code = body.get("code") or ""
+        if not isinstance(code, str):
+            return jsonify({"ok": False, "error": "code must be a string"}), 400
+        social.set_identity_code(code)
+        return jsonify({"ok": True, "configured": social.get_identity_code_configured()})
+    except Exception as exc:
+        logger.error("Failed to set identity code: %s", exc)
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
 @app.route("/api/social/people/<person_id>", methods=["DELETE"])
+@_joan_only
 def api_social_person_delete(person_id):
     """Joan-only — 'forget person'. 'joan' herself can never be deleted
     through this route."""

@@ -209,7 +209,7 @@ function startLauncher (projectRoot) {
                  `(attempt ${launcherRestartAttempts}/${MAX_LAUNCHER_RESTARTS})…`)
     setTimeout(() => {
       startLauncher(projectRoot)
-      const LOCALHOST_URL = 'http://localhost:8079'
+      const LOCALHOST_URL = 'http://localhost:8179'
       waitForBackend(LOCALHOST_URL)
         .then(() => autoStartJarvis(LOCALHOST_URL))
         .catch(() => {})  // waitForBackend already reports/handles its own timeout via bootBackend's caller
@@ -275,7 +275,7 @@ function killBackend (done) {
   function pollUntilStopped () {
     if (Date.now() > deadline) { finalizeAndExit(); return }
     const req = http.get(
-      { hostname: 'localhost', port: 8079, path: '/api/health', timeout: 1500 },
+      { hostname: 'localhost', port: 8179, path: '/api/health', timeout: 1500 },
       res => {
         let body = ''
         res.on('data', c => { body += c })
@@ -294,7 +294,7 @@ function killBackend (done) {
 
   try {
     const req = http.request(
-      { hostname: 'localhost', port: 8079, path: '/api/stop', method: 'POST', timeout: 2000 },
+      { hostname: 'localhost', port: 8179, path: '/api/stop', method: 'POST', timeout: 2000 },
       () => pollUntilStopped()
     )
     req.on('error', () => finalizeAndExit())  // launcher unreachable — nothing to wait for
@@ -308,7 +308,7 @@ function killBackend (done) {
 // broader net than killBackend()'s own pkill-by-script-path sweep above,
 // which only matches processes whose command line names launcher.py/
 // jarvis.py. This catches what that sweep can miss entirely: a stray
-// process bound to 8079/8080 that isn't ours by name (an orphan from a
+// process bound to 8179/8180 that isn't ours by name (an orphan from a
 // previous crashed session that got re-parented, a manually-started
 // process, etc.) — exactly the kind of wedged state a user-triggered
 // "nuclear" restart needs to clear, per the retry button's own contract

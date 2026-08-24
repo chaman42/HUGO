@@ -5,6 +5,10 @@
 // addMessage()'s own comment and _applyResponseTiming() below.
 let _lastJarvisTimingEl = null
 
+// Same "most recently added assistant bubble" tracking as _lastJarvisTimingEl
+// above, for the 'repeat that' replay button — see _applyTtsAudioReady() below.
+let _lastJarvisReplayBtn = null
+
 // ════════════════════════════════════════════════════════════════════════════
 // LOG — addMessage routes messages to the right destination:
 //   user/jarvis → main chat log (clean conversation view)
@@ -91,6 +95,7 @@ function addMessage(type, message) {
     <div class="msg-row">
       <span class="msg-time">${ts()}</span>
       <span class="msg-label">${label}</span>
+      ${type === 'jarvis' ? '<button class="msg-replay-btn" title="Repetir audio" style="display:none">\u{1F50A}</button>' : ''}
       <span class="msg-text">${esc(message)}</span>
     </div>
     ${type === 'jarvis' ? '<div class="msg-timing"></div>' : ''}`
@@ -106,6 +111,7 @@ function addMessage(type, message) {
   // _applyResponseTiming() below.
   if (type === 'jarvis') {
     _lastJarvisTimingEl = row.querySelector('.msg-timing')
+    _lastJarvisReplayBtn = row.querySelector('.msg-replay-btn')
   }
 
   // ── Response timer integration ───────────────────────────────────────────
@@ -148,6 +154,32 @@ function _applyResponseTiming(data) {
   if (el.dataset.tts) parts.push(`VOZ: ${el.dataset.tts}s`)
   el.textContent = parts.join(' · ')
 }
+
+// ── 'Repeat that' replay button — 'tts_audio_ready' socket event (see
+// core/server.py's emit_tts_audio_ready() and core/voice.py's replay-cache
+// module section). Same "no per-message id, attach to the most recently
+// added assistant bubble" convention as _applyResponseTiming above — fired
+// once per reply, once edge-tts has actually finished synthesizing (say
+// fallback replies never fire this at all, so the button just never shows
+// for those — see core.voice._speak_edge_tts_blocking's own docstring).
+// ────────────────────────────────────────────────────────────────────────
+function _applyTtsAudioReady(data) {
+  const btn = _lastJarvisReplayBtn
+  if (!btn || !data.id) return
+  btn.dataset.audioId = data.id
+  btn.style.display = ''
+}
+
+// Event delegation on the whole log — one listener instead of rebinding a
+// per-button handler on every addMessage() call. new Audio().play() rather
+// than a shared <audio> element so overlapping clicks (repeat this one,
+// then that one before it finishes) just play concurrently instead of one
+// cutting the other off.
+logEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.msg-replay-btn')
+  if (!btn || !btn.dataset.audioId) return
+  new Audio(`${JARVIS_API}/api/tts_audio/${btn.dataset.audioId}`).play().catch(() => {})
+})
 
 // ── Maintenance panel message writer ────────────────────────────────────────
 function addMaintMessage(message) {
@@ -325,10 +357,17 @@ async function sendTextCommand(sourceInput) {
   addMessage('user', text)
 
   try {
+    // device_id: the persistent per-device UUID from bootstrap-auth.js
+    // (_deviceFingerprint) — lets HUGO tell Joan's own devices apart from
+    // Dani's (or anyone else's) without relying on IP/network, which
+    // wouldn't survive Joan using someone else's computer. See
+    // core.social.SocialEngine._match_device.
+    const payload = { text, device_id: typeof _deviceFingerprint !== 'undefined' ? _deviceFingerprint : undefined }
+    if (images.length) payload.images = images
     const res = await fetch(`${JARVIS_API}/text_command`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(images.length ? { text, images } : { text }),
+      body:    JSON.stringify(payload),
     })
     if (!res.ok) addMessage('error', 'Jarvis rechazó el comando')
   } catch {
@@ -375,8 +414,8 @@ async function updateSettingsInfo() {
             </div>
             <div class="estudio-console-block">
               <div class="estudio-console-section-label neutral"><span class="dot"></span>Conexión</div>
-              <div class="info-row"><span class="info-key">Jarvis Port</span><span class="info-val">8080</span></div>
-              <div class="info-row"><span class="info-key">Launcher Port</span><span class="info-val">8079</span></div>
+              <div class="info-row"><span class="info-key">Jarvis Port</span><span class="info-val">8180</span></div>
+              <div class="info-row"><span class="info-key">Launcher Port</span><span class="info-val">8179</span></div>
             </div>
             <div class="estudio-console-block">
               <div class="estudio-console-section-label neutral"><span class="dot"></span>Build</div>

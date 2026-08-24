@@ -676,6 +676,15 @@ async function _renderCorePersonas() {
   let people = []
   try {
     const res = await fetch(`${JARVIS_API}/api/social/people`)
+    // The whole /api/social/* surface is Joan-only server-side (see
+    // core.routes_social._joan_only) — a 403 here means whoever's
+    // currently using HUGO isn't identified as Joan, so this tab simply
+    // doesn't exist for them, same as it doesn't exist for Dani inside
+    // HUGO's own replies.
+    if (res.status === 403) {
+      body.innerHTML = '<div class="core-empty-note">Esta sección no está disponible.</div>'
+      return
+    }
     const data = await res.json()
     people = Array.isArray(data.people) ? data.people : []
   } catch {

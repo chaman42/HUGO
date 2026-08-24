@@ -137,7 +137,7 @@ def set_ready(ready: bool = True) -> None:
 
 @app.after_request
 def _cors(response):
-    """Allow cross-origin requests from the launcher (port 8079)."""
+    """Allow cross-origin requests from the launcher (port 8179)."""
     response.headers["Access-Control-Allow-Origin"]  = "*"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
@@ -146,10 +146,10 @@ def _cors(response):
 
 @app.route("/")
 def index():
-    # Redirect Dock shortcuts / bookmarks still pointing at the old port 8080
-    # to the launcher at 8079 which is now the canonical entry point.
+    # Redirect Dock shortcuts / bookmarks still pointing at the old port 8180
+    # to the launcher at 8179 which is now the canonical entry point.
     host = request.host.split(":")[0]   # strip port
-    return redirect(f"http://{host}:8079/", code=302)
+    return redirect(f"http://{host}:8179/", code=302)
 
 
 # ---------------------------------------------------------------------------
@@ -302,6 +302,21 @@ def emit_response_timing(data: dict) -> None:
     """
     try:
         socketio.emit("response_timing", data)
+    except Exception:
+        pass
+
+
+def emit_tts_audio_ready(audio_id: str) -> None:
+    """'Repeat that' replay button (ui/js/chat-render.js's .msg-replay-btn) —
+    fired by core.voice._speak_edge_tts_blocking once a reply's audio is
+    synthesized and cached (core.voice.get_cached_audio_path), served over
+    GET /api/tts_audio/<id> (core.routes_control). Same 'no per-message id,
+    merge onto the most recently added assistant bubble' convention as
+    emit_response_timing right above — see that function's own docstring
+    for the accepted edge case this shares (a second message arriving
+    before this one's audio is ready would misattach the button)."""
+    try:
+        socketio.emit("tts_audio_ready", {"id": audio_id})
     except Exception:
         pass
 
@@ -554,7 +569,7 @@ def _heartbeat_loop() -> None:
 
 
 def start() -> threading.Thread:
-    """Start Flask-SocketIO on 0.0.0.0:8080 in a daemon thread."""
+    """Start Flask-SocketIO on 0.0.0.0:8180 in a daemon thread."""
     # Task Engine wakeup check — logs any in_progress task's state (see
     # core.task_engine.TaskEngine.resume_on_wakeup's own docstring for why
     # the "Avancé en X..." summary Joan actually hears doesn't need to be
@@ -584,7 +599,7 @@ def start() -> threading.Thread:
         socketio.run(
             app,
             host="0.0.0.0",
-            port=8080,
+            port=8180,
             use_reloader=False,
             log_output=False,
             allow_unsafe_werkzeug=True,

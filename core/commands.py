@@ -131,6 +131,19 @@ from core.session import _get_history_snapshot
 
 logger = logging.getLogger(__name__)
 
+# Intents with real-world consequences — gated behind creator authority (see
+# core.social.InfoPermissions.can_trigger_actions and this module's own
+# "Creator authority gate" in _dispatch_command_impl). pending_confirm is
+# included because it's what actually finalizes a previously-proposed
+# calendar/reminder/app-open/package-install action — the propose step
+# itself is here too since a friend confirming later shouldn't be able to
+# execute what they proposed earlier either.
+_ACTION_INTENTS_REQUIRE_CREATOR = {
+    "calendar_write", "reminder_create", "open_app",
+    "calendar_propose", "reminder_propose", "app_open_propose",
+    "pending_confirm", "start_investigation", "code_engine_task", "create_task",
+}
+
 # ---------------------------------------------------------------------------
 # Interaction-tracking state — updated at the top of every dispatch_command()
 # call; read by core/background_loops.py and core/sleep_control.py's daemon
@@ -1346,6 +1359,16 @@ def _stream_and_speak_reply(personality: str, messages: list[dict], cmd_start: f
     (_tts_worker) and return immediately; calling that once per sentence
     gets correct in-order playback for free.
 
+    Only actually speaks per-chunk when core.voice.supports_chunked_streaming()
+    says the active engine benefits from it (see that function's own
+    docstring) — False for edge-tts, whose per-sentence network round trip
+    turned this into a multi-second dead-air gap at every sentence
+    boundary instead of an overlap win. When it's False, chunks are still
+    collected (the full reply is still returned, still assembled and
+    logged exactly the same) but never individually spoken — spoken stays
+    False throughout, so the caller's own tail speaks the complete
+    `full_text` once, in a single TTS call.
+
     Returns (full_text, spoken) — spoken is True once at least one chunk
     was actually handed to _say_for, so the caller knows not to speak
     `full_text` again itself. On total failure (every tier produced zero
@@ -1363,6 +1386,8 @@ def _stream_and_speak_reply(personality: str, messages: list[dict], cmd_start: f
     convention — if a marker is detected, nothing further is spoken this
     turn (the caller still gets the full text back to extract/dispatch
     the skill from, unchanged from before streaming existed)."""
+    from core import voice as voice_mod
+    speak_per_chunk = voice_mod.supports_chunked_streaming()
     chunks: list[str] = []
     spoken = False
     marker_seen = False
@@ -1370,6 +1395,8 @@ def _stream_and_speak_reply(personality: str, messages: list[dict], cmd_start: f
     try:
         for chunk in groq_client._groq_stream_chunks(messages, max_tokens=256):
             chunks.append(chunk)
+            if not speak_per_chunk:
+                continue
             if marker_seen or skill_dispatch.extract_skill_directive(chunk):
                 marker_seen = True
                 continue
@@ -1889,9 +1916,17 @@ def generate_schema(topic: str, context: str | None = None, schema_type: str = "
     return f"Esquema sobre «{subject}» guardado en Estudio, con {len(parsed['nodes'])} nodos."
 
 
+_VOICE_ENROLL_RE = re.compile(
+    r"\b(aprende|reconoce|configura|activa|graba)\b.{0,20}"
+    r"\b(mi\s+voz|huella\s+de\s+voz|reconocimiento\s+de\s+voz|voz)\b",
+    re.IGNORECASE,
+)
+
+
 def dispatch_command(transcript: str, context: str | None = None,
                       voice_gated: bool = False, is_continuation: bool = False,
-                      audio_path: str | None = None, images: list | None = None) -> None:
+                      audio_path: str | None = None, images: list | None = None,
+                      device_id: str | None = None) -> None:
     """Public entry point — wraps _dispatch_command_impl with proactive-
     behavior bookkeeping: marks 'processing' busy so the background
     proactive thread never interrupts (see core.background_loops._proactive_blocked),
@@ -1931,6 +1966,11 @@ def dispatch_command(transcript: str, context: str | None = None,
                  voice has no image path. See _dispatch_command_impl for how
                  each is turned into a text description via core.vision
                  before the normal reply is generated.
+        device_id: Persistent per-device UUID (ui/js/bootstrap-auth.js's
+                 _deviceFingerprint) sent with typed input — None for voice,
+                 which has no browser/device of its own to report. Fed into
+                 core.social.identify_person as an authoritative signal
+                 alongside audio_path — see _dispatch_command_impl.
     """
     global _last_interaction_mono, _last_interaction_wall
     with _dispatch_lock:
@@ -1972,7 +2012,7 @@ def dispatch_command(transcript: str, context: str | None = None,
                 logger.debug("Initiative delivery/scan trigger failed (non-critical)", exc_info=True)
             _dispatch_command_impl(
                 transcript, context=context, voice_gated=voice_gated, is_continuation=is_continuation,
-                audio_path=audio_path, images=images,
+                audio_path=audio_path, images=images, device_id=device_id,
             )
         finally:
             _dispatch_busy.clear()
@@ -1980,7 +2020,8 @@ def dispatch_command(transcript: str, context: str | None = None,
 
 def _dispatch_command_impl(transcript: str, context: str | None = None,
                            voice_gated: bool = False, is_continuation: bool = False,
-                           audio_path: str | None = None, images: list | None = None) -> None:
+                           audio_path: str | None = None, images: list | None = None,
+                           device_id: str | None = None) -> None:
     """Intent → action → format pipeline. Never raises.
 
     Args:
@@ -2077,6 +2118,31 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
             _say_for(current_p, msg, cmd_start=cmd_start)
             return
 
+        # ── Identity override code? (device/friend distinction) ─────────────
+        # A deterministic short-circuit, same tier as mode-switch/diamond-
+        # move/voice-enrollment above — never reaches Groq. This is the
+        # explicit fallback for the one case device-ID matching can't cover:
+        # Joan talking to HUGO from a device that isn't his own (Dani's
+        # computer, a borrowed phone). Checked for BOTH voice and typed
+        # input (unlike the voice-only gates further down) since the whole
+        # point is it has to work regardless of whose device this is. See
+        # core.social's own IDENTITY OVERRIDE CODE module section.
+        try:
+            from core import social as social_mod
+            if social_mod.check_identity_code(transcript):
+                social_mod.override_as_joan(device_id or social_mod.get_local_device_id())
+                with personality_mod._personality_lock:
+                    current_p = personality_mod._personality
+                confirm = response._format_response(
+                    "Identidad confirmada. Hola, Joan.",
+                    transcript=transcript, personality=current_p,
+                )
+                logger.info("Jarvis: %s", confirm)
+                _say_for(current_p, confirm, cmd_start=cmd_start)
+                return
+        except Exception:
+            logger.debug("Identity code check failed (non-critical)", exc_info=True)
+
         # ── Determine current personality ────────────────────────────────────
         # HUGO is the only personality (JARVIS/FRIDAY removed 2026-08-10) —
         # nothing left to switch between, so the old "Personality switch?"
@@ -2166,9 +2232,40 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
         # a reply — identify_person() degrades gracefully with audio_path
         # unset (typed input) by falling through to the linguistic/context
         # signals, same fallback chain it always uses.
+        # Creator authority (see core.social.InfoPermissions.can_trigger_actions'
+        # own docstring): computed once here, right after identification, and
+        # reused at the action-dispatch gate further down — defaults to "can
+        # act" when nobody's been identified yet, same permissive default
+        # who_is_present() itself falls back to (solo use is still the
+        # common case). Best-effort; a lookup failure defaults to allowing
+        # the action rather than silently blocking Joan over a bug here.
+        _can_trigger_actions = True
+        _can_access_schedule = True
         try:
             from core import social as social_mod
-            social_mod.social_engine.identify_person({"audio_path": audio_path}, transcript)
+            # Voice never carries a browser device_id (see dispatch_command's
+            # own docstring on that param — None for voice, always). Falling
+            # back to the local-machine id here resolves through the same
+            # generic _match_device path as any other device: Joan on an
+            # install where he's already claimed it (this one), Dani by
+            # default on a fresh one — see _match_device's own docstring on
+            # the 2026-08-24 default-to-Dani redesign. Deliberately does NOT
+            # touch _identify_speaker_multi_factor/restrict_memory above,
+            # which stays voice-confidence-gated on purpose — a mic can pick
+            # up someone else's voice on this same machine, so pulling
+            # Joan's actual personal memory into a reply still needs the
+            # stricter check; this only fixes who HUGO believes it's
+            # talking to.
+            social_mod.social_engine.identify_person(
+                {"audio_path": audio_path, "device_id": device_id or social_mod.get_local_device_id()},
+                transcript,
+            )
+            _present = social_mod.social_engine.who_is_present()
+            _current_person = _present[0] if _present else None
+            if _current_person is not None:
+                _turn_permissions = social_mod.social_engine.get_information_permissions(_current_person.id)
+                _can_trigger_actions = _turn_permissions.can_trigger_actions
+                _can_access_schedule = _turn_permissions.can_access_joan_schedule
         except Exception:
             logger.debug("Social identification failed (non-critical)", exc_info=True)
 
@@ -2250,6 +2347,40 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
         parameters  = intent_data.get("parameters", {})
         logger.debug("Intent=%s  Parameters=%s", intent, parameters)
         logger.info("[LATENCY] T1_intent_detected t=+%.3fs intent=%s", time.monotonic() - cmd_start, intent)
+
+        # ── Creator authority gate — consequential actions only ─────────────
+        # Reroutes an action with real consequences (calendar write,
+        # reminder, opening an app, confirming a pending proposal, starting
+        # an investigation, code engine work, creating a task) away from
+        # actually executing whenever the current speaker isn't Joan (see
+        # core.social.InfoPermissions.can_trigger_actions' own docstring —
+        # this is the "creator authority" distinction: a trusted friend like
+        # Dani can still ASK, HUGO just won't DO it for anyone but Joan).
+        # Falls through to the normal open-ended reply path instead of a
+        # hardcoded refusal string — the NOTA INTERNA note lets HUGO explain
+        # it naturally, in her own voice, same pattern as the
+        # identity_uncertain note above.
+        if intent in _ACTION_INTENTS_REQUIRE_CREATOR and not _can_trigger_actions:
+            intent = "unknown"
+            parameters = {}
+            user_content = (
+                f"{user_content}\n\n"
+                "[NOTA INTERNA: quien te habla no es Joan y te ha pedido algo con "
+                "consecuencias reales (una acción, no solo hablar) — no la "
+                "ejecutes bajo ningún concepto, eso solo lo desbloquea Joan. "
+                "Explícaselo con naturalidad y tu tono habitual, sin sonar a "
+                "mensaje de error ni a política de permisos, y sin detallar qué "
+                "habrías hecho exactamente.]"
+            )
+        elif intent == "calendar_read" and not _can_access_schedule:
+            intent = "unknown"
+            parameters = {}
+            user_content = (
+                f"{user_content}\n\n"
+                "[NOTA INTERNA: quien te habla no es Joan y te ha preguntado por "
+                "su agenda — no compartas ningún detalle real de ella. Esquívalo "
+                "con naturalidad y tu tono habitual.]"
+            )
 
         # ── Contextual panel — best-effort, before the reply is generated;
         # never affects what HUGO actually says (see core.session._maybe_emit_panel).
