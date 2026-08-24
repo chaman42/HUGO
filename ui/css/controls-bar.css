@@ -718,4 +718,12 @@ body.dani-locked .hugo-diamond.context-main .hugo-diamond-gem,
 body.dani-locked .hugo-diamond.context-main .hugo-diamond-particles {
   display: none;
 }
+/* Ajustes while locked — shows ONLY the Claves API section (see the two
+   .settings-locked-hide wrappers in ui/index.html, before/after it):
+   system info, feature toggles, Modo Test, test tools, and every
+   Sistema/update/sleep/build control are Joan-admin surface Dani has no
+   use for yet. */
+body.dani-locked .settings-locked-hide {
+  display: none;
+}
 

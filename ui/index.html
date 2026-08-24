@@ -633,6 +633,16 @@
                this section previously had no scroll path of its own, so
                anything past the visible fold was simply clipped. -->
           <div class="settings-scroll">
+            <!-- Dani's nav lockout (2026-08-24) — while locked, Ajustes
+                 shows ONLY the Claves API section below: everything else
+                 here (system info, feature toggles, Modo Test, test
+                 tools, Sistema/update/sleep/build buttons) is Joan-admin
+                 surface Dani has no use for yet, and showing it just adds
+                 noise to the one thing he actually needs to do. Wrapped
+                 in two .settings-locked-hide blocks (before/after Claves
+                 API) rather than restructuring the DOM — see
+                 controls-bar.css's own body.dani-locked rule. -->
+            <div class="settings-locked-hide">
             <div id="settingsBody"></div>
             <!-- Everything below is deliberately OUTSIDE #settingsBody, which
                  updateSettingsInfo() fully overwrites every time this section
@@ -673,6 +683,7 @@
             <div class="test-tools-panel" id="testToolsPanel">
               <div class="test-tools-toggles" id="testToolsToggles"></div>
             </div>
+            </div><!-- /.settings-locked-hide (before) -->
             <!-- Claves API — lets Joan paste an API key for each provider
                  (core/api_key_store.py's MANAGED_KEYS) without hand-editing
                  .env, including Dani's own isolated Groq/Serper keys (see
@@ -688,6 +699,7 @@
             <div class="settings-divider"><span>Claves API</span></div>
             <div class="api-keys-panel" id="apiKeysPanel"></div>
 
+            <div class="settings-locked-hide">
             <div class="settings-divider"><span>Sistema</span></div>
             <button id="updateHugoBtn" class="settings-update-btn">Actualizar Sistema</button>
             <div id="updateHugoStatus" class="settings-update-status"></div>
@@ -713,6 +725,7 @@
                  replace anything running, just produces a file. -->
             <button id="buildIosBtn" class="settings-update-btn">Compilar para iPhone</button>
             <div id="buildIosStatus" class="settings-update-status"></div>
+            </div><!-- /.settings-locked-hide (after) -->
           </div><!-- /.settings-scroll -->
         </div><!-- /.section-inner -->
       </div><!-- /#section-settings -->

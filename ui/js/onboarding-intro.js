@@ -193,6 +193,12 @@ async function _maybeRunOnboarding() {
     _onboardingBackendBase = resolved.base   // reused by _refreshLockState/_runUnlockSequence below — no need to re-race BACKEND_URLS once we have a working one
     const status = resolved.data
     if (status.seen || status.person_id !== 'dani') return false
+    // Apply the lock state BEFORE the sequence itself runs, not after —
+    // otherwise body.dani-locked isn't set yet during beat 7's bottom-nav
+    // reveal, so Chat/Sistema briefly show there too (real bug found
+    // live-testing this: they're not supposed to be visible at any point
+    // before he's actually unlocked).
+    await _refreshLockState()
     await _runOnboardingSequence(resolved.base)
     _fetchWithTimeout(`${resolved.base}/api/onboarding/seen`, { method: 'POST' }).catch(() => {})
     return true

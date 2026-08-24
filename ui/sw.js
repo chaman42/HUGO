@@ -632,7 +632,18 @@
 // (.hugo-diamond.context-main .X, 0,3,0) outrank a plain
 // `body.dani-locked .X` (0,2,0), so those layers stayed visible.
 // controls-bar.css now repeats the same .context-main ancestor chain.
-const CACHE = 'jarvis-v191';
+// v192: real bug found live-testing the full first-launch flow —
+// Chat/Sistema briefly showed in the bottom nav during the intro
+// sequence's own nav-peek beat, since body.dani-locked wasn't applied
+// until AFTER the sequence finished. _refreshLockState() now runs before
+// _runOnboardingSequence() instead of after. onboarding-intro.js changed
+// (already in PRECACHE, hence the bump).
+// v193: Ajustes shows ONLY Claves API while locked — everything else
+// (system info, feature toggles, Modo Test, test tools, Sistema/update/
+// sleep/build controls) wrapped in two .settings-locked-hide blocks.
+// index.html changed (not precached) + controls-bar.css (already
+// precached, hence the bump).
+const CACHE = 'jarvis-v193';
 
 // Assets to pre-cache on install so the icons/manifest load instantly
 // offline. '/' (ui/index.html) is deliberately NOT in this list — see the
