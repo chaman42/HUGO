@@ -1,7 +1,7 @@
 {
   "name": "hugo",
   "productName": "HUGO",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "HUGO — JarvisLite voice assistant desktop app",
   "main": "main.js",
   "private": true,
