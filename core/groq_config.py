@@ -9,8 +9,10 @@ from groq import Groq
 from dotenv import load_dotenv
 
 from core import active_person
+from core import api_key_store
 
 load_dotenv()
+api_key_store.apply_saved_to_environ()   # a key saved in Ajustes on a PREVIOUS run must already be live before GROQ_API_KEYS is computed below
 
 # Main conversational model chain — GROQ_MODEL_CHAIN, an ordered,
 # best-to-lightest list of every active Groq text/chat model (confirmed via
@@ -172,31 +174,61 @@ def _reasoning_effort_for(model: str) -> str | None:
 # unset entries are dropped, so a deployment with only GROQ_API_KEY set
 # behaves exactly as before this existed (a one-key list, same as the old
 # single-client singleton).
-GROQ_API_KEYS = [k for k in (os.getenv("GROQ_API_KEY"), os.getenv("GROQ_API_KEY_2")) if k]
+_ISOLATED_PERSONS = {"dani"}   # checked even when the person below has no key configured yet
 
-# Per-person key isolation (2026-08-24, Joan's request: "when I access from
-# my computer it uses my api keys and when Dani accesses from his computer
-# it uses his"). GROQ_API_KEYS above stays Joan's own resilience chain
-# (primary + optional second-account key) exactly as before — Joan is the
-# default identity, so unidentified/Joan turns keep using it unchanged.
-# Dani is the only OTHER profile core.social currently recognizes (see
-# core.social._DEFAULT_PROFILES), so he's the only one that needs an
-# explicit override; a third profile would need adding to
-# _ISOLATED_PERSON_GROQ_KEYS the same way.
-#
-# Isolation is intentional, not a bug: Joan explicitly chose "no fallback"
-# over "fall back to my key" for Dani's turns (2026-08-24) — if Dani's key
-# is unset or rate-limited, his turns should degrade to the local
-# Ollama/offline fallback (see core.groq_client._groq_complete's tail)
-# rather than silently spending Joan's quota. See active_groq_keys() below
-# for where that's actually enforced.
-_ISOLATED_PERSON_GROQ_KEYS = {
-    person: key
-    for person, key in {"dani": os.getenv("GROQ_API_KEY_DANI")}.items()
-    if key
-}
-_ISOLATED_PERSONS = {"dani"}   # checked even when the person above has no key configured yet
 
+def _rebuild_derived_keys() -> None:
+    """(Re)builds GROQ_API_KEYS/_ISOLATED_PERSON_GROQ_KEYS from the current
+    os.environ and drops every cached Groq client — both are otherwise only
+    ever computed once at import time, so a key saved live via Ajustes
+    (core.api_key_store.set_key -> on_change) would never take effect
+    without this. Also runs once at the bottom of this module to do the
+    original one-time computation."""
+    global GROQ_API_KEYS, _ISOLATED_PERSON_GROQ_KEYS, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN
+    # GROQ_API_KEYS — ordered list of every configured key, primary first.
+    # GROQ_API_KEY_2 (optional, .env) is a second key on a SEPARATE account/
+    # project — a distinct rate-limit budget, not just a spare copy of the
+    # same one. Currently commented out in .env at Joan's request
+    # (2026-08-10, ban-risk concern) — the value is preserved there, just
+    # inactive, so GROQ_API_KEYS resolves to one entry until it's
+    # uncommented again. Empty/unset entries are dropped, so a deployment
+    # with only GROQ_API_KEY set behaves exactly as before this existed (a
+    # one-key list, same as the old single-client singleton).
+    GROQ_API_KEYS = [k for k in (os.getenv("GROQ_API_KEY"), os.getenv("GROQ_API_KEY_2")) if k]
+
+    # Per-person key isolation (2026-08-24, Joan's request: "when I access
+    # from my computer it uses my api keys and when Dani accesses from his
+    # computer it uses his"). GROQ_API_KEYS above stays Joan's own
+    # resilience chain (primary + optional second-account key) exactly as
+    # before — Joan is the default identity, so unidentified/Joan turns
+    # keep using it unchanged. Dani is the only OTHER profile core.social
+    # currently recognizes (see core.social._DEFAULT_PROFILES), so he's the
+    # only one that needs an explicit override; a third profile would need
+    # adding to _ISOLATED_PERSON_GROQ_KEYS the same way.
+    #
+    # Isolation is intentional, not a bug: Joan explicitly chose "no
+    # fallback" over "fall back to my key" for Dani's turns (2026-08-24) —
+    # if Dani's key is unset or rate-limited, his turns should degrade to
+    # the local Ollama/offline fallback (see
+    # core.groq_client._groq_complete's tail) rather than silently spending
+    # Joan's quota. See active_groq_keys() below for where that's actually
+    # enforced.
+    _ISOLATED_PERSON_GROQ_KEYS = {
+        person: key
+        for person, key in {"dani": os.getenv("GROQ_API_KEY_DANI")}.items()
+        if key
+    }
+    _groq_clients.clear()   # any client built from a now-replaced key must not linger
+
+    # Cloudflare Workers AI fallback — see the module comment further down
+    # this file for what these are. Rebuilt here too so a key saved via
+    # Ajustes takes effect immediately, same as the Groq keys above.
+    CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID")
+    CLOUDFLARE_API_TOKEN  = os.getenv("CLOUDFLARE_API_TOKEN")
+
+
+GROQ_API_KEYS: list[str] = []
+_ISOLATED_PERSON_GROQ_KEYS: dict[str, str] = {}
 _groq_clients: dict[str, Groq] = {}   # one cached client per key, keyed by the key itself
 
 
@@ -252,8 +284,8 @@ def _get_groq(api_key: str | None = None):
 # caught the same way: grep 'CLOUDFLARE' in logs/activity.log for real
 # per-model failure counts, same pattern that caught qwen3-32b/llama-4-scout).
 # ---------------------------------------------------------------------------
-CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID")
-CLOUDFLARE_API_TOKEN  = os.getenv("CLOUDFLARE_API_TOKEN")
+CLOUDFLARE_ACCOUNT_ID: str | None = None
+CLOUDFLARE_API_TOKEN: str | None = None
 
 _DEFAULT_CLOUDFLARE_MODEL_CHAIN = ",".join([
     "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
@@ -263,3 +295,6 @@ CLOUDFLARE_MODEL_CHAIN = [
     m.strip() for m in os.getenv("CLOUDFLARE_MODEL_CHAIN", _DEFAULT_CLOUDFLARE_MODEL_CHAIN).split(",")
     if m.strip()
 ]
+
+_rebuild_derived_keys()               # initial computation — see that function's own docstring
+api_key_store.on_change(_rebuild_derived_keys)   # keep it correct after every Ajustes key edit too

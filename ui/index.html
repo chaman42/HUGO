@@ -659,6 +659,21 @@
             <div class="test-tools-panel" id="testToolsPanel">
               <div class="test-tools-toggles" id="testToolsToggles"></div>
             </div>
+            <!-- Claves API — lets Joan paste an API key for each provider
+                 (core/api_key_store.py's MANAGED_KEYS) without hand-editing
+                 .env, including Dani's own isolated Groq/Serper keys (see
+                 core/active_person.py — his turns bill THESE, never Joan's).
+                 Joan-only server-side (GET/POST /api/api_keys, gated by the
+                 same _joan_only as Personas) — but, same convention as the
+                 Personas tab in NÚCLEO, not hidden client-side either: it
+                 always renders, and a non-Joan viewer's fetch just 403s into
+                 the "no autorizado" note _renderApiKeys() shows instead.
+                 Never pre-fills a real key value into the input — only
+                 whether one is already set (GET returns booleans, never
+                 values) — see _renderApiKeys()/settings-updates.js. -->
+            <div class="settings-divider"><span>Claves API</span></div>
+            <div class="api-keys-panel" id="apiKeysPanel"></div>
+
             <div class="settings-divider"><span>Sistema</span></div>
             <button id="updateHugoBtn" class="settings-update-btn">Actualizar Sistema</button>
             <div id="updateHugoStatus" class="settings-update-status"></div>

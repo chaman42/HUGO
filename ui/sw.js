@@ -588,7 +588,11 @@
 // v184: chat-render.js/chat.css changed (chat replies now render as real
 // paragraphs instead of one collapsed line); both already in PRECACHE,
 // hence the bump.
-const CACHE = 'jarvis-v184';
+// v185: Ajustes' new "Claves API" panel — controls-bar.css, chat-render.js,
+// settings-updates.js changed (all three already in PRECACHE, hence the
+// bump); index.html also changed but isn't precached (served network-first,
+// see the fetch handler below).
+const CACHE = 'jarvis-v185';
 
 // Assets to pre-cache on install so the icons/manifest load instantly
 // offline. '/' (ui/index.html) is deliberately NOT in this list — see the

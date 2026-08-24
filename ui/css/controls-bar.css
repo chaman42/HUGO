@@ -573,3 +573,101 @@ body.jarvis-offline #modeBtn {
   min-height: 1em;
 }
 
+/* Claves API panel — see ui/index.html's #apiKeysPanel comment and
+   _renderApiKeys()/settings-updates.js. Each row: label (top), a
+   password-masked input + Guardar button (middle), inline status (bottom).
+   Deliberately its own rhythm rather than reusing .info-row wholesale —
+   that row shape has no room for an input+button pair, only a static
+   key/value pair. */
+.api-keys-group-label {
+  font-family: var(--mm-font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  margin: 14px 0 4px 8px;
+}
+.api-keys-group-label:first-child { margin-top: 0; }
+.api-key-row {
+  padding: 9px 0 9px 8px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.05);
+  border-left: 2px solid transparent;
+  transition: border-left-color 150ms;
+}
+.api-key-row:hover { border-left-color: rgba(63,169,245,0.35); }
+.api-key-row:last-child { border-bottom: none; }
+.api-key-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.api-key-label {
+  font-family: var(--mm-font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(63,169,245,0.5);
+}
+.api-key-state {
+  font-family: var(--mm-font-display);
+  font-size: 0.66rem;
+  flex-shrink: 0;
+}
+.api-key-state.set     { color: rgba(90,220,140,0.85); }
+.api-key-state.unset   { color: rgba(255,255,255,0.3); }
+.api-key-row-controls {
+  display: flex;
+  gap: 6px;
+}
+.api-key-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(63,169,245,0.2);
+  border-radius: 0;
+  color: rgba(255,255,255,0.85);
+  font-family: var(--mm-font-mono);
+  font-size: 0.72rem;
+  padding: 7px 9px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.api-key-input::placeholder { color: rgba(255,255,255,0.25); }
+.api-key-input:focus { border-color: rgba(63,169,245,0.5); }
+.api-key-save-btn {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 1px solid rgba(63,169,245,0.25); border-radius: 0;
+  color: rgba(63,169,245,0.7); font-family: var(--font);
+  font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 0 12px; cursor: pointer; outline: none;
+  transition: border-color 0.2s, background 0.2s, color 0.2s, opacity 0.2s;
+}
+.api-key-save-btn:hover:not(:disabled) {
+  border-color: rgba(63,169,245,0.5);
+  color: rgba(63,169,245,0.95);
+  background: rgba(63,169,245,0.05);
+}
+.api-key-save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.api-key-clear-btn {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 0;
+  color: rgba(255,255,255,0.4); font-family: var(--font);
+  font-size: 0.62rem; padding: 0 10px; cursor: pointer; outline: none;
+  transition: border-color 0.2s, color 0.2s;
+}
+.api-key-clear-btn:hover:not(:disabled) {
+  border-color: rgba(255,68,68,0.4);
+  color: rgba(255,68,68,0.8);
+}
+.api-key-clear-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.api-key-row-note {
+  margin-top: 8px;
+  font-size: 0.66rem;
+  color: rgba(255,255,255,0.4);
+  text-align: center;
+}
+

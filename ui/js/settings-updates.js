@@ -305,6 +305,96 @@ if (sleepStopBtn) {
   })
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// CLAVES API — see ui/index.html's #apiKeysPanel comment and
+// core/routes_api_keys.py. Joan-only server-side; a non-Joan viewer's GET
+// just 403s here, same "don't hide the tab, let the backend gate degrade
+// gracefully" convention as NÚCLEO's Personas tab (_renderCorePersonas in
+// core-tabs-sleep-panel.js).
+// ════════════════════════════════════════════════════════════════════════════
+const API_KEY_GROUPS = [
+  {
+    label: 'Compartida (Joan)',
+    keys: [
+      { key: 'GROQ_API_KEY',         label: 'Groq' },
+      { key: 'GROQ_API_KEY_2',       label: 'Groq (cuenta 2)' },
+      { key: 'SERPER_API_KEY',       label: 'Serper (búsqueda web)' },
+      { key: 'DEEPSEEK_API_KEY',     label: 'DeepSeek (code engine)' },
+      { key: 'CLOUDFLARE_ACCOUNT_ID', label: 'Cloudflare (account id)' },
+      { key: 'CLOUDFLARE_API_TOKEN',  label: 'Cloudflare (token)' },
+    ],
+  },
+  {
+    label: 'Dani (aislada — nunca usa la de Joan)',
+    keys: [
+      { key: 'GROQ_API_KEY_DANI',   label: 'Groq' },
+      { key: 'SERPER_API_KEY_DANI', label: 'Serper (búsqueda web)' },
+    ],
+  },
+]
+
+async function _renderApiKeys() {
+  const panel = document.getElementById('apiKeysPanel')
+  if (!panel) return
+  let status
+  try {
+    const res = await fetch(`${JARVIS_API}/api/api_keys`)
+    if (res.status === 403) {
+      panel.innerHTML = '<div class="api-key-row-note">No autorizado</div>'
+      return
+    }
+    status = await res.json()
+  } catch {
+    panel.innerHTML = '<div class="api-key-row-note">Jarvis offline</div>'
+    return
+  }
+  panel.innerHTML = API_KEY_GROUPS.map(group => `
+    <div class="api-keys-group-label">${esc(group.label)}</div>
+    ${group.keys.map(({ key, label }) => {
+      const isSet = !!status[key]
+      return `
+        <div class="api-key-row" data-key="${key}">
+          <div class="api-key-row-head">
+            <span class="api-key-label">${esc(label)}</span>
+            <span class="api-key-state ${isSet ? 'set' : 'unset'}">${isSet ? '● Configurada' : '○ Vacía'}</span>
+          </div>
+          <div class="api-key-row-controls">
+            <input type="password" class="api-key-input" placeholder="${isSet ? '•••••••••••• (pegar para reemplazar)' : 'Pegar clave…'}" autocomplete="off" spellcheck="false">
+            <button class="api-key-save-btn">Guardar</button>
+            <button class="api-key-clear-btn" ${isSet ? '' : 'disabled'} title="Borrar">✕</button>
+          </div>
+        </div>
+      `
+    }).join('')}
+  `).join('')
+
+  panel.querySelectorAll('.api-key-row').forEach(row => {
+    const key      = row.dataset.key
+    const input    = row.querySelector('.api-key-input')
+    const saveBtn  = row.querySelector('.api-key-save-btn')
+    const clearBtn = row.querySelector('.api-key-clear-btn')
+    const save = async (value) => {
+      saveBtn.disabled = true
+      clearBtn.disabled = true
+      try {
+        const res  = await fetch(`${JARVIS_API}/api/api_keys`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ key, value }),
+        })
+        const data = await res.json()
+        if (res.ok && data.ok) _renderApiKeys()   // re-render from the new status — never leaves the pasted value sitting in the input
+      } catch { /* leave the row as-is; Joan can just retry */ } finally {
+        saveBtn.disabled = false
+        clearBtn.disabled = false
+      }
+    }
+    saveBtn.addEventListener('click', () => { if (input.value.trim()) save(input.value) })
+    input.addEventListener('keydown', e => { if (e.key === 'Enter' && input.value.trim()) save(input.value) })
+    clearBtn.addEventListener('click', () => save(''))
+  })
+}
+
 // PAGE LOAD init (clock/personality/boot-splash) moved to
 // clock-boot-splash-wiring.js — see its own comment for why: it was a bare
 // hoisted-function-declaration call in the original single-file app.js,

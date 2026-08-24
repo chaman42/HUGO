@@ -465,6 +465,7 @@ async function updateSettingsInfo() {
     `)
   } catch { /* leave build rows out — non-critical diagnostic info */ }
   if (typeof _refreshSleepStatus === 'function') _refreshSleepStatus()
+  if (typeof _renderApiKeys === 'function') _renderApiKeys()
 }
 
 // Feature toggles — config-driven: each entry's `key` must match a key in
