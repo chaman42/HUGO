@@ -104,6 +104,15 @@
       </svg>
     </div>
     <div class="boot-splash-name" id="bootSplashName">H U G O</div>
+    <!-- Dani's one-time first-launch onboarding sequence (see
+         ui/js/onboarding-intro.js) — reuses THIS same #bootSplash stage
+         (already black background + this diamond) rather than a second
+         overlay; only these two lines + #bottomNav's 'onboarding-nav-peek'
+         override (boot-splash.css) are new markup/CSS for it. Hidden
+         (opacity:0) and simply never revealed for anyone but a
+         not-yet-onboarded Dani. -->
+    <div class="onboarding-line" id="onboardingLine"></div>
+    <div class="onboarding-clock" id="onboardingClock"></div>
     <div class="boot-splash-status" id="bootSplashStatus">Cargando...</div>
     <!-- Real, backend-driven boot progress — fills only in response to
          genuine 'boot_progress' socket events from launcher.py/jarvis.py,
@@ -1051,6 +1060,7 @@
 <script src="/js/personality-switch.js"></script>
 <script src="/js/chat-render.js"></script>
 <script src="/js/settings-updates.js"></script>
+<script src="/js/onboarding-intro.js"></script>
 <script src="/js/clock-boot-splash-wiring.js"></script>
 <script src="/js/mm-wiring.js"></script>
 <script src="/js/estudio.js"></script>

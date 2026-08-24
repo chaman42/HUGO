@@ -592,7 +592,12 @@
 // settings-updates.js changed (all three already in PRECACHE, hence the
 // bump); index.html also changed but isn't precached (served network-first,
 // see the fetch handler below).
-const CACHE = 'jarvis-v185';
+// v186: Dani's one-time first-launch onboarding sequence + per-person API
+// key scoping — new /js/onboarding-intro.js added to PRECACHE below;
+// controls-bar.css, boot-splash.css, settings-updates.js,
+// clock-boot-splash-wiring.js all changed (already in PRECACHE, hence the
+// bump); index.html also changed but isn't precached.
+const CACHE = 'jarvis-v186';
 
 // Assets to pre-cache on install so the icons/manifest load instantly
 // offline. '/' (ui/index.html) is deliberately NOT in this list — see the
@@ -611,6 +616,7 @@ const PRECACHE = [
   '/js/section-nav.js', '/js/status-diamond-grid.js', '/js/diamond-motion.js',
   '/js/diamond-text-launcher.js', '/js/core-tabs-sleep-panel.js', '/js/mind-map.js',
   '/js/personality-switch.js', '/js/chat-render.js', '/js/settings-updates.js',
+  '/js/onboarding-intro.js',
   '/js/clock-boot-splash-wiring.js', '/js/mm-wiring.js',
   '/js/estudio.js',
 ];

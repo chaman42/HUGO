@@ -83,6 +83,7 @@ import uuid
 from core.voice import speak
 from core import tools
 from core import active_person
+from core import api_key_store
 from core import memory
 from core import personality as personality_mod
 from core import intent as intent_mod
@@ -2285,6 +2286,26 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
         # None on a failed/unidentified lookup, so a worker thread reused
         # for the next request never keeps a stale identity from this one.
         active_person.set_active_person(_current_person.id if _current_person is not None else None)
+
+        # Dani's own install onboarding gate (2026-08-24): until he's
+        # configured AND validated (core.api_key_validation, at save time
+        # in core.routes_api_keys) both his own Groq and Serper keys, HUGO
+        # stays fully silent/unusable rather than degrading to the local
+        # Ollama fallback or a search-less reply — Joan's explicit choice,
+        # "every api key he uses will have to be entered before using
+        # hugo". A fixed directive to Ajustes, not a naturalized reply —
+        # this is deterministic system state, not a real answer to a real
+        # query, same reasoning as the mode-switch confirmation just above.
+        if _current_person is not None and _current_person.id == "dani":
+            _dani_key_status = api_key_store.get_status()
+            if not all(_dani_key_status.get(k) for k in ("GROQ_API_KEY_DANI", "SERPER_API_KEY_DANI")):
+                msg = (
+                    "Todavía no tengo tus claves de API configuradas — entra en "
+                    "Ajustes y ponlas para que pueda ayudarte de verdad."
+                )
+                logger.info("Jarvis: %s", msg)
+                _say_for(current_p, msg, cmd_start=cmd_start)
+                return
 
         # ── Build user content — inject conversation context if provided ─────
         # Part 2: conversation mode passes the rolling buffer as context so

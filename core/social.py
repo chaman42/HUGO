@@ -95,6 +95,11 @@ class Person:
     # looked at it. The Personas tab shows "Desconocido" for anyone with
     # this still False, regardless of their numeric trust_level.
     trust_confirmed:       bool = False
+    # Whether this person has been shown HUGO's one-time first-launch
+    # onboarding sequence (ui/js/onboarding-intro.js) — see
+    # mark_onboarding_seen() below. Same per-person persisted-boolean shape
+    # as trust_confirmed just above.
+    onboarding_seen:       bool = False
 
 
 @dataclass
@@ -150,7 +155,7 @@ _DEFAULT_PROFILES = {
         "joan": {
             "id": "joan", "name": "Joan", "relationship_to_joan": "self",
             "trust_level": 1.0, "knows_hugo": True, "voice_profile_id": "joan_primary",
-            "trust_confirmed": True,
+            "trust_confirmed": True, "onboarding_seen": False,
             "linguistic_profile": {}, "first_seen": "", "last_seen": "", "interaction_count": 0,
             "discord_id": None, "device_ids": [],
             "relationship": {"type": "self", "closeness": 1.0, "joan_sentiment": "n/a", "shared_topics": [], "notes": []},
@@ -168,7 +173,7 @@ _DEFAULT_PROFILES = {
         "dani": {
             "id": "dani", "name": "Dani", "relationship_to_joan": "friend",
             "trust_level": 0.5, "knows_hugo": True, "voice_profile_id": None,
-            "trust_confirmed": True,
+            "trust_confirmed": True, "onboarding_seen": False,
             "linguistic_profile": {}, "first_seen": "", "last_seen": "", "interaction_count": 0,
             "discord_id": None, "device_ids": [],
             "relationship": {"type": "friend", "closeness": 0.3, "joan_sentiment": "positive", "shared_topics": [], "notes": []},
@@ -221,7 +226,25 @@ def _person_from_record(record: dict) -> Person:
         # her), and this covers a profile store saved before this field
         # existed, which would otherwise show her as "Desconocido".
         trust_confirmed=True if person_id == "joan" else bool(record.get("trust_confirmed", False)),
+        onboarding_seen=bool(record.get("onboarding_seen", False)),
     )
+
+
+def mark_onboarding_seen(person_id: str) -> None:
+    """Persists that `person_id` has now been shown the one-time
+    first-launch onboarding sequence — see ui/js/onboarding-intro.js and
+    core/routes_onboarding.py. Same load/mutate/save shape as
+    SocialEngine.update_interaction below; best-effort, never raises."""
+    try:
+        with _lock:
+            data = _load()
+            record = data["people"].get(person_id)
+            if record is None:
+                return
+            record["onboarding_seen"] = True
+            _save_locked(data)
+    except Exception:
+        logger.debug("mark_onboarding_seen failed (non-critical)", exc_info=True)
 
 
 def get_all_people() -> list[Person]:

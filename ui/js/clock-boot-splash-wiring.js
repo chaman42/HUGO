@@ -160,7 +160,29 @@ applyPersonality('hugo')  // set initial state immediately (default personality)
 // Boot splash is purely decorative and must never risk taking down anything
 // after it — wrapped so a failure here can't halt the rest of this script's
 // top-level execution (a real, previously-hit failure mode in this file).
-try { _playBootSplash() } catch (e) { console.error('[BootSplash] failed:', e) }
+//
+// _maybeRunOnboarding() (ui/js/onboarding-intro.js, loaded just before this
+// file) gates Dani's one-time first-launch sequence in front of the normal
+// splash. It reuses #bootSplash/#bootSplashOrb/#bootSplashName as its own
+// stage and already reveals them itself, so when it actually ran, hand off
+// straight to the real backend-connection wait (_enterBootSplashWait)
+// instead of replaying _playBootSplash()'s own terminal-checklist/orb-
+// reveal beats a second time. Any failure in the gate itself falls back to
+// the normal splash, same as if onboarding were never applicable.
+_maybeRunOnboarding().then(ran => {
+  if (!ran) { try { _playBootSplash() } catch (e) { console.error('[BootSplash] failed:', e) } return }
+  const splash   = document.getElementById('bootSplash')
+  const orb      = document.getElementById('bootSplashOrb')
+  const nameEl   = document.getElementById('bootSplashName')
+  const statusEl = document.getElementById('bootSplashStatus')
+  const retryBtn = document.getElementById('bootSplashRetry')
+  if (splash && orb && nameEl && statusEl && retryBtn) {
+    _enterBootSplashWait(splash, nameEl, orb, statusEl, retryBtn)
+  }
+}).catch(e => {
+  console.error('[Onboarding] gate failed, falling back to normal boot:', e)
+  try { _playBootSplash() } catch (e2) { console.error('[BootSplash] failed:', e2) }
+})
 
 // Must match @keyframes boot-trace-loop's duration above — how long the
 // border-trace dash takes to complete one full lap of the diamond.

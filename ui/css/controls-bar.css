@@ -670,4 +670,11 @@ body.jarvis-offline #modeBtn {
   color: rgba(255,255,255,0.4);
   text-align: center;
 }
+.api-key-row-error {
+  margin-top: 6px;
+  font-size: 0.64rem;
+  color: rgba(255,68,68,0.85);
+  min-height: 1em;
+}
+.api-key-row-error:empty { margin-top: 0; }
 

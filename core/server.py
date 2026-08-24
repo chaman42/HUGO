@@ -475,7 +475,8 @@ import core.routes_judgment      # noqa: E402,F401
 import core.routes_initiative    # noqa: E402,F401
 import core.routes_spontaneity   # noqa: E402,F401
 import core.routes_social        # noqa: E402,F401
-import core.routes_api_keys      # noqa: E402,F401 — imported AFTER routes_social so it can reuse its _joan_only
+import core.routes_api_keys      # noqa: E402,F401 — per-person scoped (core.api_key_store.keys_for), no import-order dependency on routes_social any more
+import core.routes_onboarding    # noqa: E402,F401
 import core.routes_hugo_mobile   # noqa: E402,F401
 
 

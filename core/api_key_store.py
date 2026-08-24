@@ -37,16 +37,36 @@ _lock     = threading.Lock()
 # not a secret at all, and Discord's bridge only reads its token at process
 # startup (core.server.start()) regardless, so a live edit wouldn't even
 # take effect without a restart the way these do.
-MANAGED_KEYS = [
-    "GROQ_API_KEY",
-    "GROQ_API_KEY_2",
-    "GROQ_API_KEY_DANI",
-    "SERPER_API_KEY",
-    "SERPER_API_KEY_DANI",
-    "DEEPSEEK_API_KEY",
-    "CLOUDFLARE_ACCOUNT_ID",
-    "CLOUDFLARE_API_TOKEN",
-]
+#
+# KEY_OWNERS (2026-08-24) — Dani gets his own fully separate HUGO install
+# (his own Mac, his own .env/data/), but it's the SAME codebase, and the
+# identity system already defaults an unrecognized device to "dani" (see
+# core.social's own module docstring) — so on Dani's own machine, HE is
+# who gets identified there, on day one. core.routes_api_keys uses this
+# map to scope Ajustes' "Claves API" panel to only the current person's
+# OWN keys: Joan's keys don't exist to Dani (his explicit request, "api
+# keys that only me use, simply do not exist to him"), and — symmetrically,
+# no cross-access even for Joan — Dani's keys aren't Joan's to touch either.
+KEY_OWNERS = {
+    "GROQ_API_KEY":          "joan",
+    "GROQ_API_KEY_2":        "joan",
+    "SERPER_API_KEY":        "joan",
+    "DEEPSEEK_API_KEY":      "joan",
+    "CLOUDFLARE_ACCOUNT_ID": "joan",
+    "CLOUDFLARE_API_TOKEN":  "joan",
+    "GROQ_API_KEY_DANI":     "dani",
+    "SERPER_API_KEY_DANI":   "dani",
+}
+MANAGED_KEYS = list(KEY_OWNERS)
+
+
+def keys_for(person_id: str | None) -> list[str]:
+    """The subset of MANAGED_KEYS visible/editable to `person_id` (a
+    core.social profile id) — anyone who isn't specifically "dani" gets
+    Joan's group, matching the rest of the app's permissive-default-to-Joan
+    convention for admin-ish surfaces when nobody's been identified yet."""
+    owner = "dani" if person_id == "dani" else "joan"
+    return [key for key, o in KEY_OWNERS.items() if o == owner]
 
 # Snapshot of whatever .env/the real environment already had BEFORE any
 # saved override is applied — set_key(key, "") restores this instead of

@@ -252,6 +252,50 @@
   opacity: 1;
 }
 
+/* Dani's one-time first-launch onboarding sequence — see
+   ui/js/onboarding-intro.js. Sits between #bootSplashName and
+   #bootSplashStatus, same fade-in convention as both of them. */
+.onboarding-line {
+  margin-top: 18px;
+  max-width: 320px;
+  padding: 0 24px;
+  font-family: var(--font);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.82);
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.onboarding-line.visible { opacity: 1; }
+
+.onboarding-clock {
+  margin-top: 10px;
+  font-family: var(--mm-font-mono);
+  font-size: 1.4rem;
+  letter-spacing: 0.1em;
+  color: rgba(64,156,240,0.85);
+  text-shadow: 0 0 12px rgba(64,156,240,0.5);
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.onboarding-clock.visible { opacity: 1; }
+
+/* #bottomNav normally sits in normal document flow, BENEATH #bootSplash's
+   z-index:9999 black overlay (base.css) — this lifts it briefly above the
+   overlay so "the bottom bar appears" can be its own onboarding beat while
+   the black background is still showing. Removed again right after (see
+   onboarding-intro.js) — #bootSplash hasn't started fading yet at that
+   point, so the snap back to normal flow happens invisibly, still under
+   the opaque overlay. */
+#bottomNav.onboarding-nav-peek {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+#bottomNav.onboarding-nav-peek.visible { opacity: 1; }
+
 /* Real boot progress — see the HTML comment above #bootRealProgress.
    Monotonic on purpose: launcher.py and jarvis.py emit 'boot_progress' on
    two independent sockets, so a later, lower-percent event arriving after
