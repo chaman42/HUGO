@@ -1,3 +1,9 @@
+# Runtime app data — conversations, memory, identity/social profiles, and
+# other personal state HUGO writes to disk. Never belongs in git history;
+# stripped from all past commits 2026-08-24 (git filter-repo --path data
+# --invert-paths) before this repo ever got a remote.
+data/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
