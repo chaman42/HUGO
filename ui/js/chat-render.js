@@ -332,6 +332,14 @@ attachFileInput?.addEventListener('change', () => {
 // implementation, per the floating diamond / Main floating input requirements.
 async function sendTextCommand(sourceInput) {
   const input = sourceInput || textInput
+  // Nav lockout (ui/js/onboarding-intro.js) — Dani is view-only on Main
+  // until his keys are done; every text-entry surface (Main's floating
+  // input, Chat's own, the diamond bubble) funnels through this one
+  // function, so one guard here covers all of them. The backend's own
+  // gate (core.commands' is_person_locked check) is still the real
+  // enforcement — this just keeps the UI from pretending a message was
+  // ever going to do anything.
+  if (typeof _daniLocked !== 'undefined' && _daniLocked) return
   let text  = input.value.trim()
   const hasAttachments = _stagedAttachments.length > 0
   if (!text && !hasAttachments) return

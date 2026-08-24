@@ -113,6 +113,28 @@ def get_status() -> dict:
     return {key: bool(os.environ.get(key, "").strip()) for key in MANAGED_KEYS}
 
 
+# The keys Dani himself needs before HUGO does anything for him — both his
+# own Groq and Serper slots (see KEY_OWNERS above). Single source of truth
+# for "is Dani locked out": core.commands' chat gate AND
+# core.routes_api_keys' /api/api_keys/lock_status (which the frontend nav
+# lockout in ui/js/onboarding-intro.js polls) both call is_person_locked()
+# below rather than duplicating this check.
+DANI_REQUIRED_KEYS = ("GROQ_API_KEY_DANI", "SERPER_API_KEY_DANI")
+
+
+def is_person_locked(person_id: str | None) -> bool:
+    """Whether `person_id` should be locked out of HUGO's real
+    functionality (2026-08-24, Joan's request: Dani gets NOTHING — no
+    chat/voice replies, no nav beyond Main/Ajustes — until both his keys
+    are set and validated). Only Dani can ever be locked; Joan (or nobody
+    identified) never is, matching the rest of the app's permissive
+    default for the admin/solo-use case."""
+    if person_id != "dani":
+        return False
+    status = get_status()
+    return not all(status.get(k) for k in DANI_REQUIRED_KEYS)
+
+
 def set_key(key: str, value: str) -> None:
     """Saves `value` for `key` (persisted + applied to os.environ live), or
     — if `value` is blank — clears the override and restores whatever

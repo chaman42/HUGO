@@ -151,6 +151,40 @@ body.speaking   .mm-status-dot { animation: none; opacity: 1; } /* steady — no
 }
 .mm-quote.fading { opacity: 0; }
 
+/* Dani's nav lockout (2026-08-24) — see controls-bar.css's own
+   body.dani-locked comment. Hidden by default; shown in place of the
+   normal rotating quote while he's view-only on Main. */
+.mm-locked-notice {
+  display: none;
+  font-family: var(--mm-font-display);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(64,156,240,0.75);
+  text-align: center;
+  max-width: 60%;
+  padding: 0 16px;
+}
+body.dani-locked .mm-quote          { display: none; }
+body.dani-locked .mm-locked-notice  { display: block; }
+
+/* Full Main lockdown (2026-08-24, Joan's request after seeing the lighter
+   dim-only version) — during lockout Main shows ONLY the diamond (bare,
+   no surrounding particle/ring effects — a deliberate "not at full
+   capability" look), the header clock, HUGO's name, and the locked
+   notice above. Everything else on Main is fully hidden, not just dimmed:
+   status/quote row, the session/personality stats box, both retractable
+   trays (quick actions + sys status strip), the corner HUD readouts, and
+   the floating text input. */
+body.dani-locked .mm-status-label,
+body.dani-locked .mm-stats-panel,
+body.dani-locked #mmActionsTray,
+body.dani-locked #mmSysTray,
+body.dani-locked .mm-edge-readouts,
+body.dani-locked .mm-floating-input {
+  display: none;
+}
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CONTEXTUAL PANELS — weather/time/... side panels that slide in beside the

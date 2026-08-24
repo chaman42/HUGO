@@ -38,6 +38,18 @@ def _current_person_id() -> str | None:
         return None
 
 
+@app.route("/api/api_keys/lock_status")
+def api_key_lock_status():
+    """Whether the CURRENT identified person is locked out of HUGO's real
+    functionality (core.api_key_store.is_person_locked — only ever true
+    for Dani, and only until both his keys are set+validated). Polled by
+    ui/js/onboarding-intro.js at boot and after every Ajustes key save to
+    drive the Main+Ajustes-only nav restriction and detect the moment he
+    unlocks (triggering the second "rest of the system" sequence)."""
+    person_id = _current_person_id()
+    return jsonify({"locked": api_key_store.is_person_locked(person_id), "person_id": person_id})
+
+
 @app.route("/api/api_keys", methods=["GET"])
 def api_get_api_keys():
     """{key: bool} for only the keys the CURRENT identified person owns —

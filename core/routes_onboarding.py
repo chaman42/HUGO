@@ -1,17 +1,22 @@
 """Flask routes for Dani's one-time first-launch onboarding sequence (see
 ui/js/onboarding-intro.js): whether it's already been shown to the CURRENT
-identified person, marking it seen, and on-demand TTS for its 3 fixed
-lines — reusing the exact same synth+cache+serve path every other HUGO
-reply uses (core.voice._edge_tts_synthesize/_cache_tts_audio, served back
-through the existing GET /api/tts_audio/<id> in core.routes_control — no
-new audio-serving path needed).
+identified person, marking it seen, and speaking its 3 fixed lines.
+
+Real incident (2026-08-24, found live-testing): the first version of this
+spoke each line through the BROWSER's own <audio> element (fetch an id,
+new Audio(...).play()) — but Chrome (and Electron's default Chromium too,
+nothing in electron/window.js overrides its autoplay policy) blocks
+audio.play() with zero prior user interaction, exactly the situation on a
+fresh boot. Every OTHER HUGO utterance instead plays server-side via
+core.voice._speak_edge_tts_blocking() (afplay as a subprocess, no browser
+audio API involved at all), which never touches that policy — so
+api_onboarding_speak() below calls that directly instead, synchronously,
+and the frontend just awaits the response to know a line finished.
 
 Deliberately its own module rather than living in core.routes_social —
 that whole file is Joan-only by design (see its own docstring); this one
 is for the opposite audience."""
-import asyncio
 import logging
-import tempfile
 
 from flask import jsonify
 
@@ -68,30 +73,35 @@ _ONBOARDING_LINES = {
         "crearte una cuenta gratuita para obtener esas claves API. Una vez las "
         "tengas, podrás acceder a mis plenas capacidades."
     ),
+    # Second sequence (2026-08-24) — plays once, the moment Dani's keys go
+    # from incomplete to complete (see ui/js/onboarding-intro.js's
+    # _runUnlockSequence()), unlocking full navigation. Not gated by
+    # onboarding_seen at all — it's driven purely by the lock-status
+    # transition, so it plays exactly once regardless of how many times he
+    # reloads the app before finishing setup.
+    "unlocked": (
+        "Perfecto, ya tienes tus claves configuradas. A partir de ahora tienes "
+        "acceso a todas mis funciones — resúmenes, esquemas, investigaciones, "
+        "recordatorios, y todo lo demás. Adelante."
+    ),
 }
 
-# line_key -> audio id, synthesized once per process. Not persisted to disk
-# on purpose — re-synthesizing on a process restart is free (edge-tts, no
-# API cost), and onboarding plays once, immediately, at first launch, well
-# before core.voice's own MAX_CACHED_AUDIO=30 replay-cache ring buffer
-# could ever evict these in the same session.
-_onboarding_audio_ids: dict[str, str] = {}
-
-
-@app.route("/api/onboarding/audio/<line_key>")
-def api_onboarding_audio(line_key):
+@app.route("/api/onboarding/speak/<line_key>", methods=["POST"])
+def api_onboarding_speak(line_key):
+    """Synthesizes (if not already cached) and PLAYS `line_key` synchronously
+    server-side, blocking until afplay actually finishes — see this
+    module's own docstring for why, instead of the browser fetching an
+    audio id and playing it itself. The frontend just awaits this to know
+    when the line is done and it's time for the next beat."""
     if line_key not in _ONBOARDING_LINES:
         return jsonify({"error": "unknown line"}), 404
-    if line_key not in _onboarding_audio_ids:
+    text = _ONBOARDING_LINES[line_key]
+    try:
         import core.voice as voice_mod
-        tmp_path = tempfile.mkstemp(suffix=".mp3", prefix="hugo_onboarding_")[1]
-        try:
-            edge_rate = voice_mod._wpm_to_edge_rate(175)
-            asyncio.run(voice_mod._edge_tts_synthesize(
-                _ONBOARDING_LINES[line_key], voice_mod.EDGE_TTS_VOICE, edge_rate, tmp_path,
-            ))
-            _onboarding_audio_ids[line_key] = voice_mod._cache_tts_audio(tmp_path)
-        except Exception as exc:
-            logger.error("Onboarding TTS synth failed for %s: %s", line_key, exc, exc_info=True)
-            return jsonify({"error": "synthesis failed"}), 500
-    return jsonify({"audio_id": _onboarding_audio_ids[line_key], "text": _ONBOARDING_LINES[line_key]})
+        if not voice_mod.is_tts_muted():
+            voice_mod._pre_speak(text)
+            voice_mod._speak_edge_tts_blocking(text)
+    except Exception as exc:
+        logger.error("Onboarding speak failed for %s: %s", line_key, exc, exc_info=True)
+        return jsonify({"ok": False, "error": "speak failed"}), 500
+    return jsonify({"ok": True, "text": text})

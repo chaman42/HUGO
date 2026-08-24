@@ -9,6 +9,45 @@
 // own top-level init calls it; loaded AFTER diamond-motion.js so
 // _organicReveal is available.
 
+// Real incident (2026-08-24, found live-testing): JARVIS_API starts out
+// pointing at BACKEND_URLS[0] (the Tailscale candidate) and only gets
+// corrected to a working address AFTER connection.js's socket 'connect_error'
+// handler advances it — but that correction happens on ITS OWN timing
+// (~5s socket timeout, then a fresh attempt every 3s), and there's no way
+// to know in advance whether it's already run by the time onboarding needs
+// an answer. A bare `fetch()` against a bad candidate, or even a single
+// retry loop timed to guess when the correction lands, either hangs
+// forever or is racy — and since _maybeRunOnboarding() is awaited BEFORE
+// _playBootSplash() even starts (see clock-boot-splash-wiring.js's own
+// gate), a hang here used to block the ENTIRE app from ever booting for
+// ANYONE, not just skip onboarding for Dani.
+//
+// Fix: don't depend on JARVIS_API/connection.js's retry state AT ALL for
+// the initial status check — race every BACKEND_URLS candidate (see
+// bootstrap-auth.js) in parallel ourselves and take whichever answers
+// first. _resolveBackendBase() below does this once; every subsequent
+// onboarding call in this file reuses that SAME resolved base rather than
+// re-reading the (possibly still-uncorrected) JARVIS_API.
+function _fetchWithTimeout(url, options, timeoutMs = 4000) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer))
+}
+
+async function _resolveBackendBase() {
+  const attempts = BACKEND_URLS.map(base =>
+    _fetchWithTimeout(`${base}/api/onboarding/status`, {}, 4000).then(res => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return res.json().then(data => ({ base, data }))
+    })
+  )
+  try {
+    return await Promise.any(attempts)
+  } catch (e) {
+    return null   // every candidate failed — genuinely unreachable right now
+  }
+}
+
 // Short generated tone for the diamond's reveal beat — no existing sound-
 // asset convention anywhere in this codebase (every other effect here is
 // CSS/JS-only), so a tiny Web Audio oscillator sweep avoids adding a new
@@ -32,36 +71,55 @@ function _playOnboardingTone() {
   } catch (e) { /* silence is an acceptable degrade */ }
 }
 
-// Fetches one fixed onboarding line's audio id (synthesized/cached
-// server-side, GET /api/onboarding/audio/<key> — core/routes_onboarding.py),
-// reveals its text in sync via the same word-by-word _organicReveal()
-// every HUGO spoken reply already uses (ui/js/diamond-motion.js), and
-// resolves once playback actually ends. Falls back to a fixed hold if the
-// audio itself couldn't be fetched/played, so a TTS hiccup degrades to
-// "text appears, then a short pause" rather than skipping the line.
-async function _playOnboardingLine(lineKey, textEl) {
-  let audioId = null, text = null
-  try {
-    const data = await fetch(`${JARVIS_API}/api/onboarding/audio/${lineKey}`).then(r => r.json())
-    audioId = data.audio_id
-    text    = data.text
-  } catch (e) {
-    console.error('[Onboarding] audio fetch failed:', e)
-  }
-  if (text) _organicReveal(textEl, text)
-  if (!audioId) {
-    await new Promise(resolve => setTimeout(resolve, 1800))
-    return
-  }
-  const audio = new Audio(`${JARVIS_API}/api/tts_audio/${audioId}`)
-  await new Promise(resolve => {
-    audio.onended = resolve
-    audio.onerror = resolve
-    audio.play().catch(resolve)
-  })
+// Exact wording spoken/typed during the sequence — MUST match
+// core/routes_onboarding.py's _ONBOARDING_LINES exactly (kept as a small
+// duplicated constant rather than an extra round trip just to fetch text,
+// since these 3 lines are fixed and rarely change).
+const _ONBOARDING_LINE_TEXT = {
+  intro: (
+    'Hola, soy tu herramienta universal de gestión de olvidos, ' +
+    'o puedes llamarme HUGO.'
+  ),
+  purpose: (
+    'Estoy diseñado para asistirte en una amplia gama de campos y trabajos, ' +
+    'ya sea haciendo resúmenes, esquemas, investigaciones, ' +
+    'o recordándote que no seas un vago.'
+  ),
+  keys: (
+    'Sin embargo, antes de activar mis funciones totalmente, necesito que ' +
+    'pongas las llaves de API en Ajustes. Tendrás que entrar a internet y ' +
+    'crearte una cuenta gratuita para obtener esas claves API. Una vez las ' +
+    'tengas, podrás acceder a mis plenas capacidades.'
+  ),
+  unlocked: (
+    'Perfecto, ya tienes tus claves configuradas. A partir de ahora tienes ' +
+    'acceso a todas mis funciones — resúmenes, esquemas, investigaciones, ' +
+    'recordatorios, y todo lo demás. Adelante.'
+  ),
 }
 
-async function _runOnboardingSequence() {
+// Reveals `lineKey`'s text immediately (word-by-word, via the same
+// _organicReveal() every HUGO spoken reply already uses —
+// ui/js/diamond-motion.js) and, in parallel, asks the SERVER to actually
+// speak it (POST /api/onboarding/speak/<key> — core/routes_onboarding.py,
+// blocks until afplay finishes; see that module's own docstring for why
+// this ISN'T a browser <audio> element: Chrome/Electron's autoplay policy
+// blocks audio.play() with zero prior user interaction, exactly the
+// situation on a fresh boot — a real bug found live-testing this). Falls
+// back to a fixed hold if the speak call itself fails, so a TTS hiccup
+// degrades to "text appears, then a short pause" rather than skipping the
+// line entirely.
+async function _playOnboardingLine(base, lineKey, textEl) {
+  _organicReveal(textEl, _ONBOARDING_LINE_TEXT[lineKey] || '')
+  try {
+    await _fetchWithTimeout(`${base}/api/onboarding/speak/${lineKey}`, { method: 'POST' }, 30000)
+  } catch (e) {
+    console.error('[Onboarding] speak failed:', e)
+    await new Promise(resolve => setTimeout(resolve, 1800))
+  }
+}
+
+async function _runOnboardingSequence(base) {
   const grid      = document.getElementById('bootSplashGrid')
   const orb       = document.getElementById('bootSplashOrb')
   const nameEl    = document.getElementById('bootSplashName')
@@ -86,7 +144,7 @@ async function _runOnboardingSequence() {
 
   // Beat 3: "Hola, soy... HUGO" — spoken + typed together.
   lineEl.classList.add('visible')
-  await _playOnboardingLine('intro', lineEl)
+  await _playOnboardingLine(base, 'intro', lineEl)
 
   // Beat 4: the HUGO name reveals right as/after she says it.
   nameEl.classList.add('visible')
@@ -100,7 +158,7 @@ async function _runOnboardingSequence() {
   await new Promise(resolve => setTimeout(resolve, 600))
 
   // Beat 6: second line — what HUGO's for.
-  await _playOnboardingLine('purpose', lineEl)
+  await _playOnboardingLine(base, 'purpose', lineEl)
 
   // Beat 7: the bottom nav bar appears (see #bottomNav.onboarding-nav-peek
   // in boot-splash.css for why this needs a temporary z-index lift above
@@ -112,7 +170,7 @@ async function _runOnboardingSequence() {
   await new Promise(resolve => setTimeout(resolve, 600))
 
   // Beat 8: third line — the API-keys directive to Ajustes.
-  await _playOnboardingLine('keys', lineEl)
+  await _playOnboardingLine(base, 'keys', lineEl)
 
   // Clean up the peek override and this sequence's own text/clock —
   // #bootSplash is still fully opaque at this point (its own fade-out
@@ -130,13 +188,82 @@ async function _runOnboardingSequence() {
 // terminal-checklist run) or fall through to the normal boot splash.
 async function _maybeRunOnboarding() {
   try {
-    const status = await fetch(`${JARVIS_API}/api/onboarding/status`).then(r => r.json())
+    const resolved = await _resolveBackendBase()
+    if (!resolved) return false   // every BACKEND_URLS candidate unreachable right now — let the normal boot splash run
+    _onboardingBackendBase = resolved.base   // reused by _refreshLockState/_runUnlockSequence below — no need to re-race BACKEND_URLS once we have a working one
+    const status = resolved.data
     if (status.seen || status.person_id !== 'dani') return false
-    await _runOnboardingSequence()
-    fetch(`${JARVIS_API}/api/onboarding/seen`, { method: 'POST' }).catch(() => {})
+    await _runOnboardingSequence(resolved.base)
+    _fetchWithTimeout(`${resolved.base}/api/onboarding/seen`, { method: 'POST' }).catch(() => {})
     return true
   } catch (e) {
     console.error('[Onboarding] sequence failed:', e)
     return false
   }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// NAV LOCKOUT (2026-08-24) — Dani gets Main+Ajustes only, view-only on
+// Main (no chat/voice input works anywhere — see ui/js/chat-render.js's
+// sendTextCommand() guard and ui/js/section-nav.js's switchSection()
+// redirect), until BOTH his keys are set and validated
+// (core.api_key_store.is_person_locked, polled via
+// GET /api/api_keys/lock_status). This is INDEPENDENT of the one-time
+// onboarding_seen flag above — it re-applies on every single load until
+// he's actually done, not just during the first session.
+// ════════════════════════════════════════════════════════════════════════════
+let _onboardingBackendBase = null   // set by _maybeRunOnboarding() once resolved; _refreshLockState falls back to JARVIS_API if that never ran (e.g. Joan's own session)
+let _daniLocked = false
+
+// Fetches current lock state and applies it (body class + nav visuals via
+// CSS, see boot-splash.css's/controls-bar.css's own .dani-locked rules).
+// If this is a TRUE -> false transition (Dani just finished entering his
+// keys), plays the one-time "unlocked" sequence before settling into the
+// now-fully-open nav. Called once after boot resolves, and again by
+// ui/js/settings-updates.js after every successful Ajustes key save.
+async function _refreshLockState() {
+  const base = _onboardingBackendBase || (typeof JARVIS_API !== 'undefined' ? JARVIS_API : null)
+  if (!base) return
+  let data
+  try {
+    data = await _fetchWithTimeout(`${base}/api/api_keys/lock_status`, {}, 4000).then(r => r.json())
+  } catch (e) {
+    return   // leave the previous known state as-is rather than guessing on a network hiccup
+  }
+  const wasLocked = _daniLocked
+  _daniLocked = !!data.locked
+  document.body.classList.toggle('dani-locked', _daniLocked)
+  if (wasLocked && !_daniLocked) {
+    await _runUnlockSequence(base)
+  }
+}
+
+// Second sequence — plays exactly once, the moment lock status flips from
+// true to false. Reuses the SAME #bootSplash stage as the first-launch
+// sequence (see _runOnboardingSequence's own comments for why: it's
+// already the black-background + diamond stage, no need for a second
+// overlay), but shorter — one line, no name/clock beats (those already
+// happened once; repeating them here would feel like a second first
+// impression rather than "you've now unlocked the rest of me").
+async function _runUnlockSequence(base) {
+  const splash = document.getElementById('bootSplash')
+  const orb    = document.getElementById('bootSplashOrb')
+  const lineEl = document.getElementById('onboardingLine')
+  if (!splash || !orb || !lineEl) return
+
+  splash.classList.remove('fading', 'gone')
+  splash.style.removeProperty('display')
+  splash.style.opacity = '1'
+  orb.classList.add('reveal')
+  _playOnboardingTone()
+  lineEl.classList.add('visible')
+  await new Promise(resolve => setTimeout(resolve, 600))
+
+  await _playOnboardingLine(base, 'unlocked', lineEl)
+
+  await new Promise(resolve => setTimeout(resolve, 800))
+  splash.classList.add('fading')
+  lineEl.classList.remove('visible')
+  await new Promise(resolve => setTimeout(resolve, 1000))
+  splash.style.display = 'none'
 }

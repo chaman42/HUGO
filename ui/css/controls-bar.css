@@ -678,3 +678,44 @@ body.jarvis-offline #modeBtn {
 }
 .api-key-row-error:empty { margin-top: 0; }
 
+/* ── Dani's nav lockout (2026-08-24) — ui/js/onboarding-intro.js's
+   _refreshLockState()/_daniLocked. Main+Ajustes stay reachable (their nav
+   items keep their normal look); everything else is fully HIDDEN, not
+   just dimmed (Joan's explicit call after seeing the lighter version) —
+   Chat/Sistema nav items, the floating app launcher (NÚCLEO/ESTUDIO), the
+   persistent bottom bar (mic/wake-word toggle, power, etc.), and every
+   text-entry surface. The backend redirect in switchSection()/the chat
+   gate in core.commands are still the real enforcement — this just makes
+   the restriction visible up front instead of surprising. See
+   ui/css/main-menu-orb.css for Main's own additional lockdown (stats
+   panel, action trays, etc.) and the diamond-particle hiding below. */
+body.dani-locked .nav-item:not([data-section="home"]):not([data-section="settings"]),
+body.dani-locked #appLauncherBtn,
+body.dani-locked #persistentBar {
+  display: none;
+}
+body.dani-locked #textInput,
+body.dani-locked #sendBtn,
+body.dani-locked #attachBtn,
+body.dani-locked #mmFloatingInput,
+body.dani-locked #hugoDiamondInput {
+  display: none;
+}
+/* The diamond itself stays — bare, no surrounding particle/ring effects,
+   a deliberate "not at full capability" look until he's set up. Facet
+   shape + halo glow (identity) stay; the elaborate Main-context ambient
+   layers (energy field, outer ring, energy rings, corner gems, particle
+   field) don't. Selectors repeat the SAME .hugo-diamond.context-main
+   ancestor chain diamond-core.css/diamond-toggles.css use for these —
+   those context-main-scoped rules are what actually reveals each layer
+   on Main (0,3,0 specificity), so a plain `body.dani-locked .X` (0,2,0)
+   loses to them; matching the same chain plus body.dani-locked (0,4,0)
+   is what actually wins. */
+body.dani-locked .hugo-diamond.context-main .hugo-diamond-energy-field,
+body.dani-locked .hugo-diamond.context-main .hugo-diamond-ring-outer,
+body.dani-locked .hugo-diamond.context-main .hugo-diamond-energy-ring,
+body.dani-locked .hugo-diamond.context-main .hugo-diamond-gem,
+body.dani-locked .hugo-diamond.context-main .hugo-diamond-particles {
+  display: none;
+}
+

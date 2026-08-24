@@ -76,7 +76,16 @@ let _currentSection = 'home'
 
 // Public entry point — every nav click, section-changing button, etc. call
 // THIS, not _performSwitchSection() directly.
+// Nav lockout (ui/js/onboarding-intro.js's _daniLocked/_refreshLockState)
+// — while Dani hasn't finished entering his own keys, every section
+// except Main and Ajustes redirects here instead of actually switching.
+// Checked at this single public entry point so every caller (bottom nav
+// clicks, sysPanelClose, any future switchSection() call) is covered
+// automatically, no per-call-site guards needed.
 function switchSection(name) {
+  if (typeof _daniLocked !== 'undefined' && _daniLocked && name !== 'home' && name !== 'settings') {
+    name = 'settings'
+  }
   _performSwitchSection(name)
 }
 

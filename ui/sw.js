@@ -597,7 +597,42 @@
 // controls-bar.css, boot-splash.css, settings-updates.js,
 // clock-boot-splash-wiring.js all changed (already in PRECACHE, hence the
 // bump); index.html also changed but isn't precached.
-const CACHE = 'jarvis-v186';
+// v187: real incident found live-testing — onboarding-intro.js's fetches
+// used to hang indefinitely against an unreachable BACKEND_URLS[0]
+// (Tailscale) candidate, blocking the ENTIRE app boot, not just skipping
+// onboarding. Added a timeout + bounded retry that re-reads JARVIS_API so
+// it picks up connection.js's own URL-fallback correction. Already in
+// PRECACHE, hence the bump.
+// v188: two more real incidents found live-testing — (1) the v187 retry
+// still raced connection.js's own URL-correction timing unreliably, so
+// onboarding-intro.js now resolves a working BACKEND_URLS candidate
+// itself (Promise.any) instead of depending on JARVIS_API at all; (2)
+// onboarding audio moved off the browser's own <audio> element entirely
+// (Chrome/Electron block autoplay with zero prior user interaction) onto
+// a new synchronous server-side POST /api/onboarding/speak/<key>
+// (core/routes_onboarding.py), same afplay path every other HUGO
+// utterance already uses. Already in PRECACHE, hence the bump.
+// v189: nav lockout — Dani is restricted to Main+Ajustes (view-only on
+// Main) until his keys are set+validated, independent of the one-time
+// onboarding sequence, plus a second "unlocked" sequence that plays once
+// when he finishes. onboarding-intro.js, clock-boot-splash-wiring.js,
+// section-nav.js, chat-render.js, settings-updates.js, controls-bar.css,
+// main-menu-orb.css all changed (all already in PRECACHE, hence the
+// bump); index.html also changed but isn't precached.
+// v190: stricter Main lockdown per Joan's feedback after seeing the
+// dim-only version — Chat/Sistema nav, app launcher, persistent bar,
+// stats panel, action trays, sys strip, corner readouts, all text inputs,
+// and the diamond's surrounding particle/ring effects are now fully
+// hidden (not dimmed) while locked; only the bare diamond, header clock,
+// name, and Main/Ajustes nav remain. controls-bar.css/main-menu-orb.css
+// changed (already in PRECACHE, hence the bump).
+// v191: fixed specificity bug in v190's diamond-particle hiding — the
+// context-main-scoped rules in diamond-core.css/diamond-toggles.css that
+// actually reveal the energy field/rings/gems/particles on Main
+// (.hugo-diamond.context-main .X, 0,3,0) outrank a plain
+// `body.dani-locked .X` (0,2,0), so those layers stayed visible.
+// controls-bar.css now repeats the same .context-main ancestor chain.
+const CACHE = 'jarvis-v191';
 
 // Assets to pre-cache on install so the icons/manifest load instantly
 // offline. '/' (ui/index.html) is deliberately NOT in this list — see the

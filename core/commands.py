@@ -2296,16 +2296,14 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
         # hugo". A fixed directive to Ajustes, not a naturalized reply —
         # this is deterministic system state, not a real answer to a real
         # query, same reasoning as the mode-switch confirmation just above.
-        if _current_person is not None and _current_person.id == "dani":
-            _dani_key_status = api_key_store.get_status()
-            if not all(_dani_key_status.get(k) for k in ("GROQ_API_KEY_DANI", "SERPER_API_KEY_DANI")):
-                msg = (
-                    "Todavía no tengo tus claves de API configuradas — entra en "
-                    "Ajustes y ponlas para que pueda ayudarte de verdad."
-                )
-                logger.info("Jarvis: %s", msg)
-                _say_for(current_p, msg, cmd_start=cmd_start)
-                return
+        if api_key_store.is_person_locked(_current_person.id if _current_person is not None else None):
+            msg = (
+                "Todavía no tengo tus claves de API configuradas — entra en "
+                "Ajustes y ponlas para que pueda ayudarte de verdad."
+            )
+            logger.info("Jarvis: %s", msg)
+            _say_for(current_p, msg, cmd_start=cmd_start)
+            return
 
         # ── Build user content — inject conversation context if provided ─────
         # Part 2: conversation mode passes the rolling buffer as context so

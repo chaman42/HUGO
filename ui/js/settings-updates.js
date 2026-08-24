@@ -388,6 +388,10 @@ async function _renderApiKeys() {
         const data = await res.json()
         if (res.ok && data.ok) {
           _renderApiKeys()   // re-render from the new status — never leaves the pasted value sitting in the input
+          // Re-check nav lockout (ui/js/onboarding-intro.js) — this save
+          // may have just been the LAST key Dani needed, which should
+          // trigger the one-time "unlocked" sequence and open up full nav.
+          if (typeof _refreshLockState === 'function') _refreshLockState()
         } else {
           errorEl.textContent = data.error || 'No se pudo guardar la clave.'
         }
