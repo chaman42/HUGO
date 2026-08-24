@@ -182,6 +182,13 @@ body.speaking .status-label { color: var(--accent); }
   line-height: 1.5;
   word-break: break-word;
 }
+/* Paragraph breaks — see chat-render.js's _renderParagraphs(). Kill the
+   browser's default <p> margins first (they'd otherwise stack with this
+   gap and double-space everything), then add back just enough gap between
+   consecutive paragraphs to read as separate thoughts; the last one needs
+   none since .msg-text itself has no bottom padding to compensate for. */
+.msg-text p { margin: 0 0 0.6em 0; }
+.msg-text p:last-child { margin-bottom: 0; }
 
 /* 'Repeat that' replay button — see _applyTtsAudioReady()/.msg-replay-btn
    in chat-render.js. display:none until 'tts_audio_ready' arrives (say

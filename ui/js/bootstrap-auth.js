@@ -336,20 +336,37 @@ launcher.on('mic_status', ({ status }) => {
 // _applyBootProgress() and its own comment further down). Stages 4-5-7
 // arrive on jarvisSocket instead, once jarvis.py's server exists — see
 // _attemptConnect() below.
-launcher.on('boot_progress', _applyBootProgress)
+//
+// Real incident (2026-08-24, found simulating Dani's first launch):
+// _applyBootProgress/_applyUpdateProgress/_applyBuildIosProgress are all
+// defined in LATER <script> tags (clock-boot-splash-wiring.js,
+// settings-updates.js — see index.html's script order) than this one.
+// _initLauncherSocket() runs here as soon as _generateFingerprint()'s
+// promise resolves, which — per the HTML spec's microtask-checkpoint
+// timing after each classic <script> finishes its synchronous portion —
+// can happen before the parser ever reaches those later scripts. Passing
+// the bare function NAME evaluates it as a value right now, while it's
+// still undefined, throwing "_applyBootProgress is not defined" and
+// aborting the rest of _initLauncherSocket() (no try/catch around it),
+// which silently skipped the update_progress/build_ios_progress
+// registrations below every single time this ran. Wrapping each in an
+// arrow function defers the name lookup to when the event actually
+// fires — by then every script has loaded, so the reference is always
+// valid, regardless of script order or microtask timing.
+launcher.on('boot_progress', (data) => _applyBootProgress(data))
 
 // Real update progress — emitted by launcher.py's api_update() as it
 // streams scripts/rebuild_app.sh's own output (see emit_update_progress()
 // there and _applyUpdateProgress() further down). `launcher` is always-on
 // (independent of jarvis.py), matching where this event actually
 // originates.
-launcher.on('update_progress', _applyUpdateProgress)
+launcher.on('update_progress', (data) => _applyUpdateProgress(data))
 
 // Real iOS-build progress — emitted by launcher.py's api_build_ios() as it
 // streams scripts/build_ios.sh's own output (see emit_build_ios_progress()
 // there and _applyBuildIosProgress() further down). Same rationale as
 // update_progress above.
-launcher.on('build_ios_progress', _applyBuildIosProgress)
+launcher.on('build_ios_progress', (data) => _applyBuildIosProgress(data))
 }   // end _initLauncherSocket()
 
 // ════════════════════════════════════════════════════════════════════════════

@@ -2250,6 +2250,7 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
         # the action rather than silently blocking Joan over a bug here.
         _can_trigger_actions = True
         _can_access_schedule = True
+        _current_person = None
         try:
             from core import social as social_mod
             # Voice never carries a browser device_id (see dispatch_command's
@@ -2664,7 +2665,21 @@ def _dispatch_command_impl(transcript: str, context: str | None = None,
             # even after is_feature_enabled('modo_test') started auto-triggering
             # for Joan (core.memory_flags.is_feature_enabled). Guarded directly
             # here instead of pushing the check further down.
-            if not memory.is_feature_enabled("modo_test"):
+            #
+            # Second, separate real incident (found simulating Dani's first
+            # use, 2026-08-24): the fingerprint is documented — see
+            # core.linguistic_fingerprint's own module docstring — as
+            # specifically "HOW JOAN talks", a secondary voice-identification
+            # signal for _identify_speaker_multi_factor. restrict_memory only
+            # protects it for LOW-CONFIDENCE VOICE turns; typed input never
+            # sets restrict_memory at all (voice_gated is False), so Dani's
+            # own text messages were folding his vocabulary/sentence patterns
+            # into what's supposed to be Joan's fingerprint — actively
+            # degrading the very signal meant to recognize Joan. Gated here
+            # on the actual identified speaker instead, independent of
+            # restrict_memory/modo_test, both of which answer a different
+            # question (test-mode ephemerality) than "is this really Joan".
+            if not memory.is_feature_enabled("modo_test") and _current_person is not None and _current_person.id == "joan":
                 try:
                     linguistic_fingerprint.update_fingerprint([transcript])
                 except Exception:

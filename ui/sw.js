@@ -577,7 +577,18 @@
 // emit_tts_audio_ready and core/voice.py's replay-cache module section).
 // chat-render.js, connection.js, chat.css all changed; all three already
 // in PRECACHE, hence the bump.
-const CACHE = 'jarvis-v182';
+// v183: bootstrap-auth.js's launcher.on('boot_progress'/'update_progress'/
+// 'build_ios_progress', ...) registrations passed the handler function
+// NAME, evaluated immediately — but those handlers are defined in later
+// <script> tags, so this threw "not defined" and silently dropped two of
+// the three registrations on every real launch (found simulating Dani's
+// first launch). Wrapped in arrow functions so the lookup happens at
+// event-fire time instead. bootstrap-auth.js already in PRECACHE, hence
+// the bump.
+// v184: chat-render.js/chat.css changed (chat replies now render as real
+// paragraphs instead of one collapsed line); both already in PRECACHE,
+// hence the bump.
+const CACHE = 'jarvis-v184';
 
 // Assets to pre-cache on install so the icons/manifest load instantly
 // offline. '/' (ui/index.html) is deliberately NOT in this list — see the

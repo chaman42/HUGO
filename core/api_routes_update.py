@@ -6,11 +6,40 @@ are large, self-contained, and share nothing with the shorter routes there.
 import os
 import subprocess
 import threading
+from functools import wraps
 
 from flask import jsonify, request
 
 from core.launcher_app import _BASE_DIR, app, socketio, logger
 from core import process_manager as pm
+
+
+def _joan_only(view):
+    """Real incident (2026-08-24, found simulating Dani's first launch):
+    neither of this file's routes had any authorization check — the
+    "ACTUALIZAR SISTEMA"/"COMPILAR PARA IPHONE" Ajustes buttons are visible
+    to anyone, Dani included, and nothing server-side stopped a non-Joan
+    caller from POSTing here directly, e.g. triggering a full rebuild +
+    git push (see api_update()'s own docstring) or an iOS build. Same
+    permissive-default check as core.routes_social._current_person_is_joan/
+    _joan_only — duplicated rather than imported since this module lives on
+    the launcher's Flask app (core.launcher_app), a different process from
+    core.server/core.routes_social entirely; see
+    core.sleep_curiosity_search._admin_device_active for the same
+    duplicate-rather-than-import precedent."""
+    @wraps(view)
+    def wrapper(*args, **kwargs):
+        try:
+            from core import social
+            present = social.social_engine.who_is_present()
+            current = present[0] if present else None
+            is_joan = current is None or current.id == "joan"
+        except Exception:
+            is_joan = True
+        if not is_joan:
+            return jsonify({"error": "not authorized"}), 403
+        return view(*args, **kwargs)
+    return wrapper
 
 
 def emit_update_progress(stage: str, label: str) -> None:
@@ -37,6 +66,7 @@ def emit_build_ios_progress(stage: str, label: str) -> None:
 
 
 @app.route("/api/update", methods=["POST"])
+@_joan_only
 def api_update():
     """Run scripts/rebuild_app.sh synchronously — git pull, bump+push a
     Service Worker cache-bust commit, rebuild, reinstall
@@ -164,6 +194,7 @@ def api_update():
 
 
 @app.route("/api/build_ios", methods=["POST"])
+@_joan_only
 def api_build_ios():
     """Run scripts/build_ios.sh synchronously — cap sync -> xcodebuild
     archive -> xcodebuild -exportArchive — and report the resulting .ipa

@@ -1,6 +1,21 @@
 // chat-render.js — Timestamp helper, chat message rendering, maintenance log, input enable state, and feature toggles.
 // esc() moved to bootstrap-auth.js — see its own comment for why.
 
+// Renders message text as HTML paragraphs instead of one run-on line —
+// long HUGO replies (and multi-line user input) collapse to a single
+// visual block under plain esc() since browsers ignore bare '\n' in HTML.
+// Blank-line-separated chunks become their own <p>; a lone '\n' inside a
+// chunk (no blank line) becomes a <br> rather than a new paragraph, so a
+// short aside doesn't get the same wide spacing as a real paragraph break.
+function _renderParagraphs(message) {
+  return String(message)
+    .split(/\n{2,}/)
+    .map(para => esc(para).replace(/\n/g, '<br>'))
+    .filter(Boolean)
+    .map(para => `<p>${para}</p>`)
+    .join('') || esc(message)
+}
+
 // The most recently added assistant message's .msg-timing element — see
 // addMessage()'s own comment and _applyResponseTiming() below.
 let _lastJarvisTimingEl = null
@@ -96,7 +111,7 @@ function addMessage(type, message) {
       <span class="msg-time">${ts()}</span>
       <span class="msg-label">${label}</span>
       ${type === 'jarvis' ? '<button class="msg-replay-btn" title="Repetir audio" style="display:none">\u{1F50A}</button>' : ''}
-      <span class="msg-text">${esc(message)}</span>
+      <span class="msg-text">${_renderParagraphs(message)}</span>
     </div>
     ${type === 'jarvis' ? '<div class="msg-timing"></div>' : ''}`
   logEl.appendChild(row)

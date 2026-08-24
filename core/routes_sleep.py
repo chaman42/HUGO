@@ -2,6 +2,7 @@
 insights polling for NUCLEO HUGO's Estado/Pensamiento tabs."""
 import logging
 import time
+from functools import wraps
 
 from flask import jsonify
 
@@ -9,7 +10,36 @@ from core.server import app
 
 logger = logging.getLogger(__name__)
 
+
+def _joan_only(view):
+    """Real incident (2026-08-24, found simulating Dani's first launch):
+    POST /api/sleep/start had no authorization check at all — the
+    "INICIAR SUEÑO" Ajustes button is visible to anyone, Dani included, and
+    nothing server-side stopped a non-Joan caller from manually kicking off
+    a sleep/reflection cycle. Same permissive-default check as
+    core.routes_social._current_person_is_joan/_joan_only — duplicated
+    rather than imported: core.server imports this module (line ~470)
+    BEFORE core.routes_social (line ~477), so importing routes_social here
+    would be a circular/import-order problem. See
+    core.sleep_curiosity_search._admin_device_active for the same
+    duplicate-rather-than-import precedent."""
+    @wraps(view)
+    def wrapper(*args, **kwargs):
+        try:
+            from core import social
+            present = social.social_engine.who_is_present()
+            current = present[0] if present else None
+            is_joan = current is None or current.id == "joan"
+        except Exception:
+            is_joan = True
+        if not is_joan:
+            return jsonify({"error": "not authorized"}), 403
+        return view(*args, **kwargs)
+    return wrapper
+
+
 @app.route("/api/sleep/start", methods=["POST"])
+@_joan_only
 def api_sleep_start():
     """Starts continuous sleep (spawns the child process) and returns
     immediately — it now runs cycle after cycle indefinitely, so there's no
@@ -35,6 +65,7 @@ def api_sleep_start():
         return jsonify({"ok": False, "error": str(exc)}), 500
 
 @app.route("/api/sleep/stop", methods=["POST"])
+@_joan_only
 def api_sleep_stop():
     """Manual 'Detener Sueño' — signals the continuous-sleep subprocess to
     stop (see commands.stop_continuous_sleep()); it finishes whatever phase
