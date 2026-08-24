@@ -649,7 +649,12 @@
 // _refreshLockState() now plays the sequence first, only removing the
 // class once it's already covering the screen and starting to fade.
 // onboarding-intro.js changed (already in PRECACHE, hence the bump).
-const CACHE = 'jarvis-v194';
+// v195: onboarding raises the Mac's system volume to a 40% floor (never
+// lowers it) at the very start of the first-launch sequence, before any
+// sound plays — Joan's request, so a fresh Mac's low default volume
+// doesn't mean Dani misses the spoken intro. onboarding-intro.js changed
+// (already in PRECACHE, hence the bump).
+const CACHE = 'jarvis-v195';
 
 // Assets to pre-cache on install so the icons/manifest load instantly
 // offline. '/' (ui/index.html) is deliberately NOT in this list — see the

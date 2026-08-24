@@ -128,6 +128,16 @@ async function _runOnboardingSequence(base) {
   const bottomNav = document.getElementById('bottomNav')
   if (!orb || !nameEl || !lineEl || !clockEl) return
 
+  // Beat 0: raise the system volume to a minimum audible floor (never
+  // lowers it) BEFORE anything plays, including beat 2's own tone — a
+  // fresh Mac's default/low volume shouldn't mean Dani misses the whole
+  // spoken intro. Awaited (small, ~200-400ms real cost — two osascript
+  // round trips) rather than fire-and-forget, so this is guaranteed done
+  // before any sound plays rather than racing it; best-effort either way,
+  // a failure here just means the sequence proceeds at whatever volume
+  // was already set.
+  await _fetchWithTimeout(`${base}/api/onboarding/ensure_volume`, { method: 'POST' }, 4000).catch(() => {})
+
   // Beat 1: black screen (already the default), grid fades in — same
   // ambient depth the normal boot splash opens with.
   requestAnimationFrame(() => { if (grid) grid.classList.add('visible') })

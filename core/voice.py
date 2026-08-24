@@ -102,6 +102,31 @@ def is_tts_muted() -> bool:
     return _tts_muted
 
 
+def ensure_min_system_volume(min_percent: int) -> None:
+    """Raises macOS's system OUTPUT volume to `min_percent` if it's
+    currently lower — never lowers it if it's already at or above that
+    level. Used once, at the very start of Dani's first-launch onboarding
+    sequence (core/routes_onboarding.py) — Joan's explicit request: force
+    the volume up just enough that a fresh install with the Mac's default
+    (often low/muted) volume doesn't silently miss the whole spoken intro,
+    without ever overriding a volume Dani already had set higher himself.
+    Best-effort: `osascript` failing (non-macOS, sandboxed, no audio
+    device) just means the volume stays whatever it already was."""
+    try:
+        current = subprocess.run(
+            ["osascript", "-e", "output volume of (get volume settings)"],
+            capture_output=True, text=True, timeout=5,
+        )
+        current_percent = int(current.stdout.strip())
+        if current_percent < min_percent:
+            subprocess.run(
+                ["osascript", "-e", f"set volume output volume {min_percent}"],
+                capture_output=True, text=True, timeout=5,
+            )
+    except Exception:
+        logger.debug("ensure_min_system_volume failed (non-critical)", exc_info=True)
+
+
 # ---------------------------------------------------------------------------
 # Ducking — interrupt-feature infrastructure, step 1 (see
 # ~/.claude memory project_interrupt_feature.md for the full design/status).

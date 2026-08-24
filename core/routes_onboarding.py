@@ -47,6 +47,23 @@ def api_onboarding_status():
     return jsonify({"seen": bool(person and person.onboarding_seen), "person_id": person_id})
 
 
+# Minimum system volume for the first-launch sequence (2026-08-24, Joan's
+# request) — a fresh Mac's default/low volume shouldn't mean Dani misses
+# the whole spoken intro. Only ever raises, never lowers — see
+# core.voice.ensure_min_system_volume's own docstring.
+_ONBOARDING_MIN_VOLUME = 40
+
+
+@app.route("/api/onboarding/ensure_volume", methods=["POST"])
+def api_onboarding_ensure_volume():
+    try:
+        import core.voice as voice_mod
+        voice_mod.ensure_min_system_volume(_ONBOARDING_MIN_VOLUME)
+    except Exception as exc:
+        logger.debug("ensure_volume failed (non-critical): %s", exc, exc_info=True)
+    return jsonify({"ok": True})
+
+
 @app.route("/api/onboarding/seen", methods=["POST"])
 def api_onboarding_mark_seen():
     person_id = _current_person_id()
