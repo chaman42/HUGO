@@ -643,7 +643,13 @@
 // sleep/build controls) wrapped in two .settings-locked-hide blocks.
 // index.html changed (not precached) + controls-bar.css (already
 // precached, hence the bump).
-const CACHE = 'jarvis-v193';
+// v194: real bug found live-testing the unlock sequence — the
+// dani-locked class flipped off BEFORE the sequence played, briefly
+// flashing the full unlocked nav/UI underneath the still-forming overlay.
+// _refreshLockState() now plays the sequence first, only removing the
+// class once it's already covering the screen and starting to fade.
+// onboarding-intro.js changed (already in PRECACHE, hence the bump).
+const CACHE = 'jarvis-v194';
 
 // Assets to pre-cache on install so the icons/manifest load instantly
 // offline. '/' (ui/index.html) is deliberately NOT in this list — see the

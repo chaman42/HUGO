@@ -237,11 +237,18 @@ async function _refreshLockState() {
     return   // leave the previous known state as-is rather than guessing on a network hiccup
   }
   const wasLocked = _daniLocked
-  _daniLocked = !!data.locked
-  document.body.classList.toggle('dani-locked', _daniLocked)
-  if (wasLocked && !_daniLocked) {
+  const newLocked = !!data.locked
+  if (wasLocked && !newLocked) {
+    // Real bug found live-testing this: toggling the body class to
+    // "unlocked" BEFORE playing the sequence revealed the full nav/UI
+    // for a moment before the overlay had a chance to cover it — the
+    // class must only flip once the sequence (which owns #bootSplash,
+    // covering the whole screen at z-index 9999 regardless) has already
+    // finished and started fading, not a beat earlier.
     await _runUnlockSequence(base)
   }
+  _daniLocked = newLocked
+  document.body.classList.toggle('dani-locked', _daniLocked)
 }
 
 // Second sequence — plays exactly once, the moment lock status flips from
