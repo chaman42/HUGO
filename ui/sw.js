@@ -654,7 +654,10 @@
 // sound plays — Joan's request, so a fresh Mac's low default volume
 // doesn't mean Dani misses the spoken intro. onboarding-intro.js changed
 // (already in PRECACHE, hence the bump).
-const CACHE = 'jarvis-v195';
+// v196: Claves API rows now link to where to actually get each key
+// (Groq console, Serper, DeepSeek, Cloudflare) — settings-updates.js/
+// controls-bar.css changed (already in PRECACHE, hence the bump).
+const CACHE = 'jarvis-v196';
 
 // Assets to pre-cache on install so the icons/manifest load instantly
 // offline. '/' (ui/index.html) is deliberately NOT in this list — see the

@@ -329,6 +329,22 @@ const API_KEY_LABELS = {
 // down to whichever keys the response actually included.
 const API_KEY_ORDER = Object.keys(API_KEY_LABELS)
 
+// Where to actually get each key — Joan's request, so Dani (or Joan
+// himself, setting up a fresh key) isn't left guessing which site a
+// "Groq" or "Serper" label even refers to. Same provider → same URL
+// regardless of which variable it fills (Dani's isolated *_DANI slots
+// point at the exact same signup page as the shared ones).
+const API_KEY_SIGNUP_URLS = {
+  GROQ_API_KEY:          'https://console.groq.com/keys',
+  GROQ_API_KEY_2:        'https://console.groq.com/keys',
+  GROQ_API_KEY_DANI:     'https://console.groq.com/keys',
+  SERPER_API_KEY:        'https://serper.dev',
+  SERPER_API_KEY_DANI:   'https://serper.dev',
+  DEEPSEEK_API_KEY:      'https://platform.deepseek.com',
+  CLOUDFLARE_ACCOUNT_ID: 'https://dash.cloudflare.com',
+  CLOUDFLARE_API_TOKEN:  'https://dash.cloudflare.com',
+}
+
 async function _renderApiKeys() {
   const panel = document.getElementById('apiKeysPanel')
   if (!panel) return
@@ -348,10 +364,12 @@ async function _renderApiKeys() {
   panel.innerHTML = keys.map(key => {
     const label = API_KEY_LABELS[key]
     const isSet = !!status[key]
+    const signupUrl = API_KEY_SIGNUP_URLS[key]
     return `
       <div class="api-key-row" data-key="${key}">
         <div class="api-key-row-head">
           <span class="api-key-label">${esc(label)}</span>
+          ${signupUrl ? `<a class="api-key-signup-link" href="${signupUrl}" target="_blank" rel="noopener noreferrer">Obtener clave ↗</a>` : ''}
           <span class="api-key-state ${isSet ? 'set' : 'unset'}">${isSet ? '● Configurada' : '○ Vacía'}</span>
         </div>
         <div class="api-key-row-controls">

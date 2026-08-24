@@ -598,11 +598,18 @@ body.jarvis-offline #modeBtn {
 .api-key-row:last-child { border-bottom: none; }
 .api-key-row-head {
   display: flex;
-  justify-content: space-between;
   align-items: baseline;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 6px;
 }
+.api-key-signup-link {
+  font-family: var(--font);
+  font-size: 0.62rem;
+  color: rgba(63,169,245,0.6);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.api-key-signup-link:hover { color: rgba(63,169,245,0.95); text-decoration: underline; }
 .api-key-label {
   font-family: var(--mm-font-mono);
   font-size: 0.625rem;
@@ -614,6 +621,7 @@ body.jarvis-offline #modeBtn {
   font-family: var(--mm-font-display);
   font-size: 0.66rem;
   flex-shrink: 0;
+  margin-left: auto;
 }
 .api-key-state.set     { color: rgba(90,220,140,0.85); }
 .api-key-state.unset   { color: rgba(255,255,255,0.3); }
